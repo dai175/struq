@@ -101,7 +101,7 @@ export const listSongs = createServerFn({ method: "GET" }).handler(
 // ─── getSongWithSections ────────────────────────────────
 
 export const getSongWithSections = createServerFn({ method: "GET" })
-  .validator((input: { songId: string }) => input)
+  .inputValidator((input: { songId: string }) => input)
   .handler(
     async ({
       data,
@@ -141,7 +141,7 @@ export const getSongWithSections = createServerFn({ method: "GET" })
 // ─── createSong ─────────────────────────────────────────
 
 export const createSong = createServerFn({ method: "POST" })
-  .validator(
+  .inputValidator(
     (input: {
       title: string;
       artist?: string;
@@ -178,7 +178,7 @@ export const createSong = createServerFn({ method: "POST" })
 // ─── updateSong ─────────────────────────────────────────
 
 export const updateSong = createServerFn({ method: "POST" })
-  .validator(
+  .inputValidator(
     (input: {
       id: string;
       title: string;
@@ -217,7 +217,7 @@ export const updateSong = createServerFn({ method: "POST" })
 // ─── deleteSong ─────────────────────────────────────────
 
 export const deleteSong = createServerFn({ method: "POST" })
-  .validator((input: { id: string }) => input)
+  .inputValidator((input: { id: string }) => input)
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -256,7 +256,7 @@ export const deleteSong = createServerFn({ method: "POST" })
 // ─── saveSections ───────────────────────────────────────
 
 export const saveSections = createServerFn({ method: "POST" })
-  .validator(
+  .inputValidator(
     (input: {
       songId: string;
       sections: Array<{
