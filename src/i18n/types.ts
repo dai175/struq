@@ -51,6 +51,14 @@ export interface Translations {
     aiGenerate: string;
     addSection: string;
     noSections: string;
+    noSongs: string;
+    deleteSong: string;
+    confirmDelete: string;
+    saved: string;
+    titleRequired: string;
+    customLabel: string;
+    memo: string;
+    chordProgression: string;
   };
 
   setlist: {

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SongsIndexRouteImport } from './routes/songs/index'
 import { Route as SetlistsIndexRouteImport } from './routes/setlists/index'
 import { Route as SongsNewRouteImport } from './routes/songs/new'
 import { Route as SetlistsIdRouteImport } from './routes/setlists/$id'
@@ -33,6 +34,11 @@ const LoginRoute = LoginRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SongsIndexRoute = SongsIndexRouteImport.update({
+  id: '/songs/',
+  path: '/songs/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetlistsIndexRoute = SetlistsIndexRouteImport.update({
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/setlists/$id': typeof SetlistsIdRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists/': typeof SetlistsIndexRoute
+  '/songs/': typeof SongsIndexRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/songs/$id/perform': typeof SongsIdPerformRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/setlists/$id': typeof SetlistsIdRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists': typeof SetlistsIndexRoute
+  '/songs': typeof SongsIndexRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/songs/$id/perform': typeof SongsIdPerformRoute
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/setlists/$id': typeof SetlistsIdRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists/': typeof SetlistsIndexRoute
+  '/songs/': typeof SongsIndexRoute
   '/api/auth/callback': typeof ApiAuthCallbackRoute
   '/api/auth/google': typeof ApiAuthGoogleRoute
   '/songs/$id/perform': typeof SongsIdPerformRoute
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/setlists/$id'
     | '/songs/new'
     | '/setlists/'
+    | '/songs/'
     | '/api/auth/callback'
     | '/api/auth/google'
     | '/songs/$id/perform'
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/setlists/$id'
     | '/songs/new'
     | '/setlists'
+    | '/songs'
     | '/api/auth/callback'
     | '/api/auth/google'
     | '/songs/$id/perform'
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/setlists/$id'
     | '/songs/new'
     | '/setlists/'
+    | '/songs/'
     | '/api/auth/callback'
     | '/api/auth/google'
     | '/songs/$id/perform'
@@ -154,6 +166,7 @@ export interface RootRouteChildren {
   SetlistsIdRoute: typeof SetlistsIdRoute
   SongsNewRoute: typeof SongsNewRoute
   SetlistsIndexRoute: typeof SetlistsIndexRoute
+  SongsIndexRoute: typeof SongsIndexRoute
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
   SongsIdPerformRoute: typeof SongsIdPerformRoute
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/songs/': {
+      id: '/songs/'
+      path: '/songs'
+      fullPath: '/songs/'
+      preLoaderRoute: typeof SongsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/setlists/': {
@@ -242,6 +262,7 @@ const rootRouteChildren: RootRouteChildren = {
   SetlistsIdRoute: SetlistsIdRoute,
   SongsNewRoute: SongsNewRoute,
   SetlistsIndexRoute: SetlistsIndexRoute,
+  SongsIndexRoute: SongsIndexRoute,
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRoute,
   SongsIdPerformRoute: SongsIdPerformRoute,
