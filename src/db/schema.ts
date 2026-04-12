@@ -3,6 +3,7 @@ import {
   text,
   integer,
   primaryKey,
+  index,
 } from "drizzle-orm/sqlite-core";
 
 // ─── Users ──────────────────────────────────────────────
@@ -18,36 +19,44 @@ export const users = sqliteTable("users", {
 });
 
 // ─── Songs ──────────────────────────────────────────────
-export const songs = sqliteTable("songs", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  title: text("title").notNull(),
-  artist: text("artist"),
-  bpm: integer("bpm"),
-  key: text("key"),
-  referenceUrl: text("reference_url"),
-  createdAt: integer("created_at", { mode: "number" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "number" }).notNull(),
-  deletedAt: integer("deleted_at", { mode: "number" }),
-});
+export const songs = sqliteTable(
+  "songs",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    title: text("title").notNull(),
+    artist: text("artist"),
+    bpm: integer("bpm"),
+    key: text("key"),
+    referenceUrl: text("reference_url"),
+    createdAt: integer("created_at", { mode: "number" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "number" }).notNull(),
+    deletedAt: integer("deleted_at", { mode: "number" }),
+  },
+  (table) => [index("songs_user_id_idx").on(table.userId)],
+);
 
 // ─── Setlists ───────────────────────────────────────────
-export const setlists = sqliteTable("setlists", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  title: text("title").notNull(),
-  description: text("description"),
-  sessionDate: text("session_date"),
-  venue: text("venue"),
-  sortOrder: integer("sort_order").notNull(),
-  createdAt: integer("created_at", { mode: "number" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "number" }).notNull(),
-  deletedAt: integer("deleted_at", { mode: "number" }),
-});
+export const setlists = sqliteTable(
+  "setlists",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    title: text("title").notNull(),
+    description: text("description"),
+    sessionDate: text("session_date"),
+    venue: text("venue"),
+    sortOrder: integer("sort_order").notNull(),
+    createdAt: integer("created_at", { mode: "number" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "number" }).notNull(),
+    deletedAt: integer("deleted_at", { mode: "number" }),
+  },
+  (table) => [index("setlists_user_id_idx").on(table.userId)],
+);
 
 // ─── SetlistSongs (junction) ────────────────────────────
 export const setlistSongs = sqliteTable(
@@ -55,27 +64,31 @@ export const setlistSongs = sqliteTable(
   {
     setlistId: text("setlist_id")
       .notNull()
-      .references(() => setlists.id),
+      .references(() => setlists.id, { onDelete: "cascade" }),
     songId: text("song_id")
       .notNull()
-      .references(() => songs.id),
+      .references(() => songs.id, { onDelete: "cascade" }),
     sortOrder: integer("sort_order").notNull(),
   },
   (table) => [primaryKey({ columns: [table.setlistId, table.songId] })],
 );
 
 // ─── Sections ───────────────────────────────────────────
-export const sections = sqliteTable("sections", {
-  id: text("id").primaryKey(),
-  songId: text("song_id")
-    .notNull()
-    .references(() => songs.id),
-  type: text("type").notNull(),
-  label: text("label").notNull(),
-  bars: integer("bars").notNull().default(8),
-  extraBeats: integer("extra_beats").notNull().default(0),
-  chordProgression: text("chord_progression"),
-  memo: text("memo"),
-  sortOrder: integer("sort_order").notNull(),
-  deletedAt: integer("deleted_at", { mode: "number" }),
-});
+export const sections = sqliteTable(
+  "sections",
+  {
+    id: text("id").primaryKey(),
+    songId: text("song_id")
+      .notNull()
+      .references(() => songs.id),
+    type: text("type").notNull(),
+    label: text("label").notNull(),
+    bars: integer("bars").notNull().default(8),
+    extraBeats: integer("extra_beats").notNull().default(0),
+    chordProgression: text("chord_progression"),
+    memo: text("memo"),
+    sortOrder: integer("sort_order").notNull(),
+    deletedAt: integer("deleted_at", { mode: "number" }),
+  },
+  (table) => [index("sections_song_id_idx").on(table.songId)],
+);
