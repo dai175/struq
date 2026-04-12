@@ -262,6 +262,17 @@ const KNOWN_SECTION_TYPES: ReadonlySet<string> = new Set(
 );
 
 function normalizeSection(raw: unknown): SectionData {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {
+      id: crypto.randomUUID(),
+      type: "custom",
+      label: null,
+      bars: DEFAULT_BARS.custom,
+      extraBeats: 0,
+      chordProgression: null,
+      memo: null,
+    };
+  }
   const obj = raw as Record<string, unknown>;
 
   const rawType = typeof obj.type === "string" ? obj.type.toLowerCase() : "";
