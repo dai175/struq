@@ -324,6 +324,7 @@ Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"t
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),
+        signal: AbortSignal.timeout(30_000),
       },
     );
 
