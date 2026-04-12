@@ -1,3 +1,4 @@
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 SESSION_SECRET=at-least-32-characters-random-string
+GEMINI_API_KEY=your-gemini-api-key

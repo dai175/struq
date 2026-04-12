@@ -60,6 +60,8 @@ export interface Translations {
     customLabel: string;
     memo: string;
     chordProgression: string;
+    aiError: string;
+    aiConfirmReplace: string;
   };
 
   setlist: {

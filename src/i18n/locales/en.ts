@@ -52,6 +52,8 @@ export const en: Translations = {
     customLabel: "Label",
     memo: "Memo",
     chordProgression: "Chords",
+    aiError: "Failed to generate structure. Please retry or input manually.",
+    aiConfirmReplace: "Replace existing sections with AI-generated structure?",
   },
   setlist: {
     title: "Title",

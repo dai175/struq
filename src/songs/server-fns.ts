@@ -3,7 +3,8 @@ import { getAuthUser } from "@/auth/server-fns";
 import { getDb, schema } from "@/db";
 import { eq, and, isNull, inArray, desc } from "drizzle-orm";
 import { env } from "cloudflare:workers";
-import type { SectionType } from "@/i18n/types";
+import { SECTION_TYPES, type SectionType } from "@/i18n/types";
+import type { SectionData } from "@/songs/components/SectionCard";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -251,6 +252,109 @@ export const deleteSong = createServerFn({ method: "POST" })
         .delete(schema.setlistSongs)
         .where(eq(schema.setlistSongs.songId, data.id)),
     ]);
+  });
+
+// ─── generateSections (AI) ──────────────────────────────
+
+const VALID_SECTION_TYPES = SECTION_TYPES.filter(
+  (t): t is Exclude<SectionType, "custom"> => t !== "custom",
+);
+
+function normalizeSection(raw: unknown): SectionData {
+  const obj = raw as Record<string, unknown>;
+
+  const rawType = typeof obj.type === "string" ? obj.type.toLowerCase() : "";
+  const type: SectionType = (VALID_SECTION_TYPES as readonly string[]).includes(
+    rawType,
+  )
+    ? (rawType as SectionType)
+    : "custom";
+
+  const rawBars =
+    typeof obj.bars === "number" ? Math.floor(obj.bars) : Number.NaN;
+  const bars = rawBars > 0 ? rawBars : 8;
+
+  const rawExtra =
+    typeof obj.extra_beats === "number"
+      ? Math.floor(obj.extra_beats)
+      : Number.NaN;
+  const extraBeats = rawExtra >= 0 && rawExtra <= 7 ? rawExtra : 0;
+
+  const chordProgression =
+    typeof obj.chord_progression === "string"
+      ? obj.chord_progression.trim() || null
+      : null;
+
+  return {
+    id: crypto.randomUUID(),
+    type,
+    label:
+      type === "custom" && typeof obj.type === "string" ? obj.type : null,
+    bars,
+    extraBeats,
+    chordProgression,
+    memo: null,
+  };
+}
+
+export const generateSections = createServerFn({ method: "POST" })
+  .inputValidator((input: { title: string; artist: string }) => input)
+  .handler(async ({ data }): Promise<SectionData[]> => {
+    await requireUser();
+
+    const title = data.title.trim();
+    if (!title) throw new Error("Title is required");
+
+    const artist = data.artist.trim();
+    const prompt = `Given the song "${title}"${artist ? ` by "${artist}"` : ""}, return the song structure as a JSON array.
+Each element should have:
+- "type": one of "intro", "a", "b", "chorus", "bridge", "solo", "outro"
+- "bars": number of bars (integer)
+- "extra_beats": additional beats beyond the bar count (integer, 0 if none)
+- "chord_progression": chord symbols separated by spaces (e.g. "Am F C G"), or null if unknown
+
+Return ONLY valid JSON, no explanation.
+Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"type":"a","bars":8,"extra_beats":2,"chord_progression":"Am F C G"}]`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const result = (await response.json()) as {
+      candidates?: Array<{
+        content?: { parts?: Array<{ text?: string }> };
+      }>;
+    };
+
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("No response from AI");
+
+    // Strip markdown code fences if present
+    const jsonStr = text.replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/, "$1").trim();
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      throw new Error("Invalid JSON response from AI");
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error("AI returned empty or invalid structure");
+    }
+
+    return parsed.slice(0, 50).map(normalizeSection);
   });
 
 // ─── saveSections ───────────────────────────────────────

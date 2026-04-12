@@ -1,4 +1,4 @@
-import { SECTION_TYPES } from "@/i18n/types";
+import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import { useI18n } from "@/i18n";
 import { SECTION_COLORS } from "@/songs/constants";
 

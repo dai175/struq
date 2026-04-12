@@ -52,6 +52,8 @@ export const ja: Translations = {
     customLabel: "ラベル",
     memo: "メモ",
     chordProgression: "コード進行",
+    aiError: "構成の生成に失敗しました。再試行するか、手動で入力してください。",
+    aiConfirmReplace: "既存のセクションをAI生成で置き換えますか？",
   },
   setlist: {
     title: "タイトル",

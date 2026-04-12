@@ -3,6 +3,7 @@ declare namespace Cloudflare {
     GOOGLE_CLIENT_ID: string;
     GOOGLE_CLIENT_SECRET: string;
     SESSION_SECRET: string;
+    GEMINI_API_KEY: string;
   }
 }
 

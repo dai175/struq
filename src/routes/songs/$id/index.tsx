@@ -13,6 +13,7 @@ import {
   updateSong,
   deleteSong,
   saveSections,
+  generateSections,
   type SectionRow,
 } from "@/songs/server-fns";
 import { StructurePreview } from "@/songs/components/StructurePreview";
@@ -20,7 +21,7 @@ import { SectionPalette } from "@/songs/components/SectionPalette";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { DEFAULT_BARS } from "@/songs/constants";
 import type { SectionType } from "@/i18n/types";
-import { ArrowLeft, ExternalLink, Play, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Play, Sparkles, Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -102,7 +103,7 @@ function SongEditPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const router = useRouter();
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const [title, setTitle] = useState(loaderData.song.title);
   const [artist, setArtist] = useState(loaderData.song.artist ?? "");
@@ -117,6 +118,8 @@ function SongEditPage() {
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // Sync state when loader data changes (e.g., after router.invalidate)
   useEffect(() => {
@@ -149,6 +152,31 @@ function SongEditPage() {
       const newIndex = prev.findIndex((s) => s.id === over.id);
       return arrayMove(prev, oldIndex, newIndex);
     });
+  }
+
+  async function handleAiGenerate() {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setTitleError(true);
+      return;
+    }
+
+    if (sectionsList.length > 0) {
+      if (!confirm(t.song.aiConfirmReplace)) return;
+    }
+
+    setAiGenerating(true);
+    setAiError(null);
+    try {
+      const sections = await generateSections({
+        data: { title: trimmedTitle, artist: artist.trim() },
+      });
+      setSectionsList(sections);
+    } catch {
+      setAiError(t.song.aiError);
+    } finally {
+      setAiGenerating(false);
+    }
   }
 
   function handleAddSection(type: SectionType) {
@@ -362,6 +390,30 @@ function SongEditPage() {
       )}
 
       <div className="mt-6">
+        <button
+          type="button"
+          onClick={handleAiGenerate}
+          disabled={aiGenerating}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-3 text-sm font-semibold transition-opacity active:opacity-70 disabled:opacity-40"
+        >
+          <Sparkles size={16} />
+          {aiGenerating ? t.common.loading : t.song.aiGenerate}
+        </button>
+        {aiError && (
+          <div className="mt-2 flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <span>{aiError}</span>
+            <button
+              type="button"
+              onClick={handleAiGenerate}
+              className="ml-2 shrink-0 font-medium underline"
+            >
+              {t.common.retry}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4">
         <SectionPalette onAdd={handleAddSection} />
       </div>
 
