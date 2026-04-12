@@ -31,6 +31,7 @@ export interface Translations {
     next: string;
     bars: string;
     barsWithExtra: string;
+    extraBeats: string;
   };
 
   nav: {

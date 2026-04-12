@@ -203,6 +203,8 @@ function SongEditPage() {
       return;
     }
 
+    const parsedBpm = bpm ? parseInt(bpm, 10) : undefined;
+
     setSaving(true);
     try {
       await updateSong({
@@ -210,7 +212,7 @@ function SongEditPage() {
           id,
           title: trimmed,
           artist: artist.trim() || undefined,
-          bpm: bpm ? parseInt(bpm, 10) || undefined : undefined,
+          bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
           key: key.trim() || undefined,
           referenceUrl: referenceUrl.trim() || undefined,
         },
@@ -234,6 +236,8 @@ function SongEditPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       router.invalidate();
+    } catch {
+      alert(t.common.error);
     } finally {
       setSaving(false);
     }
@@ -241,8 +245,12 @@ function SongEditPage() {
 
   async function handleDeleteSong() {
     if (!confirm(t.song.confirmDelete)) return;
-    await deleteSong({ data: { id } });
-    navigate({ to: "/songs" });
+    try {
+      await deleteSong({ data: { id } });
+      navigate({ to: "/songs" });
+    } catch {
+      alert(t.common.error);
+    }
   }
 
   return (
@@ -275,16 +283,18 @@ function SongEditPage() {
       {/* Song metadata */}
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
+          <label htmlFor="song-title" className="mb-1 block text-sm text-text-secondary">
             {t.song.title} *
           </label>
           <input
+            id="song-title"
             type="text"
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
               if (titleError) setTitleError(false);
             }}
+            aria-describedby={titleError ? "song-title-error" : undefined}
             className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
               titleError
                 ? "border-red-400 focus:border-red-500"
@@ -292,15 +302,16 @@ function SongEditPage() {
             }`}
           />
           {titleError && (
-            <p className="mt-1 text-xs text-red-500">{t.song.titleRequired}</p>
+            <p id="song-title-error" className="mt-1 text-xs text-red-500">{t.song.titleRequired}</p>
           )}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
+          <label htmlFor="song-artist" className="mb-1 block text-sm text-text-secondary">
             {t.song.artist}
           </label>
           <input
+            id="song-artist"
             type="text"
             value={artist}
             onChange={(e) => setArtist(e.target.value)}
@@ -310,10 +321,11 @@ function SongEditPage() {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">
+            <label htmlFor="song-bpm" className="mb-1 block text-sm text-text-secondary">
               {t.song.bpm}
             </label>
             <input
+              id="song-bpm"
               type="number"
               value={bpm}
               onChange={(e) => setBpm(e.target.value)}
@@ -322,10 +334,11 @@ function SongEditPage() {
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">
+            <label htmlFor="song-key" className="mb-1 block text-sm text-text-secondary">
               {t.song.key}
             </label>
             <input
+              id="song-key"
               type="text"
               value={key}
               onChange={(e) => setKey(e.target.value)}
@@ -336,11 +349,12 @@ function SongEditPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
+          <label htmlFor="song-reference-url" className="mb-1 block text-sm text-text-secondary">
             {t.song.referenceUrl}
           </label>
           <div className="flex items-center gap-2">
             <input
+              id="song-reference-url"
               type="url"
               value={referenceUrl}
               onChange={(e) => setReferenceUrl(e.target.value)}

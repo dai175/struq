@@ -25,6 +25,7 @@ export const en: Translations = {
     next: "NEXT",
     bars: "bars",
     barsWithExtra: "{bars} bars + {extra}",
+    extraBeats: "Extra beats",
   },
   nav: {
     setlists: "Setlists",
@@ -45,7 +46,7 @@ export const en: Translations = {
     noSections: "No sections yet",
     noSongs: "No songs yet",
     deleteSong: "Delete Song",
-    confirmDelete: "Delete this song?",
+    confirmDelete: "Are you sure you want to delete this song?",
     saved: "Saved",
     titleRequired: "Title is required",
     customLabel: "Label",

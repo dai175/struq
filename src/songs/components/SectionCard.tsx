@@ -117,7 +117,7 @@ export function SectionCard({
 
       {/* Extra beats */}
       <div className="px-3 pt-3">
-        <p className="mb-1.5 text-xs text-text-secondary">Extra beats</p>
+        <p className="mb-1.5 text-xs text-text-secondary">{t.common.extraBeats}</p>
         <div className="flex items-center gap-1">
           {EXTRA_BEATS_OPTIONS.map((val) => (
             <button

@@ -25,6 +25,7 @@ export const ja: Translations = {
     next: "NEXT",
     bars: "小節",
     barsWithExtra: "{bars}小節 + {extra}",
+    extraBeats: "端数拍",
   },
   nav: {
     setlists: "セットリスト",
@@ -45,7 +46,7 @@ export const ja: Translations = {
     noSections: "セクションがありません",
     noSongs: "曲がありません",
     deleteSong: "曲を削除",
-    confirmDelete: "この曲を削除しますか？",
+    confirmDelete: "この曲を削除しますか？セクションも削除されます。",
     saved: "保存しました",
     titleRequired: "タイトルは必須です",
     customLabel: "ラベル",

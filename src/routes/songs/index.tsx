@@ -24,6 +24,8 @@ function SongsPage() {
     try {
       await deleteSong({ data: { id } });
       router.invalidate();
+    } catch {
+      alert(t.common.error);
     } finally {
       setDeletingId(null);
     }

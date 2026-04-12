@@ -212,17 +212,21 @@ export const deleteSong = createServerFn({ method: "POST" })
     const db = getDb(env.DB);
     const timestamp = now();
 
+    // Verify ownership before any deletion
+    const song = await db.query.songs.findFirst({
+      where: and(
+        eq(schema.songs.id, data.id),
+        eq(schema.songs.userId, user.userId),
+        isNull(schema.songs.deletedAt),
+      ),
+    });
+    if (!song) return;
+
     // Soft-delete the song
     await db
       .update(schema.songs)
       .set({ deletedAt: timestamp })
-      .where(
-        and(
-          eq(schema.songs.id, data.id),
-          eq(schema.songs.userId, user.userId),
-          isNull(schema.songs.deletedAt),
-        ),
-      );
+      .where(eq(schema.songs.id, data.id));
 
     // Soft-delete all sections
     await db

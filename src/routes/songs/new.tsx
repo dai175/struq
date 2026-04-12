@@ -30,18 +30,22 @@ function NewSongPage() {
       return;
     }
 
+    const parsedBpm = bpm ? parseInt(bpm, 10) : undefined;
+
     setSaving(true);
     try {
       const result = await createSong({
         data: {
           title: trimmed,
           artist: artist.trim() || undefined,
-          bpm: bpm ? parseInt(bpm, 10) || undefined : undefined,
+          bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
           key: key.trim() || undefined,
           referenceUrl: referenceUrl.trim() || undefined,
         },
       });
       navigate({ to: "/songs/$id", params: { id: result.id } });
+    } catch {
+      alert(t.common.error);
     } finally {
       setSaving(false);
     }
