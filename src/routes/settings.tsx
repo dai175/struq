@@ -1,21 +1,17 @@
-import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { logout } from "@/auth/server-fns";
+import { logout, requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 
 export const Route = createFileRoute("/settings")({
-  beforeLoad: ({ context }) => {
-    if (!context.user) {
-      throw redirect({ to: "/login" });
-    }
-  },
+  beforeLoad: requireAuth,
   component: SettingsPage,
 });
 
 function SettingsPage() {
   const { t } = useI18n();
   const router = useRouter();
-  const context = Route.useRouteContext();
+  const { user } = Route.useRouteContext();
   const logoutFn = useServerFn(logout);
 
   const handleLogout = async () => {
@@ -33,25 +29,21 @@ function SettingsPage() {
         {t.nav.settings}
       </h1>
 
-      {context.user && (
-        <div className="mb-6 flex items-center gap-3">
-          {context.user.avatarUrl && (
-            <img
-              src={context.user.avatarUrl}
-              alt={context.user.name}
-              className="w-10 h-10 rounded-full"
-            />
-          )}
-          <div>
-            <p className="text-sm font-medium text-text-primary">
-              {context.user.name}
-            </p>
-            <p className="text-xs text-text-secondary">
-              {context.user.email}
-            </p>
-          </div>
+      <div className="mb-6 flex items-center gap-3">
+        {user!.avatarUrl && (
+          <img
+            src={user!.avatarUrl}
+            alt={user!.name}
+            className="w-10 h-10 rounded-full"
+          />
+        )}
+        <div>
+          <p className="text-sm font-medium text-text-primary">
+            {user!.name}
+          </p>
+          <p className="text-xs text-text-secondary">{user!.email}</p>
         </div>
-      )}
+      </div>
 
       <div className="border-t border-gray-200 pt-4">
         <button

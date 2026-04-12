@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { redirect } from "@tanstack/react-router";
 import {
   getSession,
   clearSession,
@@ -15,3 +16,9 @@ export const getAuthUser = createServerFn({ method: "GET" }).handler(
 export const logout = createServerFn({ method: "POST" }).handler(async () => {
   await clearSession(getSessionConfig());
 });
+
+export function requireAuth({ context }: { context: { user: SessionUser | null } }) {
+  if (!context.user) {
+    throw redirect({ to: "/login" });
+  }
+}

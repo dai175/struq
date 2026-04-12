@@ -4,6 +4,7 @@ import {
   createRootRouteWithContext,
 } from "@tanstack/react-router";
 import { I18nProvider } from "../i18n/provider";
+import { DEFAULT_LOCALE } from "../i18n/types";
 import { getAuthUser } from "../auth/server-fns";
 import type { SessionUser } from "../auth/session";
 import appCss from "../styles.css?url";
@@ -30,7 +31,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const user = Route.useRouteContext({ select: (ctx) => ctx.user });
-  const locale = user?.locale ?? "ja";
+  const locale = user?.locale ?? DEFAULT_LOCALE;
 
   return (
     <html lang={locale}>

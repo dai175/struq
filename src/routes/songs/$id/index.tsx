@@ -1,11 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { requireAuth } from "@/auth/server-fns";
 
 export const Route = createFileRoute("/songs/$id/")({
-  beforeLoad: ({ context }) => {
-    if (!context.user) {
-      throw redirect({ to: "/login" });
-    }
-  },
+  beforeLoad: requireAuth,
   component: SongEditPage,
 });
 
