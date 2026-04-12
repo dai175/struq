@@ -72,4 +72,12 @@ export interface Translations {
     section: string;
     of: string;
   };
+
+  auth: {
+    loginWith: string;
+    accountDeleted: string;
+    authFailed: string;
+    loginCancelled: string;
+    invalidState: string;
+  };
 }

@@ -1,8 +1,18 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import {
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+} from "@tanstack/react-router";
 import { I18nProvider } from "../i18n/provider";
+import { getAuthUser } from "../auth/server-fns";
+import type { SessionUser } from "../auth/session";
 import appCss from "../styles.css?url";
 
-export const Route = createRootRoute({
+export interface RouterContext {
+  user: SessionUser | null;
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -11,17 +21,25 @@ export const Route = createRootRoute({
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
+  beforeLoad: async () => {
+    const user = await getAuthUser();
+    return { user };
+  },
   shellComponent: RootDocument,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const user = Route.useRouteContext({ select: (ctx) => ctx.user });
+
   return (
     <html lang="ja">
       <head>
         <HeadContent />
       </head>
       <body>
-        <I18nProvider initialLocale="ja">{children}</I18nProvider>
+        <I18nProvider initialLocale={user?.locale ?? "ja"}>
+          {children}
+        </I18nProvider>
         <Scripts />
       </body>
     </html>

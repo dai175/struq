@@ -62,4 +62,11 @@ export const ja: Translations = {
     section: "セクション",
     of: "/",
   },
+  auth: {
+    loginWith: "Googleでログイン",
+    accountDeleted: "このアカウントは削除されています。",
+    authFailed: "認証に失敗しました。もう一度お試しください。",
+    loginCancelled: "ログインがキャンセルされました。",
+    invalidState: "認証セッションが無効です。もう一度お試しください。",
+  },
 };

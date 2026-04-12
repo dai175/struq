@@ -17,6 +17,8 @@ import { Route as SongsNewRouteImport } from './routes/songs/new'
 import { Route as SetlistsIdRouteImport } from './routes/setlists/$id'
 import { Route as SongsIdIndexRouteImport } from './routes/songs/$id/index'
 import { Route as SongsIdPerformRouteImport } from './routes/songs/$id/perform'
+import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
+import { Route as ApiAuthCallbackRouteImport } from './routes/api/auth/callback'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -58,6 +60,16 @@ const SongsIdPerformRoute = SongsIdPerformRouteImport.update({
   path: '/songs/$id/perform',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthGoogleRoute = ApiAuthGoogleRouteImport.update({
+  id: '/api/auth/google',
+  path: '/api/auth/google',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
+  id: '/api/auth/callback',
+  path: '/api/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +78,8 @@ export interface FileRoutesByFullPath {
   '/setlists/$id': typeof SetlistsIdRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists/': typeof SetlistsIndexRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/google': typeof ApiAuthGoogleRoute
   '/songs/$id/perform': typeof SongsIdPerformRoute
   '/songs/$id/': typeof SongsIdIndexRoute
 }
@@ -76,6 +90,8 @@ export interface FileRoutesByTo {
   '/setlists/$id': typeof SetlistsIdRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists': typeof SetlistsIndexRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/google': typeof ApiAuthGoogleRoute
   '/songs/$id/perform': typeof SongsIdPerformRoute
   '/songs/$id': typeof SongsIdIndexRoute
 }
@@ -87,6 +103,8 @@ export interface FileRoutesById {
   '/setlists/$id': typeof SetlistsIdRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists/': typeof SetlistsIndexRoute
+  '/api/auth/callback': typeof ApiAuthCallbackRoute
+  '/api/auth/google': typeof ApiAuthGoogleRoute
   '/songs/$id/perform': typeof SongsIdPerformRoute
   '/songs/$id/': typeof SongsIdIndexRoute
 }
@@ -99,6 +117,8 @@ export interface FileRouteTypes {
     | '/setlists/$id'
     | '/songs/new'
     | '/setlists/'
+    | '/api/auth/callback'
+    | '/api/auth/google'
     | '/songs/$id/perform'
     | '/songs/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +129,8 @@ export interface FileRouteTypes {
     | '/setlists/$id'
     | '/songs/new'
     | '/setlists'
+    | '/api/auth/callback'
+    | '/api/auth/google'
     | '/songs/$id/perform'
     | '/songs/$id'
   id:
@@ -119,6 +141,8 @@ export interface FileRouteTypes {
     | '/setlists/$id'
     | '/songs/new'
     | '/setlists/'
+    | '/api/auth/callback'
+    | '/api/auth/google'
     | '/songs/$id/perform'
     | '/songs/$id/'
   fileRoutesById: FileRoutesById
@@ -130,6 +154,8 @@ export interface RootRouteChildren {
   SetlistsIdRoute: typeof SetlistsIdRoute
   SongsNewRoute: typeof SongsNewRoute
   SetlistsIndexRoute: typeof SetlistsIndexRoute
+  ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
+  ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
   SongsIdPerformRoute: typeof SongsIdPerformRoute
   SongsIdIndexRoute: typeof SongsIdIndexRoute
 }
@@ -192,6 +218,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SongsIdPerformRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/google': {
+      id: '/api/auth/google'
+      path: '/api/auth/google'
+      fullPath: '/api/auth/google'
+      preLoaderRoute: typeof ApiAuthGoogleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/callback': {
+      id: '/api/auth/callback'
+      path: '/api/auth/callback'
+      fullPath: '/api/auth/callback'
+      preLoaderRoute: typeof ApiAuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -202,6 +242,8 @@ const rootRouteChildren: RootRouteChildren = {
   SetlistsIdRoute: SetlistsIdRoute,
   SongsNewRoute: SongsNewRoute,
   SetlistsIndexRoute: SetlistsIndexRoute,
+  ApiAuthCallbackRoute: ApiAuthCallbackRoute,
+  ApiAuthGoogleRoute: ApiAuthGoogleRoute,
   SongsIdPerformRoute: SongsIdPerformRoute,
   SongsIdIndexRoute: SongsIdIndexRoute,
 }

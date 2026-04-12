@@ -62,4 +62,11 @@ export const en: Translations = {
     section: "Section",
     of: "/",
   },
+  auth: {
+    loginWith: "Login with Google",
+    accountDeleted: "This account has been deleted.",
+    authFailed: "Authentication failed. Please try again.",
+    loginCancelled: "Login was cancelled.",
+    invalidState: "Invalid authentication session. Please try again.",
+  },
 };
