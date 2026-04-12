@@ -4,6 +4,7 @@ import { ja } from "./locales/ja";
 import { en } from "./locales/en";
 
 export type { Locale, SectionType, Translations };
+export { LOCALES, SECTION_TYPES } from "./types";
 
 const dictionaries: Record<Locale, Translations> = { ja, en };
 

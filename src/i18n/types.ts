@@ -1,14 +1,17 @@
-export type Locale = "ja" | "en";
+export const LOCALES = ["ja", "en"] as const;
+export type Locale = (typeof LOCALES)[number];
 
-export type SectionType =
-  | "intro"
-  | "a"
-  | "b"
-  | "chorus"
-  | "bridge"
-  | "solo"
-  | "outro"
-  | "custom";
+export const SECTION_TYPES = [
+  "intro",
+  "a",
+  "b",
+  "chorus",
+  "bridge",
+  "solo",
+  "outro",
+  "custom",
+] as const;
+export type SectionType = (typeof SECTION_TYPES)[number];
 
 export interface Translations {
   section: Record<SectionType, string>;

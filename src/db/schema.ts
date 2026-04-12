@@ -5,6 +5,7 @@ import {
   primaryKey,
   index,
 } from "drizzle-orm/sqlite-core";
+import { LOCALES, SECTION_TYPES } from "../i18n/types";
 
 // ─── Users ──────────────────────────────────────────────
 export const users = sqliteTable("users", {
@@ -13,7 +14,7 @@ export const users = sqliteTable("users", {
   email: text("email").notNull(),
   name: text("name").notNull(),
   avatarUrl: text("avatar_url"),
-  locale: text("locale", { enum: ["ja", "en"] }).notNull().default("ja"),
+  locale: text("locale", { enum: LOCALES }).notNull().default("ja"),
   createdAt: integer("created_at", { mode: "number" }).notNull(),
   deletedAt: integer("deleted_at", { mode: "number" }),
 });
@@ -81,8 +82,8 @@ export const sections = sqliteTable(
     songId: text("song_id")
       .notNull()
       .references(() => songs.id),
-    type: text("type").notNull(),
-    label: text("label").notNull(),
+    type: text("type", { enum: SECTION_TYPES }).notNull(),
+    label: text("label"),
     bars: integer("bars").notNull().default(8),
     extraBeats: integer("extra_beats").notNull().default(0),
     chordProgression: text("chord_progression"),
