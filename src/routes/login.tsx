@@ -15,7 +15,7 @@ export const Route = createFileRoute("/login")({
     }
   },
   validateSearch: (search: Record<string, unknown>): { error?: string } => ({
-    error: (search.error as string) || undefined,
+    error: typeof search.error === "string" ? search.error : undefined,
   }),
   component: LoginPage,
 });
@@ -37,9 +37,9 @@ function LoginPage() {
           <p className="text-sm text-text-secondary mt-1">focuswave</p>
         </div>
 
-        {errorKey && (
+        {error && (
           <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-            {t.auth[errorKey]}
+            {errorKey ? t.auth[errorKey] : t.auth.authFailed}
           </div>
         )}
 

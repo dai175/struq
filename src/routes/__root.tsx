@@ -30,16 +30,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const user = Route.useRouteContext({ select: (ctx) => ctx.user });
+  const locale = user?.locale ?? "ja";
 
   return (
-    <html lang="ja">
+    <html lang={locale}>
       <head>
         <HeadContent />
       </head>
       <body>
-        <I18nProvider initialLocale={user?.locale ?? "ja"}>
-          {children}
-        </I18nProvider>
+        <I18nProvider initialLocale={locale}>{children}</I18nProvider>
         <Scripts />
       </body>
     </html>

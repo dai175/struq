@@ -16,6 +16,11 @@ export interface AppSessionData {
 }
 
 export function getSessionConfig(): SessionConfig {
+  if (!env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+    throw new Error(
+      "Invalid SESSION_SECRET: must be a non-empty string of at least 32 characters",
+    );
+  }
   return {
     password: env.SESSION_SECRET,
     name: "struq-session",

@@ -40,6 +40,7 @@ export async function exchangeCodeForTokens(
 export interface GoogleUserInfo {
   sub: string;
   email: string;
+  email_verified?: boolean;
   name: string;
   picture?: string;
 }

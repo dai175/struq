@@ -52,6 +52,16 @@ export const Route = createFileRoute("/api/auth/callback")({
           const tokens = await exchangeCodeForTokens(code, redirectUri);
           const googleUser = await getGoogleUserInfo(tokens.access_token);
 
+          // Reject unverified email addresses
+          if (googleUser.email_verified === false) {
+            return new Response(null, {
+              status: 302,
+              headers: {
+                Location: `${url.origin}/login?error=auth_failed`,
+              },
+            });
+          }
+
           // Lookup user by google_id
           const db = getDb(env.DB);
           const existingUser = await db.query.users.findFirst({

@@ -19,8 +19,12 @@ function SettingsPage() {
   const logoutFn = useServerFn(logout);
 
   const handleLogout = async () => {
-    await logoutFn();
-    router.navigate({ to: "/login" });
+    try {
+      await logoutFn();
+      router.navigate({ to: "/login" });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   return (
@@ -34,7 +38,7 @@ function SettingsPage() {
           {context.user.avatarUrl && (
             <img
               src={context.user.avatarUrl}
-              alt=""
+              alt={context.user.name}
               className="w-10 h-10 rounded-full"
             />
           )}
