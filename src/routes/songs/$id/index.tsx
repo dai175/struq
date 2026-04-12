@@ -119,7 +119,7 @@ function SongEditPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiError, setAiError] = useState(false);
 
   // Sync state when loader data changes (e.g., after router.invalidate)
   useEffect(() => {
@@ -166,14 +166,14 @@ function SongEditPage() {
     }
 
     setAiGenerating(true);
-    setAiError(null);
+    setAiError(false);
     try {
       const sections = await generateSections({
         data: { title: trimmedTitle, artist: artist.trim() },
       });
       setSectionsList(sections);
     } catch {
-      setAiError(t.song.aiError);
+      setAiError(true);
     } finally {
       setAiGenerating(false);
     }
@@ -401,7 +401,7 @@ function SongEditPage() {
         </button>
         {aiError && (
           <div className="mt-2 flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-            <span>{aiError}</span>
+            <span>{t.song.aiError}</span>
             <button
               type="button"
               onClick={handleAiGenerate}

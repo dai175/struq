@@ -5,6 +5,7 @@ import { eq, and, isNull, inArray, desc } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import type { SectionData } from "@/songs/components/SectionCard";
+import { DEFAULT_BARS } from "@/songs/constants";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -256,23 +257,21 @@ export const deleteSong = createServerFn({ method: "POST" })
 
 // ─── generateSections (AI) ──────────────────────────────
 
-const VALID_SECTION_TYPES = SECTION_TYPES.filter(
-  (t): t is Exclude<SectionType, "custom"> => t !== "custom",
+const KNOWN_SECTION_TYPES: ReadonlySet<string> = new Set(
+  SECTION_TYPES.filter((t) => t !== "custom"),
 );
 
 function normalizeSection(raw: unknown): SectionData {
   const obj = raw as Record<string, unknown>;
 
   const rawType = typeof obj.type === "string" ? obj.type.toLowerCase() : "";
-  const type: SectionType = (VALID_SECTION_TYPES as readonly string[]).includes(
-    rawType,
-  )
+  const type: SectionType = KNOWN_SECTION_TYPES.has(rawType)
     ? (rawType as SectionType)
     : "custom";
 
   const rawBars =
     typeof obj.bars === "number" ? Math.floor(obj.bars) : Number.NaN;
-  const bars = rawBars > 0 ? rawBars : 8;
+  const bars = rawBars > 0 ? rawBars : DEFAULT_BARS[type];
 
   const rawExtra =
     typeof obj.extra_beats === "number"
