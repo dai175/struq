@@ -94,7 +94,7 @@ export const Route = createFileRoute("/api/auth/callback")({
 
           return redirectTo(origin, "/setlists");
         } catch (err) {
-          console.error("OAuth callback error:", err);
+          console.error("OAuth callback error:", err instanceof Error ? err.message : "Unknown error");
           return redirectTo(origin, "/login?error=auth_failed");
         }
       },
