@@ -13,7 +13,15 @@
 	"observability": {
 		"enabled": true
 	},
-	"upload_source_maps": true
+	"upload_source_maps": true,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "struq-db",
+			"database_id": "ebcac4fc-20be-4bb7-96eb-81da623fc41b",
+			"migrations_dir": "drizzle"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

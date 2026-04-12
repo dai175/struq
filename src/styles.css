@@ -1,15 +1,38 @@
 @import "tailwindcss";
 
+@theme {
+  /* ─── Brand Colors (focuswave) ─── */
+  --color-surface: #f8f7f5;
+  --color-surface-dark: #111111;
+  --color-surface-muted: #f0eeeb;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #6b7280;
+  --color-text-on-dark: #e5e5e5;
+
+  /* ─── Section Type Colors ─── */
+  --color-section-intro: #6b7280;
+  --color-section-a: #3b82f6;
+  --color-section-b: #8b5cf6;
+  --color-section-chorus: #f59e0b;
+  --color-section-bridge: #10b981;
+  --color-section-solo: #ef4444;
+  --color-section-outro: #6b7280;
+  --color-section-custom: #ec4899;
+
+  /* ─── Fonts ─── */
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Fira Mono", Menlo, Monaco, Consolas,
+    "Courier New", monospace;
+}
+
 body {
-  @apply m-0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  @apply m-0 bg-surface text-text-primary font-sans;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  @apply font-mono;
 }
