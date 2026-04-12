@@ -7,28 +7,15 @@ import type { SectionType } from "@/i18n/types";
 
 // ─── Types ──────────────────────────────────────────────
 
-export interface SongRow {
-  id: string;
-  title: string;
-  artist: string | null;
-  bpm: number | null;
-  key: string | null;
-  referenceUrl: string | null;
-  createdAt: number;
-  updatedAt: number;
-}
+export type SongRow = Omit<
+  typeof schema.songs.$inferSelect,
+  "userId" | "deletedAt"
+>;
 
-export interface SectionRow {
-  id: string;
-  songId: string;
-  type: SectionType;
-  label: string | null;
-  bars: number;
-  extraBeats: number;
-  chordProgression: string | null;
-  memo: string | null;
-  sortOrder: number;
-}
+export type SectionRow = Omit<
+  typeof schema.sections.$inferSelect,
+  "deletedAt"
+>;
 
 // ─── Helpers ────────────────────────────────────────────
 
@@ -42,6 +29,29 @@ function now() {
   return Math.floor(Date.now() / 1000);
 }
 
+const songColumns = {
+  id: schema.songs.id,
+  title: schema.songs.title,
+  artist: schema.songs.artist,
+  bpm: schema.songs.bpm,
+  key: schema.songs.key,
+  referenceUrl: schema.songs.referenceUrl,
+  createdAt: schema.songs.createdAt,
+  updatedAt: schema.songs.updatedAt,
+} as const;
+
+const sectionColumns = {
+  id: schema.sections.id,
+  songId: schema.sections.songId,
+  type: schema.sections.type,
+  label: schema.sections.label,
+  bars: schema.sections.bars,
+  extraBeats: schema.sections.extraBeats,
+  chordProgression: schema.sections.chordProgression,
+  memo: schema.sections.memo,
+  sortOrder: schema.sections.sortOrder,
+} as const;
+
 // ─── listSongs ──────────────────────────────────────────
 
 export const listSongs = createServerFn({ method: "GET" }).handler(
@@ -50,7 +60,7 @@ export const listSongs = createServerFn({ method: "GET" }).handler(
     const db = getDb(env.DB);
 
     const songs = await db
-      .select()
+      .select(songColumns)
       .from(schema.songs)
       .where(
         and(
@@ -64,7 +74,7 @@ export const listSongs = createServerFn({ method: "GET" }).handler(
 
     const songIds = songs.map((s) => s.id);
     const allSections = await db
-      .select()
+      .select(sectionColumns)
       .from(schema.sections)
       .where(
         and(
@@ -77,12 +87,12 @@ export const listSongs = createServerFn({ method: "GET" }).handler(
     const sectionsBySong = new Map<string, SectionRow[]>();
     for (const sec of allSections) {
       const list = sectionsBySong.get(sec.songId) ?? [];
-      list.push(sec as SectionRow);
+      list.push(sec);
       sectionsBySong.set(sec.songId, list);
     }
 
     return songs.map((song) => ({
-      song: song as SongRow,
+      song,
       sections: sectionsBySong.get(song.id) ?? [],
     }));
   },
@@ -99,18 +109,22 @@ export const getSongWithSections = createServerFn({ method: "GET" })
       const user = await requireUser();
       const db = getDb(env.DB);
 
-      const song = await db.query.songs.findFirst({
-        where: and(
-          eq(schema.songs.id, data.songId),
-          eq(schema.songs.userId, user.userId),
-          isNull(schema.songs.deletedAt),
-        ),
-      });
+      const [song] = await db
+        .select(songColumns)
+        .from(schema.songs)
+        .where(
+          and(
+            eq(schema.songs.id, data.songId),
+            eq(schema.songs.userId, user.userId),
+            isNull(schema.songs.deletedAt),
+          ),
+        )
+        .limit(1);
 
       if (!song) return null;
 
       const sections = await db
-        .select()
+        .select(sectionColumns)
         .from(schema.sections)
         .where(
           and(
@@ -120,10 +134,7 @@ export const getSongWithSections = createServerFn({ method: "GET" })
         )
         .orderBy(schema.sections.sortOrder);
 
-      return {
-        song: song as SongRow,
-        sections: sections as SectionRow[],
-      };
+      return { song, sections };
     },
   );
 
@@ -222,27 +233,24 @@ export const deleteSong = createServerFn({ method: "POST" })
     });
     if (!song) return;
 
-    // Soft-delete the song
-    await db
-      .update(schema.songs)
-      .set({ deletedAt: timestamp })
-      .where(eq(schema.songs.id, data.id));
-
-    // Soft-delete all sections
-    await db
-      .update(schema.sections)
-      .set({ deletedAt: timestamp })
-      .where(
-        and(
-          eq(schema.sections.songId, data.id),
-          isNull(schema.sections.deletedAt),
+    await Promise.all([
+      db
+        .update(schema.songs)
+        .set({ deletedAt: timestamp })
+        .where(eq(schema.songs.id, data.id)),
+      db
+        .update(schema.sections)
+        .set({ deletedAt: timestamp })
+        .where(
+          and(
+            eq(schema.sections.songId, data.id),
+            isNull(schema.sections.deletedAt),
+          ),
         ),
-      );
-
-    // Physically delete setlist-song associations
-    await db
-      .delete(schema.setlistSongs)
-      .where(eq(schema.setlistSongs.songId, data.id));
+      db
+        .delete(schema.setlistSongs)
+        .where(eq(schema.setlistSongs.songId, data.id)),
+    ]);
   });
 
 // ─── saveSections ───────────────────────────────────────
@@ -288,26 +296,29 @@ export const saveSections = createServerFn({ method: "POST" })
         ),
       );
 
-    // Insert new sections
-    if (data.sections.length > 0) {
-      await db.insert(schema.sections).values(
-        data.sections.map((sec) => ({
-          id: crypto.randomUUID(),
-          songId: data.songId,
-          type: sec.type,
-          label: sec.type === "custom" ? (sec.label?.trim() || null) : null,
-          bars: sec.bars,
-          extraBeats: sec.extraBeats,
-          chordProgression: sec.chordProgression?.trim() || null,
-          memo: sec.memo?.trim() || null,
-          sortOrder: sec.sortOrder,
-        })),
-      );
-    }
+    // Insert new sections + update song timestamp in parallel
+    const insertSections =
+      data.sections.length > 0
+        ? db.insert(schema.sections).values(
+            data.sections.map((sec) => ({
+              id: crypto.randomUUID(),
+              songId: data.songId,
+              type: sec.type,
+              label: sec.type === "custom" ? (sec.label?.trim() || null) : null,
+              bars: sec.bars,
+              extraBeats: sec.extraBeats,
+              chordProgression: sec.chordProgression?.trim() || null,
+              memo: sec.memo?.trim() || null,
+              sortOrder: sec.sortOrder,
+            })),
+          )
+        : Promise.resolve();
 
-    // Update song timestamp
-    await db
-      .update(schema.songs)
-      .set({ updatedAt: timestamp })
-      .where(eq(schema.songs.id, data.songId));
+    await Promise.all([
+      insertSections,
+      db
+        .update(schema.songs)
+        .set({ updatedAt: timestamp })
+        .where(eq(schema.songs.id, data.songId)),
+    ]);
   });

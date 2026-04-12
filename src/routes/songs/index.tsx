@@ -33,7 +33,6 @@ function SongsPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 pb-24 pt-6">
-      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold">{t.nav.songs}</h1>
         <Link
@@ -45,7 +44,6 @@ function SongsPage() {
         </Link>
       </div>
 
-      {/* Song list */}
       {songs.length === 0 ? (
         <div className="py-20 text-center">
           <p className="text-text-secondary">{t.song.noSongs}</p>

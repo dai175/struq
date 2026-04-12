@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   createFileRoute,
   Link,
@@ -13,10 +13,12 @@ import {
   updateSong,
   deleteSong,
   saveSections,
+  type SectionRow,
 } from "@/songs/server-fns";
 import { StructurePreview } from "@/songs/components/StructurePreview";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
+import { DEFAULT_BARS } from "@/songs/constants";
 import type { SectionType } from "@/i18n/types";
 import { ArrowLeft, ExternalLink, Play, Trash2 } from "lucide-react";
 import {
@@ -36,20 +38,17 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// ─── Default bars per section type ──────────────────────
-
-const DEFAULT_BARS: Record<SectionType, number> = {
-  intro: 4,
-  a: 8,
-  b: 8,
-  chorus: 8,
-  bridge: 8,
-  solo: 8,
-  outro: 4,
-  custom: 8,
-};
-
-// ─── Route ──────────────────────────────────────────────
+function toSectionData(s: SectionRow): SectionData {
+  return {
+    id: s.id,
+    type: s.type,
+    label: s.label,
+    bars: s.bars,
+    extraBeats: s.extraBeats,
+    chordProgression: s.chordProgression,
+    memo: s.memo,
+  };
+}
 
 export const Route = createFileRoute("/songs/$id/")({
   beforeLoad: requireAuth,
@@ -60,8 +59,6 @@ export const Route = createFileRoute("/songs/$id/")({
   },
   component: SongEditPage,
 });
-
-// ─── Sortable wrapper ───────────────────────────────────
 
 function SortableSection({
   section,
@@ -99,16 +96,14 @@ function SortableSection({
   );
 }
 
-// ─── Main component ─────────────────────────────────────
-
 function SongEditPage() {
   const loaderData = Route.useLoaderData();
   const { id } = Route.useParams();
   const { t } = useI18n();
   const navigate = useNavigate();
   const router = useRouter();
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Song metadata state
   const [title, setTitle] = useState(loaderData.song.title);
   const [artist, setArtist] = useState(loaderData.song.artist ?? "");
   const [bpm, setBpm] = useState(loaderData.song.bpm?.toString() ?? "");
@@ -117,44 +112,27 @@ function SongEditPage() {
     loaderData.song.referenceUrl ?? "",
   );
   const [titleError, setTitleError] = useState(false);
-
-  // Sections state
   const [sectionsList, setSectionsList] = useState<SectionData[]>(
-    loaderData.sections.map((s) => ({
-      id: s.id,
-      type: s.type,
-      label: s.label,
-      bars: s.bars,
-      extraBeats: s.extraBeats,
-      chordProgression: s.chordProgression,
-      memo: s.memo,
-    })),
+    loaderData.sections.map(toSectionData),
   );
-
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Reset state when loader data changes (e.g., after navigation)
+  // Sync state when loader data changes (e.g., after router.invalidate)
   useEffect(() => {
     setTitle(loaderData.song.title);
     setArtist(loaderData.song.artist ?? "");
     setBpm(loaderData.song.bpm?.toString() ?? "");
     setKey(loaderData.song.key ?? "");
     setReferenceUrl(loaderData.song.referenceUrl ?? "");
-    setSectionsList(
-      loaderData.sections.map((s) => ({
-        id: s.id,
-        type: s.type,
-        label: s.label,
-        bars: s.bars,
-        extraBeats: s.extraBeats,
-        chordProgression: s.chordProgression,
-        memo: s.memo,
-      })),
-    );
+    setSectionsList(loaderData.sections.map(toSectionData));
   }, [loaderData]);
 
-  // DnD sensors
+  // Cleanup saved timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(savedTimerRef.current);
+  }, []);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, {
@@ -174,16 +152,18 @@ function SongEditPage() {
   }
 
   function handleAddSection(type: SectionType) {
-    const newSection: SectionData = {
-      id: crypto.randomUUID(),
-      type,
-      label: null,
-      bars: DEFAULT_BARS[type],
-      extraBeats: 0,
-      chordProgression: null,
-      memo: null,
-    };
-    setSectionsList((prev) => [...prev, newSection]);
+    setSectionsList((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        type,
+        label: null,
+        bars: DEFAULT_BARS[type],
+        extraBeats: 0,
+        chordProgression: null,
+        memo: null,
+      },
+    ]);
   }
 
   function handleSectionChange(updated: SectionData) {
@@ -207,34 +187,36 @@ function SongEditPage() {
 
     setSaving(true);
     try {
-      await updateSong({
-        data: {
-          id,
-          title: trimmed,
-          artist: artist.trim() || undefined,
-          bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
-          key: key.trim() || undefined,
-          referenceUrl: referenceUrl.trim() || undefined,
-        },
-      });
-
-      await saveSections({
-        data: {
-          songId: id,
-          sections: sectionsList.map((s, i) => ({
-            type: s.type,
-            label: s.label,
-            bars: s.bars,
-            extraBeats: s.extraBeats,
-            chordProgression: s.chordProgression,
-            memo: s.memo,
-            sortOrder: i,
-          })),
-        },
-      });
+      await Promise.all([
+        updateSong({
+          data: {
+            id,
+            title: trimmed,
+            artist: artist.trim() || undefined,
+            bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
+            key: key.trim() || undefined,
+            referenceUrl: referenceUrl.trim() || undefined,
+          },
+        }),
+        saveSections({
+          data: {
+            songId: id,
+            sections: sectionsList.map((s, i) => ({
+              type: s.type,
+              label: s.label,
+              bars: s.bars,
+              extraBeats: s.extraBeats,
+              chordProgression: s.chordProgression,
+              memo: s.memo,
+              sortOrder: i,
+            })),
+          },
+        }),
+      ]);
 
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       router.invalidate();
     } catch {
       alert(t.common.error);
@@ -255,7 +237,6 @@ function SongEditPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 pb-28 pt-6">
-      {/* Header */}
       <div className="mb-6 flex items-center gap-2">
         <Link
           to="/songs"
@@ -280,7 +261,6 @@ function SongEditPage() {
         </button>
       </div>
 
-      {/* Song metadata */}
       <div className="space-y-3">
         <div>
           <label htmlFor="song-title" className="mb-1 block text-sm text-text-secondary">
@@ -375,19 +355,16 @@ function SongEditPage() {
         </div>
       </div>
 
-      {/* Structure preview */}
       {sectionsList.length > 0 && (
         <div className="mt-6">
           <StructurePreview sections={sectionsList} />
         </div>
       )}
 
-      {/* Section palette */}
       <div className="mt-6">
         <SectionPalette onAdd={handleAddSection} />
       </div>
 
-      {/* Sections list */}
       <div className="mt-6 space-y-3">
         {sectionsList.length === 0 ? (
           <p className="py-8 text-center text-sm text-text-secondary">
@@ -418,7 +395,7 @@ function SongEditPage() {
         )}
       </div>
 
-      {/* Save button (sticky) */}
+      {/* Sticky save — sits above bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-gray-100 bg-surface px-4 py-3">
         <div className="mx-auto max-w-md">
           <button

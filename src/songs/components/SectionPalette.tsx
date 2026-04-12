@@ -1,16 +1,6 @@
-import { SECTION_TYPES, type SectionType } from "@/i18n/types";
+import { SECTION_TYPES } from "@/i18n/types";
 import { useI18n } from "@/i18n";
-
-const SECTION_COLORS: Record<SectionType, string> = {
-  intro: "var(--color-section-intro)",
-  a: "var(--color-section-a)",
-  b: "var(--color-section-b)",
-  chorus: "var(--color-section-chorus)",
-  bridge: "var(--color-section-bridge)",
-  solo: "var(--color-section-solo)",
-  outro: "var(--color-section-outro)",
-  custom: "var(--color-section-custom)",
-};
+import { SECTION_COLORS } from "@/songs/constants";
 
 interface SectionPaletteProps {
   onAdd: (type: SectionType) => void;

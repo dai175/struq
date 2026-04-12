@@ -1,15 +1,5 @@
 import type { SectionType } from "@/i18n/types";
-
-const SECTION_COLORS: Record<SectionType, string> = {
-  intro: "var(--color-section-intro)",
-  a: "var(--color-section-a)",
-  b: "var(--color-section-b)",
-  chorus: "var(--color-section-chorus)",
-  bridge: "var(--color-section-bridge)",
-  solo: "var(--color-section-solo)",
-  outro: "var(--color-section-outro)",
-  custom: "var(--color-section-custom)",
-};
+import { SECTION_COLORS } from "@/songs/constants";
 
 interface StructurePreviewProps {
   sections: { type: SectionType; bars: number }[];

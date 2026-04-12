@@ -1,17 +1,7 @@
 import { GripVertical, Trash2 } from "lucide-react";
 import { useI18n, getSectionLabel } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
-
-const SECTION_COLORS: Record<SectionType, string> = {
-  intro: "var(--color-section-intro)",
-  a: "var(--color-section-a)",
-  b: "var(--color-section-b)",
-  chorus: "var(--color-section-chorus)",
-  bridge: "var(--color-section-bridge)",
-  solo: "var(--color-section-solo)",
-  outro: "var(--color-section-outro)",
-  custom: "var(--color-section-custom)",
-};
+import { SECTION_COLORS } from "@/songs/constants";
 
 const BAR_PRESETS = [1, 2, 4, 8, 16];
 const EXTRA_BEATS_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -44,7 +34,6 @@ export function SectionCard({
 
   return (
     <div className="rounded-xl bg-white shadow-sm">
-      {/* Header row */}
       <div className="flex items-center gap-2 px-3 pt-3">
         <div
           className="flex cursor-grab touch-none items-center text-text-secondary active:text-text-primary"
@@ -83,7 +72,6 @@ export function SectionCard({
         </button>
       </div>
 
-      {/* Bars presets */}
       <div className="px-3 pt-3">
         <p className="mb-1.5 text-xs text-text-secondary">{t.common.bars}</p>
         <div className="flex items-center gap-1.5">
@@ -115,7 +103,6 @@ export function SectionCard({
         </div>
       </div>
 
-      {/* Extra beats */}
       <div className="px-3 pt-3">
         <p className="mb-1.5 text-xs text-text-secondary">{t.common.extraBeats}</p>
         <div className="flex items-center gap-1">
@@ -137,7 +124,6 @@ export function SectionCard({
         </div>
       </div>
 
-      {/* Chord progression & Memo */}
       <div className="space-y-2 px-3 pb-3 pt-3">
         <input
           type="text"

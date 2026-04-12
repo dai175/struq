@@ -53,7 +53,6 @@ function NewSongPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 pb-24 pt-6">
-      {/* Header */}
       <div className="mb-6 flex items-center gap-3">
         <Link
           to="/songs"
@@ -64,9 +63,7 @@ function NewSongPage() {
         <h1 className="text-xl font-bold">{t.nav.newSong}</h1>
       </div>
 
-      {/* Form */}
       <div className="space-y-4">
-        {/* Title */}
         <div>
           <label className="mb-1 block text-sm text-text-secondary">
             {t.song.title} *
@@ -92,7 +89,6 @@ function NewSongPage() {
           )}
         </div>
 
-        {/* Artist */}
         <div>
           <label className="mb-1 block text-sm text-text-secondary">
             {t.song.artist}
@@ -105,7 +101,6 @@ function NewSongPage() {
           />
         </div>
 
-        {/* BPM & Key (side by side) */}
         <div className="flex gap-3">
           <div className="flex-1">
             <label className="mb-1 block text-sm text-text-secondary">
@@ -133,7 +128,6 @@ function NewSongPage() {
           </div>
         </div>
 
-        {/* Reference URL */}
         <div>
           <label className="mb-1 block text-sm text-text-secondary">
             {t.song.referenceUrl}
@@ -148,7 +142,6 @@ function NewSongPage() {
         </div>
       </div>
 
-      {/* Save button */}
       <button
         type="button"
         onClick={handleSave}
