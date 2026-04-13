@@ -243,7 +243,7 @@ function SongEditPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 pb-28 pt-6">
+    <div className="mx-auto max-w-md px-4 pb-40 pt-6">
       <div className="mb-6 flex items-center gap-2">
         <Link
           to="/songs"
@@ -414,7 +414,7 @@ function SongEditPage() {
       </div>
 
       {/* Sticky save — sits above bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-gray-100 bg-surface px-4 py-3">
+      <div className="fixed bottom-[72px] left-0 right-0 border-t border-gray-100 bg-surface px-4 py-3">
         <div className="mx-auto max-w-md">
           <button
             type="button"

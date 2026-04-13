@@ -18,7 +18,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Struq — focuswave" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap",
+      },
+      { rel: "stylesheet", href: appCss },
+    ],
   }),
   beforeLoad: async () => {
     const user = await getAuthUser();
