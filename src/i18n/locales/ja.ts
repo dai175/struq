@@ -63,6 +63,12 @@ export const ja: Translations = {
     songCount: "{count}曲",
     noSetlists: "セットリストがありません",
     addSong: "曲を追加",
+    newSetlist: "新しいセットリスト",
+    confirmDelete: "このセットリストを削除しますか？",
+    saved: "保存しました",
+    titleRequired: "タイトルは必須です",
+    noSongs: "曲がありません",
+    removeSong: "曲を外す",
   },
   settings: {
     language: "言語",

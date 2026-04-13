@@ -63,6 +63,12 @@ export const en: Translations = {
     songCount: "{count} songs",
     noSetlists: "No setlists yet",
     addSong: "Add Song",
+    newSetlist: "New Setlist",
+    confirmDelete: "Delete this setlist?",
+    saved: "Saved",
+    titleRequired: "Title is required",
+    noSongs: "No songs in this setlist",
+    removeSong: "Remove song",
   },
   settings: {
     language: "Language",

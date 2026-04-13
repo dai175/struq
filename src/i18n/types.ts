@@ -72,6 +72,12 @@ export interface Translations {
     songCount: string;
     noSetlists: string;
     addSong: string;
+    newSetlist: string;
+    confirmDelete: string;
+    saved: string;
+    titleRequired: string;
+    noSongs: string;
+    removeSong: string;
   };
 
   settings: {
