@@ -23,11 +23,9 @@ export function requireAuth({ context }: { context: { user: SessionUser | null }
 }
 
 export const updateLocale = createServerFn({ method: "POST" })
-  .validator((data: unknown) => {
-    if (typeof data !== "object" || data === null || !("locale" in data)) throw new Error("Invalid");
-    const { locale } = data as { locale: unknown };
-    if (!LOCALES.includes(locale as Locale)) throw new Error("Invalid locale");
-    return { locale: locale as Locale };
+  .inputValidator((input: { locale: Locale }) => {
+    if (!LOCALES.includes(input.locale)) throw new Error("Invalid locale");
+    return input;
   })
   .handler(async ({ data }) => {
     const session = await getSession<AppSessionData>(getSessionConfig());
