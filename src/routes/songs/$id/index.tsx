@@ -271,7 +271,7 @@ function SongEditPage() {
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
           <label htmlFor="song-title" className="mb-1 block text-sm text-text-secondary">
             {t.song.title} *
