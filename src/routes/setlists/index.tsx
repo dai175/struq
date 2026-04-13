@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { Calendar, MapPin, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
-import { listSetlists, deleteSetlist } from "@/setlists/server-fns";
-import { Plus, Trash2, MapPin, Calendar } from "lucide-react";
+import { deleteSetlist, listSetlists } from "@/setlists/server-fns";
 
 export const Route = createFileRoute("/setlists/")({
   beforeLoad: requireAuth,
@@ -58,19 +58,10 @@ function SetlistsPage() {
           {setlists.map((setlist) => (
             <div key={setlist.id} className="rounded-xl bg-white p-4 shadow-sm">
               <div className="flex items-start gap-3">
-                <Link
-                  to="/setlists/$id"
-                  params={{ id: setlist.id }}
-                  className="min-w-0 flex-1"
-                >
+                <Link to="/setlists/$id" params={{ id: setlist.id }} className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{setlist.title}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-secondary">
-                    <span>
-                      {t.setlist.songCount.replace(
-                        "{count}",
-                        String(setlist.songCount),
-                      )}
-                    </span>
+                    <span>{t.setlist.songCount.replace("{count}", String(setlist.songCount))}</span>
                     {setlist.venue && (
                       <span className="flex items-center gap-0.5">
                         <MapPin size={12} />

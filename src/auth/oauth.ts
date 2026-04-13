@@ -45,15 +45,10 @@ export interface GoogleUserInfo {
   picture?: string;
 }
 
-export async function getGoogleUserInfo(
-  accessToken: string,
-): Promise<GoogleUserInfo> {
-  const response = await fetch(
-    "https://www.googleapis.com/oauth2/v3/userinfo",
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
+export async function getGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo> {
+  const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
   if (!response.ok) {
     throw new Error(`User info fetch failed: ${response.status}`);
   }

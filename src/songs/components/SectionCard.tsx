@@ -1,5 +1,5 @@
 import { GripVertical, Trash2 } from "lucide-react";
-import { useI18n, getSectionLabel } from "@/i18n";
+import { getSectionLabel, useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
 import { SECTION_COLORS } from "@/songs/constants";
 
@@ -23,12 +23,7 @@ interface SectionCardProps {
   dragHandleProps?: Record<string, unknown>;
 }
 
-export function SectionCard({
-  section,
-  onChange,
-  onDelete,
-  dragHandleProps,
-}: SectionCardProps) {
+export function SectionCard({ section, onChange, onDelete, dragHandleProps }: SectionCardProps) {
   const { t, locale } = useI18n();
   const color = SECTION_COLORS[section.type];
 
@@ -42,18 +37,13 @@ export function SectionCard({
           <GripVertical size={20} />
         </div>
 
-        <span
-          className="size-3 shrink-0 rounded-full"
-          style={{ backgroundColor: color }}
-        />
+        <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
 
         {section.type === "custom" ? (
           <input
             type="text"
             value={section.label ?? ""}
-            onChange={(e) =>
-              onChange({ ...section, label: e.target.value })
-            }
+            onChange={(e) => onChange({ ...section, label: e.target.value })}
             placeholder={t.song.customLabel}
             className="min-w-0 flex-1 border-b border-gray-200 bg-transparent px-1 py-1 text-sm font-semibold focus:border-gray-400 focus:outline-none"
           />
@@ -82,9 +72,7 @@ export function SectionCard({
               onClick={() => onChange({ ...section, bars: preset })}
               className="flex h-9 w-9 items-center justify-center rounded-lg font-mono text-sm transition-colors"
               style={
-                section.bars === preset
-                  ? { backgroundColor: color, color: "#fff" }
-                  : { backgroundColor: "#f3f4f6" }
+                section.bars === preset ? { backgroundColor: color, color: "#fff" } : { backgroundColor: "#f3f4f6" }
               }
             >
               {preset}
@@ -113,9 +101,7 @@ export function SectionCard({
               onClick={() => onChange({ ...section, extraBeats: val })}
               className="flex h-8 w-8 items-center justify-center rounded-md font-mono text-xs transition-colors"
               style={
-                section.extraBeats === val
-                  ? { backgroundColor: color, color: "#fff" }
-                  : { backgroundColor: "#f3f4f6" }
+                section.extraBeats === val ? { backgroundColor: color, color: "#fff" } : { backgroundColor: "#f3f4f6" }
               }
             >
               {val}
@@ -128,18 +114,14 @@ export function SectionCard({
         <input
           type="text"
           value={section.chordProgression ?? ""}
-          onChange={(e) =>
-            onChange({ ...section, chordProgression: e.target.value || null })
-          }
+          onChange={(e) => onChange({ ...section, chordProgression: e.target.value || null })}
           placeholder={`${t.song.chordProgression}  (Am F C G)`}
           className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
         />
         <input
           type="text"
           value={section.memo ?? ""}
-          onChange={(e) =>
-            onChange({ ...section, memo: e.target.value || null })
-          }
+          onChange={(e) => onChange({ ...section, memo: e.target.value || null })}
           placeholder={t.song.memo}
           className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
         />

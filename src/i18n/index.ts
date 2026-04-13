@@ -1,10 +1,10 @@
 import { createContext, useContext } from "react";
-import type { Locale, SectionType, Translations } from "./types";
-import { ja } from "./locales/ja";
 import { en } from "./locales/en";
+import { ja } from "./locales/ja";
+import type { Locale, SectionType, Translations } from "./types";
 
-export type { Locale, SectionType, Translations };
 export { LOCALES, SECTION_TYPES } from "./types";
+export type { Locale, SectionType, Translations };
 
 const dictionaries: Record<Locale, Translations> = { ja, en };
 
@@ -13,11 +13,7 @@ export function getTranslations(locale: Locale): Translations {
 }
 
 /** Fixed section types use locale-derived label; custom uses the DB label */
-export function getSectionLabel(
-  type: SectionType,
-  locale: Locale,
-  customLabel?: string | null,
-): string {
+export function getSectionLabel(type: SectionType, locale: Locale, customLabel?: string | null): string {
   if (type === "custom" && customLabel) return customLabel;
   return getTranslations(locale).section[type];
 }

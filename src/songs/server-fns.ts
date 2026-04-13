@@ -1,23 +1,17 @@
-import { createServerFn } from "@tanstack/react-start";
-import { getDb, schema } from "@/db";
-import { eq, and, isNull, inArray, desc } from "drizzle-orm";
 import { env } from "cloudflare:workers";
+import { createServerFn } from "@tanstack/react-start";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { getDb, schema } from "@/db";
 import { SECTION_TYPES, type SectionType } from "@/i18n/types";
+import { now, requireUser } from "@/server/helpers";
 import type { SectionData } from "@/songs/components/SectionCard";
 import { DEFAULT_BARS } from "@/songs/constants";
-import { requireUser, now } from "@/server/helpers";
 
 // ─── Types ──────────────────────────────────────────────
 
-export type SongRow = Omit<
-  typeof schema.songs.$inferSelect,
-  "userId" | "deletedAt"
->;
+export type SongRow = Omit<typeof schema.songs.$inferSelect, "userId" | "deletedAt">;
 
-export type SectionRow = Omit<
-  typeof schema.sections.$inferSelect,
-  "deletedAt"
->;
+export type SectionRow = Omit<typeof schema.sections.$inferSelect, "deletedAt">;
 
 const songColumns = {
   id: schema.songs.id,
@@ -52,12 +46,7 @@ export const listSongs = createServerFn({ method: "GET" }).handler(
     const songs = await db
       .select(songColumns)
       .from(schema.songs)
-      .where(
-        and(
-          eq(schema.songs.userId, user.userId),
-          isNull(schema.songs.deletedAt),
-        ),
-      )
+      .where(and(eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)))
       .orderBy(desc(schema.songs.updatedAt));
 
     if (songs.length === 0) return [];
@@ -66,12 +55,7 @@ export const listSongs = createServerFn({ method: "GET" }).handler(
     const allSections = await db
       .select(sectionColumns)
       .from(schema.sections)
-      .where(
-        and(
-          inArray(schema.sections.songId, songIds),
-          isNull(schema.sections.deletedAt),
-        ),
-      )
+      .where(and(inArray(schema.sections.songId, songIds), isNull(schema.sections.deletedAt)))
       .orderBy(schema.sections.sortOrder);
 
     const sectionsBySong = new Map<string, SectionRow[]>();
@@ -92,53 +76,34 @@ export const listSongs = createServerFn({ method: "GET" }).handler(
 
 export const getSongWithSections = createServerFn({ method: "GET" })
   .inputValidator((input: { songId: string }) => input)
-  .handler(
-    async ({
-      data,
-    }): Promise<{ song: SongRow; sections: SectionRow[] } | null> => {
-      const user = await requireUser();
-      const db = getDb(env.DB);
+  .handler(async ({ data }): Promise<{ song: SongRow; sections: SectionRow[] } | null> => {
+    const user = await requireUser();
+    const db = getDb(env.DB);
 
-      const [song] = await db
-        .select(songColumns)
-        .from(schema.songs)
-        .where(
-          and(
-            eq(schema.songs.id, data.songId),
-            eq(schema.songs.userId, user.userId),
-            isNull(schema.songs.deletedAt),
-          ),
-        )
-        .limit(1);
+    const [song] = await db
+      .select(songColumns)
+      .from(schema.songs)
+      .where(
+        and(eq(schema.songs.id, data.songId), eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)),
+      )
+      .limit(1);
 
-      if (!song) return null;
+    if (!song) return null;
 
-      const sections = await db
-        .select(sectionColumns)
-        .from(schema.sections)
-        .where(
-          and(
-            eq(schema.sections.songId, data.songId),
-            isNull(schema.sections.deletedAt),
-          ),
-        )
-        .orderBy(schema.sections.sortOrder);
+    const sections = await db
+      .select(sectionColumns)
+      .from(schema.sections)
+      .where(and(eq(schema.sections.songId, data.songId), isNull(schema.sections.deletedAt)))
+      .orderBy(schema.sections.sortOrder);
 
-      return { song, sections };
-    },
-  );
+    return { song, sections };
+  });
 
 // ─── createSong ─────────────────────────────────────────
 
 export const createSong = createServerFn({ method: "POST" })
   .inputValidator(
-    (input: {
-      title: string;
-      artist?: string;
-      bpm?: number;
-      key?: string;
-      referenceUrl?: string;
-    }) => input,
+    (input: { title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string }) => input,
   )
   .handler(async ({ data }): Promise<{ id: string }> => {
     const user = await requireUser();
@@ -169,14 +134,7 @@ export const createSong = createServerFn({ method: "POST" })
 
 export const updateSong = createServerFn({ method: "POST" })
   .inputValidator(
-    (input: {
-      id: string;
-      title: string;
-      artist?: string;
-      bpm?: number;
-      key?: string;
-      referenceUrl?: string;
-    }) => input,
+    (input: { id: string; title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string }) => input,
   )
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
@@ -195,13 +153,7 @@ export const updateSong = createServerFn({ method: "POST" })
         referenceUrl: data.referenceUrl?.trim() || null,
         updatedAt: now(),
       })
-      .where(
-        and(
-          eq(schema.songs.id, data.id),
-          eq(schema.songs.userId, user.userId),
-          isNull(schema.songs.deletedAt),
-        ),
-      );
+      .where(and(eq(schema.songs.id, data.id), eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)));
   });
 
 // ─── deleteSong ─────────────────────────────────────────
@@ -215,39 +167,23 @@ export const deleteSong = createServerFn({ method: "POST" })
 
     // Verify ownership before any deletion
     const song = await db.query.songs.findFirst({
-      where: and(
-        eq(schema.songs.id, data.id),
-        eq(schema.songs.userId, user.userId),
-        isNull(schema.songs.deletedAt),
-      ),
+      where: and(eq(schema.songs.id, data.id), eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)),
     });
     if (!song) return;
 
     await Promise.all([
-      db
-        .update(schema.songs)
-        .set({ deletedAt: timestamp })
-        .where(eq(schema.songs.id, data.id)),
+      db.update(schema.songs).set({ deletedAt: timestamp }).where(eq(schema.songs.id, data.id)),
       db
         .update(schema.sections)
         .set({ deletedAt: timestamp })
-        .where(
-          and(
-            eq(schema.sections.songId, data.id),
-            isNull(schema.sections.deletedAt),
-          ),
-        ),
-      db
-        .delete(schema.setlistSongs)
-        .where(eq(schema.setlistSongs.songId, data.id)),
+        .where(and(eq(schema.sections.songId, data.id), isNull(schema.sections.deletedAt))),
+      db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.songId, data.id)),
     ]);
   });
 
 // ─── generateSections (AI) ──────────────────────────────
 
-const KNOWN_SECTION_TYPES: ReadonlySet<string> = new Set(
-  SECTION_TYPES.filter((t) => t !== "custom"),
-);
+const KNOWN_SECTION_TYPES: ReadonlySet<string> = new Set(SECTION_TYPES.filter((t) => t !== "custom"));
 
 function normalizeSection(raw: unknown): SectionData {
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
@@ -264,30 +200,20 @@ function normalizeSection(raw: unknown): SectionData {
   const obj = raw as Record<string, unknown>;
 
   const rawType = typeof obj.type === "string" ? obj.type.toLowerCase() : "";
-  const type: SectionType = KNOWN_SECTION_TYPES.has(rawType)
-    ? (rawType as SectionType)
-    : "custom";
+  const type: SectionType = KNOWN_SECTION_TYPES.has(rawType) ? (rawType as SectionType) : "custom";
 
-  const rawBars =
-    typeof obj.bars === "number" ? Math.floor(obj.bars) : Number.NaN;
+  const rawBars = typeof obj.bars === "number" ? Math.floor(obj.bars) : Number.NaN;
   const bars = rawBars > 0 ? rawBars : DEFAULT_BARS[type];
 
-  const rawExtra =
-    typeof obj.extra_beats === "number"
-      ? Math.floor(obj.extra_beats)
-      : Number.NaN;
+  const rawExtra = typeof obj.extra_beats === "number" ? Math.floor(obj.extra_beats) : Number.NaN;
   const extraBeats = rawExtra >= 0 && rawExtra <= 7 ? rawExtra : 0;
 
-  const chordProgression =
-    typeof obj.chord_progression === "string"
-      ? obj.chord_progression.trim() || null
-      : null;
+  const chordProgression = typeof obj.chord_progression === "string" ? obj.chord_progression.trim() || null : null;
 
   return {
     id: crypto.randomUUID(),
     type,
-    label:
-      type === "custom" && typeof obj.type === "string" ? obj.type : null,
+    label: type === "custom" && typeof obj.type === "string" ? obj.type : null,
     bars,
     extraBeats,
     chordProgression,
@@ -392,12 +318,7 @@ export const saveSections = createServerFn({ method: "POST" })
     await db
       .update(schema.sections)
       .set({ deletedAt: timestamp })
-      .where(
-        and(
-          eq(schema.sections.songId, data.songId),
-          isNull(schema.sections.deletedAt),
-        ),
-      );
+      .where(and(eq(schema.sections.songId, data.songId), isNull(schema.sections.deletedAt)));
 
     // Insert new sections + update song timestamp in parallel
     const insertSections =
@@ -407,7 +328,7 @@ export const saveSections = createServerFn({ method: "POST" })
               id: crypto.randomUUID(),
               songId: data.songId,
               type: sec.type,
-              label: sec.type === "custom" ? (sec.label?.trim() || null) : null,
+              label: sec.type === "custom" ? sec.label?.trim() || null : null,
               bars: sec.bars,
               extraBeats: sec.extraBeats,
               chordProgression: sec.chordProgression?.trim() || null,
@@ -419,9 +340,6 @@ export const saveSections = createServerFn({ method: "POST" })
 
     await Promise.all([
       insertSections,
-      db
-        .update(schema.songs)
-        .set({ updatedAt: timestamp })
-        .where(eq(schema.songs.id, data.songId)),
+      db.update(schema.songs).set({ updatedAt: timestamp }).where(eq(schema.songs.id, data.songId)),
     ]);
   });

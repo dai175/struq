@@ -1,18 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import {
-  getCookie,
-  deleteCookie,
-  updateSession,
-} from "@tanstack/react-start/server";
-import { exchangeCodeForTokens, getGoogleUserInfo } from "@/auth/oauth";
-import {
-  getSessionConfig,
-  type AppSessionData,
-  type SessionUser,
-} from "@/auth/session";
-import { getDb, schema } from "@/db";
-import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
+import { createFileRoute } from "@tanstack/react-router";
+import { deleteCookie, getCookie, updateSession } from "@tanstack/react-start/server";
+import { eq } from "drizzle-orm";
+import { exchangeCodeForTokens, getGoogleUserInfo } from "@/auth/oauth";
+import { type AppSessionData, getSessionConfig, type SessionUser } from "@/auth/session";
+import { getDb, schema } from "@/db";
 import { DEFAULT_LOCALE } from "@/i18n/types";
 
 function redirectTo(origin: string, path: string): Response {

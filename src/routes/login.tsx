@@ -23,17 +23,13 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { t } = useI18n();
   const { error } = Route.useSearch();
-  const errorKey = error
-    ? ERROR_KEYS[error as keyof typeof ERROR_KEYS]
-    : undefined;
+  const errorKey = error ? ERROR_KEYS[error as keyof typeof ERROR_KEYS] : undefined;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
       <div className="w-full max-w-sm px-6">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-sans font-bold text-text-primary">
-            Struq
-          </h1>
+          <h1 className="text-2xl font-sans font-bold text-text-primary">Struq</h1>
           <p className="text-sm text-text-secondary mt-1">focuswave</p>
         </div>
 

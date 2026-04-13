@@ -28,11 +28,11 @@
 }
 
 body {
-  @apply m-0 bg-surface text-text-primary font-sans;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	@apply m-0 bg-surface text-text-primary font-sans;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  @apply font-mono;
+	@apply font-mono;
 }

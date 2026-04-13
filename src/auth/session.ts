@@ -1,5 +1,5 @@
-import type { SessionConfig } from "@tanstack/react-start/server";
 import { env } from "cloudflare:workers";
+import type { SessionConfig } from "@tanstack/react-start/server";
 import type { Locale } from "@/i18n/types";
 
 export interface SessionUser {
@@ -17,9 +17,7 @@ export interface AppSessionData {
 
 export function getSessionConfig(): SessionConfig {
   if (!env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
-    throw new Error(
-      "Invalid SESSION_SECRET: must be a non-empty string of at least 32 characters",
-    );
+    throw new Error("Invalid SESSION_SECRET: must be a non-empty string of at least 32 characters");
   }
   return {
     password: env.SESSION_SECRET,

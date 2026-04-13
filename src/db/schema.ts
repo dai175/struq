@@ -1,10 +1,4 @@
-import {
-  sqliteTable,
-  text,
-  integer,
-  primaryKey,
-  index,
-} from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { LOCALES, SECTION_TYPES } from "../i18n/types";
 
 // ─── Users ──────────────────────────────────────────────

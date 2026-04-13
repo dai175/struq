@@ -1,9 +1,9 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { createSetlist } from "@/setlists/server-fns";
-import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/setlists/new")({
   beforeLoad: requireAuth,
@@ -60,9 +60,7 @@ function NewSetlistPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
-            {t.setlist.title} *
-          </label>
+          <label className="mb-1 block text-sm text-text-secondary">{t.setlist.title} *</label>
           <input
             type="text"
             value={title}
@@ -71,23 +69,15 @@ function NewSetlistPage() {
               if (titleError) setTitleError(false);
             }}
             className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
-              titleError
-                ? "border-red-400 focus:border-red-500"
-                : "border-gray-200 focus:border-gray-400"
+              titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
             }`}
             autoFocus
           />
-          {titleError && (
-            <p className="mt-1 text-xs text-red-500">
-              {t.setlist.titleRequired}
-            </p>
-          )}
+          {titleError && <p className="mt-1 text-xs text-red-500">{t.setlist.titleRequired}</p>}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
-            {t.setlist.description}
-          </label>
+          <label className="mb-1 block text-sm text-text-secondary">{t.setlist.description}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -98,9 +88,7 @@ function NewSetlistPage() {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">
-              {t.setlist.sessionDate}
-            </label>
+            <label className="mb-1 block text-sm text-text-secondary">{t.setlist.sessionDate}</label>
             <input
               type="date"
               value={sessionDate}
@@ -109,9 +97,7 @@ function NewSetlistPage() {
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">
-              {t.setlist.venue}
-            </label>
+            <label className="mb-1 block text-sm text-text-secondary">{t.setlist.venue}</label>
             <input
               type="text"
               value={venue}

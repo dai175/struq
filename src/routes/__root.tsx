@@ -1,18 +1,11 @@
-import {
-  HeadContent,
-  Outlet,
-  Scripts,
-  createRootRouteWithContext,
-  Link,
-  useMatches,
-} from "@tanstack/react-router";
-import { I18nProvider } from "../i18n/provider";
-import { useI18n } from "../i18n";
-import { DEFAULT_LOCALE } from "../i18n/types";
+import { createRootRouteWithContext, HeadContent, Link, Outlet, Scripts, useMatches } from "@tanstack/react-router";
+import { ListMusic, Music, Settings } from "lucide-react";
 import { getAuthUser } from "../auth/server-fns";
 import type { SessionUser } from "../auth/session";
+import { useI18n } from "../i18n";
+import { I18nProvider } from "../i18n/provider";
+import { DEFAULT_LOCALE } from "../i18n/types";
 import appCss from "../styles.css?url";
-import { ListMusic, Music, Settings } from "lucide-react";
 
 export interface RouterContext {
   user: SessionUser | null;

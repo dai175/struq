@@ -1,43 +1,32 @@
-import { useState, useEffect, useRef } from "react";
 import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-  redirect,
-} from "@tanstack/react-router";
-import { requireAuth } from "@/auth/server-fns";
-import { useI18n } from "@/i18n";
-import {
-  getSongWithSections,
-  updateSong,
-  deleteSong,
-  saveSections,
-  generateSections,
-  type SectionRow,
-} from "@/songs/server-fns";
-import { StructurePreview } from "@/songs/components/StructurePreview";
-import { SectionPalette } from "@/songs/components/SectionPalette";
-import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
-import { DEFAULT_BARS } from "@/songs/constants";
-import type { SectionType } from "@/i18n/types";
-import { ArrowLeft, ExternalLink, Play, Sparkles, Trash2 } from "lucide-react";
-import {
-  DndContext,
   closestCenter,
+  DndContext,
+  type DragEndEvent,
   PointerSensor,
   TouchSensor,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
+import { ArrowLeft, ExternalLink, Play, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { requireAuth } from "@/auth/server-fns";
+import { useI18n } from "@/i18n";
+import type { SectionType } from "@/i18n/types";
+import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
+import { SectionPalette } from "@/songs/components/SectionPalette";
+import { StructurePreview } from "@/songs/components/StructurePreview";
+import { DEFAULT_BARS } from "@/songs/constants";
+import {
+  deleteSong,
+  generateSections,
+  getSongWithSections,
+  type SectionRow,
+  saveSections,
+  updateSong,
+} from "@/songs/server-fns";
 
 function toSectionData(s: SectionRow): SectionData {
   return {
@@ -70,14 +59,7 @@ function SortableSection({
   onChange: (updated: SectionData) => void;
   onDelete: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: section.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -109,13 +91,9 @@ function SongEditPage() {
   const [artist, setArtist] = useState(loaderData.song.artist ?? "");
   const [bpm, setBpm] = useState(loaderData.song.bpm?.toString() ?? "");
   const [key, setKey] = useState(loaderData.song.key ?? "");
-  const [referenceUrl, setReferenceUrl] = useState(
-    loaderData.song.referenceUrl ?? "",
-  );
+  const [referenceUrl, setReferenceUrl] = useState(loaderData.song.referenceUrl ?? "");
   const [titleError, setTitleError] = useState(false);
-  const [sectionsList, setSectionsList] = useState<SectionData[]>(
-    loaderData.sections.map(toSectionData),
-  );
+  const [sectionsList, setSectionsList] = useState<SectionData[]>(loaderData.sections.map(toSectionData));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -195,9 +173,7 @@ function SongEditPage() {
   }
 
   function handleSectionChange(updated: SectionData) {
-    setSectionsList((prev) =>
-      prev.map((s) => (s.id === updated.id ? updated : s)),
-    );
+    setSectionsList((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   }
 
   function handleSectionDelete(sectionId: string) {
@@ -304,13 +280,13 @@ function SongEditPage() {
             }}
             aria-describedby={titleError ? "song-title-error" : undefined}
             className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
-              titleError
-                ? "border-red-400 focus:border-red-500"
-                : "border-gray-200 focus:border-gray-400"
+              titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
             }`}
           />
           {titleError && (
-            <p id="song-title-error" className="mt-1 text-xs text-red-500">{t.song.titleRequired}</p>
+            <p id="song-title-error" className="mt-1 text-xs text-red-500">
+              {t.song.titleRequired}
+            </p>
           )}
         </div>
 
@@ -402,11 +378,7 @@ function SongEditPage() {
         {aiError && (
           <div className="mt-2 flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
             <span>{t.song.aiError}</span>
-            <button
-              type="button"
-              onClick={handleAiGenerate}
-              className="ml-2 shrink-0 font-medium underline"
-            >
+            <button type="button" onClick={handleAiGenerate} className="ml-2 shrink-0 font-medium underline">
               {t.common.retry}
             </button>
           </div>
@@ -419,19 +391,10 @@ function SongEditPage() {
 
       <div className="mt-6 space-y-3">
         {sectionsList.length === 0 ? (
-          <p className="py-8 text-center text-sm text-text-secondary">
-            {t.song.noSections}
-          </p>
+          <p className="py-8 text-center text-sm text-text-secondary">{t.song.noSections}</p>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={sectionsList.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
-            >
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-3">
                 {sectionsList.map((section) => (
                   <SortableSection

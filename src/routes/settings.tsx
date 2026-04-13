@@ -25,22 +25,12 @@ function SettingsPage() {
 
   return (
     <div className="p-6 max-w-md mx-auto">
-      <h1 className="text-xl font-sans text-text-primary mb-6">
-        {t.nav.settings}
-      </h1>
+      <h1 className="text-xl font-sans text-text-primary mb-6">{t.nav.settings}</h1>
 
       <div className="mb-6 flex items-center gap-3">
-        {user!.avatarUrl && (
-          <img
-            src={user!.avatarUrl}
-            alt={user!.name}
-            className="w-10 h-10 rounded-full"
-          />
-        )}
+        {user!.avatarUrl && <img src={user!.avatarUrl} alt={user!.name} className="w-10 h-10 rounded-full" />}
         <div>
-          <p className="text-sm font-medium text-text-primary">
-            {user!.name}
-          </p>
+          <p className="text-sm font-medium text-text-primary">{user!.name}</p>
           <p className="text-xs text-text-secondary">{user!.email}</p>
         </div>
       </div>

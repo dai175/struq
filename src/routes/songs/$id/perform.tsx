@@ -1,21 +1,12 @@
-import { useState, useRef, useEffect } from "react";
-import {
-  createFileRoute,
-  useNavigate,
-  redirect,
-  Link,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
-import { useI18n, getSectionLabel } from "@/i18n";
-import type { Locale, SectionType, Translations } from "@/i18n/types";
-import {
-  getSongWithSections,
-  type SongRow,
-  type SectionRow,
-} from "@/songs/server-fns";
+import { getSectionLabel, useI18n } from "@/i18n";
+import type { Locale, Translations } from "@/i18n/types";
 import { getSetlist, type SetlistSongItem } from "@/setlists/server-fns";
 import { SECTION_COLORS } from "@/songs/constants";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { getSongWithSections, type SectionRow, type SongRow } from "@/songs/server-fns";
 
 // ─── Route ─────────────────────────────────────
 
@@ -24,16 +15,13 @@ type PerformSearch = { setlistId?: string };
 export const Route = createFileRoute("/songs/$id/perform")({
   beforeLoad: requireAuth,
   validateSearch: (search: Record<string, unknown>): PerformSearch => ({
-    setlistId:
-      typeof search.setlistId === "string" ? search.setlistId : undefined,
+    setlistId: typeof search.setlistId === "string" ? search.setlistId : undefined,
   }),
   loaderDeps: ({ search }) => ({ setlistId: search.setlistId }),
   loader: async ({ params, deps }) => {
     const [songData, setlistData] = await Promise.all([
       getSongWithSections({ data: { songId: params.id } }),
-      deps.setlistId
-        ? getSetlist({ data: { setlistId: deps.setlistId } })
-        : null,
+      deps.setlistId ? getSetlist({ data: { setlistId: deps.setlistId } }) : null,
     ]);
     if (!songData) throw redirect({ to: "/songs" });
     return { ...songData, setlistData };
@@ -49,14 +37,7 @@ function PerformPage() {
   const { setlistId } = Route.useSearch();
 
   return (
-    <PerformView
-      key={id}
-      song={song}
-      sections={sections}
-      setlistData={setlistData}
-      songId={id}
-      setlistId={setlistId}
-    />
+    <PerformView key={id} song={song} sections={sections} setlistData={setlistData} songId={id} setlistId={setlistId} />
   );
 }
 
@@ -252,14 +233,8 @@ function PerformView({
           <ArrowLeft size={22} />
         </button>
         <div className="min-w-0 flex-1 text-center">
-          <h1 className="truncate text-sm font-semibold opacity-70 lg:text-base">
-            {song.title}
-          </h1>
-          {metaParts.length > 0 && (
-            <p className="truncate text-xs opacity-40 lg:text-sm">
-              {metaParts.join(" · ")}
-            </p>
-          )}
+          <h1 className="truncate text-sm font-semibold opacity-70 lg:text-base">{song.title}</h1>
+          {metaParts.length > 0 && <p className="truncate text-xs opacity-40 lg:text-sm">{metaParts.join(" · ")}</p>}
         </div>
         <button
           type="button"
@@ -332,62 +307,37 @@ function PerformView({
             </Link>
           </div>
         ) : isEnded ? (
-          <p className="text-6xl font-bold opacity-50 lg:text-8xl">
-            {t.common.end}
-          </p>
+          <p className="text-6xl font-bold opacity-50 lg:text-8xl">{t.common.end}</p>
         ) : current ? (
           <>
             {/* Previous section */}
             <div className="mb-6 h-7 lg:mb-8 lg:h-8">
-              {prev && (
-                <p className="text-base opacity-25 lg:text-xl">
-                  {sectionLabel(prev, locale)}
-                </p>
-              )}
+              {prev && <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p>}
             </div>
 
             {/* Current section */}
             <div className="text-center">
-              <p
-                className="text-5xl font-bold lg:text-7xl"
-                style={{ color: SECTION_COLORS[current.type] }}
-              >
+              <p className="text-5xl font-bold lg:text-7xl" style={{ color: SECTION_COLORS[current.type] }}>
                 {sectionLabel(current, locale)}
               </p>
               {current.chordProgression && (
-                <p className="mt-4 font-mono text-xl opacity-80 lg:mt-6 lg:text-2xl">
-                  {current.chordProgression}
-                </p>
+                <p className="mt-4 font-mono text-xl opacity-80 lg:mt-6 lg:text-2xl">{current.chordProgression}</p>
               )}
-              <p className="mt-3 font-mono text-base opacity-40 lg:text-lg">
-                {formatBars(current, t)}
-              </p>
-              {current.memo && (
-                <p className="mt-2 text-sm opacity-30 lg:text-base">
-                  {current.memo}
-                </p>
-              )}
+              <p className="mt-3 font-mono text-base opacity-40 lg:text-lg">{formatBars(current, t)}</p>
+              {current.memo && <p className="mt-2 text-sm opacity-30 lg:text-base">{current.memo}</p>}
             </div>
 
             {/* Next section hint */}
             <div className="mt-6 h-10 text-center lg:mt-8">
               {next ? (
                 <div className="opacity-30">
-                  <p className="text-[10px] uppercase tracking-widest">
-                    {t.common.next}
-                  </p>
-                  <p className="text-sm lg:text-base">
-                    {sectionLabel(next, locale)}
-                  </p>
+                  <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
+                  <p className="text-sm lg:text-base">{sectionLabel(next, locale)}</p>
                 </div>
               ) : isSetlistMode && hasNextSong ? (
                 <div className="opacity-25">
-                  <p className="text-[10px] uppercase tracking-widest">
-                    {t.common.next}
-                  </p>
-                  <p className="text-sm lg:text-base">
-                    {setlistSongs[currentSongIdx + 1].title}
-                  </p>
+                  <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
+                  <p className="text-sm lg:text-base">{setlistSongs[currentSongIdx + 1].title}</p>
                 </div>
               ) : (
                 <p className="text-sm opacity-20">{t.common.end}</p>
@@ -411,9 +361,7 @@ function PerformView({
             {t.common.back}
           </button>
           <span className="font-mono text-xs opacity-30">
-            {isEnded
-              ? t.common.end
-              : `${currentIndex + 1}${t.perform.of}${total}`}
+            {isEnded ? t.common.end : `${currentIndex + 1}${t.perform.of}${total}`}
           </span>
           <button
             type="button"

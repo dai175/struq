@@ -1,10 +1,9 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { createSong } from "@/songs/server-fns";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/songs/new")({
   beforeLoad: requireAuth,
@@ -65,9 +64,7 @@ function NewSongPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
-            {t.song.title} *
-          </label>
+          <label className="mb-1 block text-sm text-text-secondary">{t.song.title} *</label>
           <input
             type="text"
             value={title}
@@ -76,23 +73,15 @@ function NewSongPage() {
               if (titleError) setTitleError(false);
             }}
             className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
-              titleError
-                ? "border-red-400 focus:border-red-500"
-                : "border-gray-200 focus:border-gray-400"
+              titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
             }`}
             autoFocus
           />
-          {titleError && (
-            <p className="mt-1 text-xs text-red-500">
-              {t.song.titleRequired}
-            </p>
-          )}
+          {titleError && <p className="mt-1 text-xs text-red-500">{t.song.titleRequired}</p>}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
-            {t.song.artist}
-          </label>
+          <label className="mb-1 block text-sm text-text-secondary">{t.song.artist}</label>
           <input
             type="text"
             value={artist}
@@ -103,9 +92,7 @@ function NewSongPage() {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">
-              {t.song.bpm}
-            </label>
+            <label className="mb-1 block text-sm text-text-secondary">{t.song.bpm}</label>
             <input
               type="number"
               value={bpm}
@@ -115,9 +102,7 @@ function NewSongPage() {
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">
-              {t.song.key}
-            </label>
+            <label className="mb-1 block text-sm text-text-secondary">{t.song.key}</label>
             <input
               type="text"
               value={key}
@@ -129,9 +114,7 @@ function NewSongPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
-            {t.song.referenceUrl}
-          </label>
+          <label className="mb-1 block text-sm text-text-secondary">{t.song.referenceUrl}</label>
           <input
             type="url"
             value={referenceUrl}

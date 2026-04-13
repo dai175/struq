@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
-import { listSongs, deleteSong } from "@/songs/server-fns";
 import { StructurePreview } from "@/songs/components/StructurePreview";
-import { Plus, Trash2 } from "lucide-react";
+import { deleteSong, listSongs } from "@/songs/server-fns";
 
 export const Route = createFileRoute("/songs/")({
   beforeLoad: requireAuth,
@@ -59,17 +59,9 @@ function SongsPage() {
           {songs.map(({ song, sections }) => (
             <div key={song.id} className="rounded-xl bg-white p-4 shadow-sm">
               <div className="flex items-start gap-3">
-                <Link
-                  to="/songs/$id"
-                  params={{ id: song.id }}
-                  className="min-w-0 flex-1"
-                >
+                <Link to="/songs/$id" params={{ id: song.id }} className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{song.title}</p>
-                  {song.artist && (
-                    <p className="mt-0.5 truncate text-sm text-text-secondary">
-                      {song.artist}
-                    </p>
-                  )}
+                  {song.artist && <p className="mt-0.5 truncate text-sm text-text-secondary">{song.artist}</p>}
                   {sections.length > 0 && (
                     <div className="mt-2">
                       <StructurePreview sections={sections} />

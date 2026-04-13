@@ -2,16 +2,7 @@ export const LOCALES = ["ja", "en"] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "ja";
 
-export const SECTION_TYPES = [
-  "intro",
-  "a",
-  "b",
-  "chorus",
-  "bridge",
-  "solo",
-  "outro",
-  "custom",
-] as const;
+export const SECTION_TYPES = ["intro", "a", "b", "chorus", "bridge", "solo", "outro", "custom"] as const;
 export type SectionType = (typeof SECTION_TYPES)[number];
 
 export interface Translations {

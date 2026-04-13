@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { setCookie, getRequestUrl } from "@tanstack/react-start/server";
+import { getRequestUrl, setCookie } from "@tanstack/react-start/server";
 import { getGoogleAuthUrl } from "@/auth/oauth";
 
 export const Route = createFileRoute("/api/auth/google")({

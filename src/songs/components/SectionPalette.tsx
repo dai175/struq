@@ -1,5 +1,5 @@
-import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import { useI18n } from "@/i18n";
+import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import { SECTION_COLORS } from "@/songs/constants";
 
 interface SectionPaletteProps {
@@ -24,10 +24,7 @@ export function SectionPalette({ onAdd }: SectionPaletteProps) {
               color: SECTION_COLORS[type],
             }}
           >
-            <span
-              className="size-2.5 rounded-full"
-              style={{ backgroundColor: SECTION_COLORS[type] }}
-            />
+            <span className="size-2.5 rounded-full" style={{ backgroundColor: SECTION_COLORS[type] }} />
             {t.section[type]}
           </button>
         ))}

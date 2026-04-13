@@ -1,16 +1,13 @@
-import { createServerFn } from "@tanstack/react-start";
-import { getDb, schema } from "@/db";
-import { eq, and, isNull, sql, max } from "drizzle-orm";
 import { env } from "cloudflare:workers";
-import { requireUser, now } from "@/server/helpers";
+import { createServerFn } from "@tanstack/react-start";
+import { and, eq, isNull, max, sql } from "drizzle-orm";
 import type { Database } from "@/db";
+import { getDb, schema } from "@/db";
+import { now, requireUser } from "@/server/helpers";
 
 // ─── Types ──────────────────────────────────────────────
 
-export type SetlistRow = Omit<
-  typeof schema.setlists.$inferSelect,
-  "userId" | "deletedAt"
->;
+export type SetlistRow = Omit<typeof schema.setlists.$inferSelect, "userId" | "deletedAt">;
 
 export type SetlistWithSongCount = SetlistRow & { songCount: number };
 
@@ -48,31 +45,24 @@ async function requireSetlistOwner(db: Database, setlistId: string, userId: stri
 
 // ─── listSetlists ──────────────────────────────────────
 
-export const listSetlists = createServerFn({ method: "GET" }).handler(
-  async (): Promise<SetlistWithSongCount[]> => {
-    const user = await requireUser();
-    const db = getDb(env.DB);
+export const listSetlists = createServerFn({ method: "GET" }).handler(async (): Promise<SetlistWithSongCount[]> => {
+  const user = await requireUser();
+  const db = getDb(env.DB);
 
-    const rows = await db
-      .select({
-        ...setlistColumns,
-        songCount: sql<number>`(
+  const rows = await db
+    .select({
+      ...setlistColumns,
+      songCount: sql<number>`(
           SELECT COUNT(*) FROM setlist_songs
           WHERE setlist_songs.setlist_id = ${schema.setlists.id}
         )`.as("song_count"),
-      })
-      .from(schema.setlists)
-      .where(
-        and(
-          eq(schema.setlists.userId, user.userId),
-          isNull(schema.setlists.deletedAt),
-        ),
-      )
-      .orderBy(schema.setlists.sortOrder);
+    })
+    .from(schema.setlists)
+    .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt)))
+    .orderBy(schema.setlists.sortOrder);
 
-    return rows;
-  },
-);
+  return rows;
+});
 
 // ─── getSetlist ────────────────────────────────────────
 
@@ -110,16 +100,8 @@ export const getSetlist = createServerFn({ method: "GET" })
           sortOrder: schema.setlistSongs.sortOrder,
         })
         .from(schema.setlistSongs)
-        .innerJoin(
-          schema.songs,
-          eq(schema.setlistSongs.songId, schema.songs.id),
-        )
-        .where(
-          and(
-            eq(schema.setlistSongs.setlistId, data.setlistId),
-            isNull(schema.songs.deletedAt),
-          ),
-        )
+        .innerJoin(schema.songs, eq(schema.setlistSongs.songId, schema.songs.id))
+        .where(and(eq(schema.setlistSongs.setlistId, data.setlistId), isNull(schema.songs.deletedAt)))
         .orderBy(schema.setlistSongs.sortOrder);
 
       return { setlist, songs };
@@ -129,14 +111,7 @@ export const getSetlist = createServerFn({ method: "GET" })
 // ─── createSetlist ─────────────────────────────────────
 
 export const createSetlist = createServerFn({ method: "POST" })
-  .inputValidator(
-    (input: {
-      title: string;
-      description?: string;
-      sessionDate?: string;
-      venue?: string;
-    }) => input,
-  )
+  .inputValidator((input: { title: string; description?: string; sessionDate?: string; venue?: string }) => input)
   .handler(async ({ data }): Promise<{ id: string }> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -147,12 +122,7 @@ export const createSetlist = createServerFn({ method: "POST" })
     const [result] = await db
       .select({ maxOrder: max(schema.setlists.sortOrder) })
       .from(schema.setlists)
-      .where(
-        and(
-          eq(schema.setlists.userId, user.userId),
-          isNull(schema.setlists.deletedAt),
-        ),
-      );
+      .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt)));
     const sortOrder = (result?.maxOrder ?? -1) + 1;
 
     const id = crypto.randomUUID();
@@ -177,13 +147,7 @@ export const createSetlist = createServerFn({ method: "POST" })
 
 export const updateSetlist = createServerFn({ method: "POST" })
   .inputValidator(
-    (input: {
-      id: string;
-      title: string;
-      description?: string;
-      sessionDate?: string;
-      venue?: string;
-    }) => input,
+    (input: { id: string; title: string; description?: string; sessionDate?: string; venue?: string }) => input,
   )
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
@@ -228,13 +192,8 @@ export const deleteSetlist = createServerFn({ method: "POST" })
     if (!setlist) return;
 
     await db.transaction(async (tx) => {
-      await tx
-        .update(schema.setlists)
-        .set({ deletedAt: now() })
-        .where(eq(schema.setlists.id, data.id));
-      await tx
-        .delete(schema.setlistSongs)
-        .where(eq(schema.setlistSongs.setlistId, data.id));
+      await tx.update(schema.setlists).set({ deletedAt: now() }).where(eq(schema.setlists.id, data.id));
+      await tx.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id));
     });
   });
 
@@ -287,20 +246,13 @@ export const removeSongFromSetlist = createServerFn({ method: "POST" })
 
     await db
       .delete(schema.setlistSongs)
-      .where(
-        and(
-          eq(schema.setlistSongs.setlistId, data.setlistId),
-          eq(schema.setlistSongs.songId, data.songId),
-        ),
-      );
+      .where(and(eq(schema.setlistSongs.setlistId, data.setlistId), eq(schema.setlistSongs.songId, data.songId)));
   });
 
 // ─── reorderSetlistSongs ───────────────────────────────
 
 export const reorderSetlistSongs = createServerFn({ method: "POST" })
-  .inputValidator(
-    (input: { setlistId: string; songIds: string[] }) => input,
-  )
+  .inputValidator((input: { setlistId: string; songIds: string[] }) => input)
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -308,9 +260,7 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
     await requireSetlistOwner(db, data.setlistId, user.userId);
 
     // Delete all existing entries
-    await db
-      .delete(schema.setlistSongs)
-      .where(eq(schema.setlistSongs.setlistId, data.setlistId));
+    await db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.setlistId));
 
     // Re-insert with new sortOrder + update timestamp in parallel
     const insertSongs =
@@ -326,10 +276,7 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
 
     await Promise.all([
       insertSongs,
-      db
-        .update(schema.setlists)
-        .set({ updatedAt: now() })
-        .where(eq(schema.setlists.id, data.setlistId)),
+      db.update(schema.setlists).set({ updatedAt: now() }).where(eq(schema.setlists.id, data.setlistId)),
     ]);
   });
 
@@ -337,33 +284,29 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
 
 export const listSongsForPicker = createServerFn({ method: "GET" })
   .inputValidator((input: { setlistId: string }) => input)
-  .handler(
-    async ({
-      data,
-    }): Promise<{ id: string; title: string; artist: string | null }[]> => {
-      const user = await requireUser();
-      const db = getDb(env.DB);
+  .handler(async ({ data }): Promise<{ id: string; title: string; artist: string | null }[]> => {
+    const user = await requireUser();
+    const db = getDb(env.DB);
 
-      const songs = await db
-        .select({
-          id: schema.songs.id,
-          title: schema.songs.title,
-          artist: schema.songs.artist,
-        })
-        .from(schema.songs)
-        .where(
-          and(
-            eq(schema.songs.userId, user.userId),
-            isNull(schema.songs.deletedAt),
-            sql`${schema.songs.id} NOT IN (
+    const songs = await db
+      .select({
+        id: schema.songs.id,
+        title: schema.songs.title,
+        artist: schema.songs.artist,
+      })
+      .from(schema.songs)
+      .where(
+        and(
+          eq(schema.songs.userId, user.userId),
+          isNull(schema.songs.deletedAt),
+          sql`${schema.songs.id} NOT IN (
               SELECT ${schema.setlistSongs.songId}
               FROM ${schema.setlistSongs}
               WHERE ${schema.setlistSongs.setlistId} = ${data.setlistId}
             )`,
-          ),
-        )
-        .orderBy(schema.songs.title);
+        ),
+      )
+      .orderBy(schema.songs.title);
 
-      return songs;
-    },
-  );
+    return songs;
+  });

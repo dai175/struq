@@ -1,5 +1,5 @@
-import { useState, useMemo, type ReactNode } from "react";
-import { I18nContext, getTranslations } from "./index";
+import { type ReactNode, useMemo, useState } from "react";
+import { getTranslations, I18nContext } from "./index";
 import type { Locale } from "./types";
 
 interface I18nProviderProps {
