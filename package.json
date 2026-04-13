@@ -17,7 +17,8 @@
     "db:migrate:production": "wrangler d1 migrations apply struq-db --remote",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.13.8",
@@ -47,11 +48,16 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
     "drizzle-kit": "^0.31.10",
+    "husky": "^9.1.7",
     "jsdom": "^27.0.0",
+    "lint-staged": "^16.4.0",
     "typescript": "^5.7.2",
     "vite": "^7.1.7",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.5",
     "wrangler": "^4.81.1"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx,json}": "biome check --write --no-errors-on-unmatched"
   }
 }
