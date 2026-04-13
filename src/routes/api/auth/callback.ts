@@ -6,6 +6,7 @@ import { exchangeCodeForTokens, getGoogleUserInfo } from "@/auth/oauth";
 import { type AppSessionData, getSessionConfig, type SessionUser } from "@/auth/session";
 import { getDb, schema } from "@/db";
 import { DEFAULT_LOCALE } from "@/i18n/types";
+import { logger } from "@/lib/logger";
 
 function redirectTo(origin: string, path: string): Response {
   return new Response(null, {
@@ -86,7 +87,7 @@ export const Route = createFileRoute("/api/auth/callback")({
 
           return redirectTo(origin, "/setlists");
         } catch (err) {
-          console.error("OAuth callback error:", err instanceof Error ? err.message : "Unknown error");
+          logger.error("OAuth callback error", { error: err instanceof Error ? err.message : "Unknown error" });
           return redirectTo(origin, "/login?error=auth_failed");
         }
       },

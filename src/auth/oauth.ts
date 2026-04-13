@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { logger } from "@/lib/logger";
 
 export function getGoogleAuthUrl(redirectUri: string, state: string): string {
   const params = new URLSearchParams({
@@ -29,6 +30,7 @@ export async function exchangeCodeForTokens(
     }),
   });
   if (!response.ok) {
+    logger.error("Token exchange failed", { status: response.status });
     throw new Error(`Token exchange failed: ${response.status}`);
   }
   return response.json() as Promise<{
@@ -50,6 +52,7 @@ export async function getGoogleUserInfo(accessToken: string): Promise<GoogleUser
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) {
+    logger.error("User info fetch failed", { status: response.status });
     throw new Error(`User info fetch failed: ${response.status}`);
   }
   return response.json() as Promise<GoogleUserInfo>;

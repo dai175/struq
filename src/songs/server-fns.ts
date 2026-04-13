@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { SECTION_TYPES, type SectionType } from "@/i18n/types";
+import { logger } from "@/lib/logger";
 import { now, requireUser } from "@/server/helpers";
 import type { SectionData } from "@/songs/components/SectionCard";
 import { DEFAULT_BARS } from "@/songs/constants";
@@ -253,6 +254,7 @@ Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"t
     );
 
     if (!response.ok) {
+      logger.error("Gemini API error", { status: response.status });
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
@@ -263,7 +265,10 @@ Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"t
     };
 
     const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("No response from AI");
+    if (!text) {
+      logger.error("No response from AI", { candidates: result.candidates?.length ?? 0 });
+      throw new Error("No response from AI");
+    }
 
     // Strip markdown code fences if present
     const jsonStr = text.replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/, "$1").trim();
@@ -272,10 +277,12 @@ Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"t
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
+      logger.error("Invalid JSON response from AI", { raw: jsonStr.slice(0, 200) });
       throw new Error("Invalid JSON response from AI");
     }
 
     if (!Array.isArray(parsed) || parsed.length === 0) {
+      logger.warn("AI returned empty or invalid structure", { parsed: JSON.stringify(parsed).slice(0, 200) });
       throw new Error("AI returned empty or invalid structure");
     }
 
