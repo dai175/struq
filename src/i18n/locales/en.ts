@@ -9,6 +9,7 @@ export const en: Translations = {
     bridge: "Bridge",
     solo: "Solo",
     outro: "Outro",
+    interlude: "Interlude",
     custom: "Custom",
   },
   common: {

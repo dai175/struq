@@ -233,7 +233,7 @@ export const generateSections = createServerFn({ method: "POST" })
     const artist = data.artist.trim();
     const prompt = `Given the song "${title}"${artist ? ` by "${artist}"` : ""}, return the song structure as a JSON array.
 Each element should have:
-- "type": one of "intro", "a", "b", "chorus", "bridge", "solo", "outro"
+- "type": one of "intro", "a", "b", "chorus", "bridge", "solo", "outro", "interlude"
 - "bars": number of bars (integer)
 - "extra_beats": additional beats beyond the bar count (integer, 0 if none)
 - "chord_progression": chord symbols separated by spaces (e.g. "Am F C G"), or null if unknown

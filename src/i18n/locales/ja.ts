@@ -6,9 +6,10 @@ export const ja: Translations = {
     a: "A",
     b: "B",
     chorus: "サビ",
-    bridge: "Bridge",
-    solo: "Solo",
+    bridge: "ブリッジ",
+    solo: "ソロ",
     outro: "アウトロ",
+    interlude: "間奏",
     custom: "カスタム",
   },
   common: {
