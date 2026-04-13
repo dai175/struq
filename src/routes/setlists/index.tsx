@@ -81,6 +81,7 @@ function SetlistsPage() {
                   type="button"
                   onClick={() => handleDelete(setlist.id)}
                   disabled={deletingId === setlist.id}
+                  aria-label={t.common.delete}
                   className="shrink-0 p-2 text-text-secondary transition-colors hover:text-red-500 disabled:opacity-40"
                 >
                   <Trash2 size={18} />

@@ -9,7 +9,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, GripVertical, Music, Play, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
@@ -27,20 +27,17 @@ import {
 
 export const Route = createFileRoute("/setlists/$id")({
   beforeLoad: requireAuth,
-  loader: ({ params }) => getSetlist({ data: { setlistId: params.id } }),
+  loader: async ({ params }) => {
+    const data = await getSetlist({ data: { setlistId: params.id } });
+    if (!data) throw redirect({ to: "/setlists" });
+    return data;
+  },
   component: SetlistDetailPage,
 });
 
 function SetlistDetailPage() {
   const data = Route.useLoaderData();
   const { id } = Route.useParams();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!data) navigate({ to: "/setlists" });
-  }, [data, navigate]);
-
-  if (!data) return null;
 
   return <SetlistEditor key={id} setlistId={id} data={data} />;
 }
@@ -174,6 +171,7 @@ function SetlistEditor({
         <div className="flex items-center gap-3">
           <Link
             to="/setlists"
+            aria-label={t.common.back}
             className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-muted"
           >
             <ArrowLeft size={20} />
@@ -195,6 +193,7 @@ function SetlistEditor({
           <button
             type="button"
             onClick={handleDelete}
+            aria-label={t.common.delete}
             className="p-2 text-text-secondary transition-colors hover:text-red-500"
           >
             <Trash2 size={18} />
@@ -216,11 +215,16 @@ function SetlistEditor({
               setTitle(e.target.value);
               if (titleError) setTitleError(false);
             }}
+            aria-describedby={titleError ? "setlist-title-error" : undefined}
             className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
               titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
             }`}
           />
-          {titleError && <p className="mt-1 text-xs text-red-500">{t.setlist.titleRequired}</p>}
+          {titleError && (
+            <p id="setlist-title-error" className="mt-1 text-xs text-red-500">
+              {t.setlist.titleRequired}
+            </p>
+          )}
         </div>
 
         <div>
@@ -327,6 +331,7 @@ function SetlistEditor({
 // ─── SortableSongCard ──────────────────────────────────
 
 function SortableSongCard({ song, index, onRemove }: { song: SetlistSongItem; index: number; onRemove: () => void }) {
+  const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.songId });
 
   const style = {
@@ -352,6 +357,7 @@ function SortableSongCard({ song, index, onRemove }: { song: SetlistSongItem; in
       <button
         type="button"
         onClick={onRemove}
+        aria-label={t.setlist.removeSong}
         className="shrink-0 p-1.5 text-text-secondary transition-colors hover:text-red-500"
       >
         <X size={16} />
@@ -408,12 +414,17 @@ function SongPickerModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
       {/* Backdrop */}
-      <button type="button" className="absolute inset-0 bg-black/40" aria-label="Close" onClick={onClose} />
+      <button type="button" className="absolute inset-0 bg-black/40" aria-label={t.common.cancel} onClick={onClose} />
       {/* Sheet */}
-      <div className="relative z-10 w-full max-w-md rounded-t-2xl bg-surface pb-8">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t.setlist.addSong}
+        className="relative z-10 w-full max-w-md rounded-t-2xl bg-surface pb-8"
+      >
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <h2 className="font-semibold">{t.setlist.addSong}</h2>
-          <button type="button" onClick={onClose} className="p-1 text-text-secondary">
+          <button type="button" onClick={onClose} aria-label={t.common.cancel} className="p-1 text-text-secondary">
             <X size={20} />
           </button>
         </div>

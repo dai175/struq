@@ -73,6 +73,7 @@ function SongsPage() {
                   type="button"
                   onClick={() => handleDelete(song.id)}
                   disabled={deletingId === song.id}
+                  aria-label={t.song.deleteSong}
                   className="shrink-0 p-2 text-text-secondary transition-colors hover:text-red-500 disabled:opacity-40"
                 >
                   <Trash2 size={18} />

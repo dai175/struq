@@ -56,6 +56,7 @@ function NewSongPage() {
       <div className="mb-6 flex items-center gap-3">
         <Link
           to="/songs"
+          aria-label={t.common.back}
           className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-muted"
         >
           <ArrowLeft size={20} />
@@ -76,11 +77,16 @@ function NewSongPage() {
               setTitle(e.target.value);
               if (titleError) setTitleError(false);
             }}
+            aria-describedby={titleError ? "song-title-error" : undefined}
             className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
               titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
             }`}
           />
-          {titleError && <p className="mt-1 text-xs text-red-500">{t.song.titleRequired}</p>}
+          {titleError && (
+            <p id="song-title-error" className="mt-1 text-xs text-red-500">
+              {t.song.titleRequired}
+            </p>
+          )}
         </div>
 
         <div>

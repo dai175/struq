@@ -247,6 +247,7 @@ function SongEditPage() {
       <div className="mb-6 flex items-center gap-2">
         <Link
           to="/songs"
+          aria-label={t.common.back}
           className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-muted"
         >
           <ArrowLeft size={20} />
@@ -255,6 +256,7 @@ function SongEditPage() {
         <Link
           to="/songs/$id/perform"
           params={{ id }}
+          aria-label="Perform"
           className="rounded-full p-2 transition-colors hover:bg-surface-muted"
         >
           <Play size={20} />
@@ -262,6 +264,7 @@ function SongEditPage() {
         <button
           type="button"
           onClick={handleDeleteSong}
+          aria-label={t.song.deleteSong}
           className="rounded-full p-2 text-text-secondary transition-colors hover:text-red-500"
         >
           <Trash2 size={20} />
@@ -353,6 +356,7 @@ function SongEditPage() {
                 href={referenceUrl.trim()}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label={t.song.referenceUrl}
                 className="shrink-0 rounded-full p-2.5 text-text-secondary transition-colors hover:bg-surface-muted"
               >
                 <ExternalLink size={18} />
