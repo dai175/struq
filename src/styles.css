@@ -43,3 +43,9 @@ code {
 	outline-offset: 2px;
 	border-radius: 4px;
 }
+
+@media (prefers-color-scheme: dark) {
+	:focus-visible {
+		outline-color: var(--color-text-on-dark);
+	}
+}
