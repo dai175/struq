@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getAuthUser } from "@/auth/server-fns";
 import { getDb, schema } from "@/db";
-import { eq, and, isNull, desc, sql, max } from "drizzle-orm";
+import { eq, and, isNull, sql, max } from "drizzle-orm";
 import { env } from "cloudflare:workers";
+import { requireUser, now } from "@/server/helpers";
+import type { Database } from "@/db";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -22,16 +23,6 @@ export type SetlistSongItem = {
 
 // ─── Helpers ────────────────────────────────────────────
 
-async function requireUser() {
-  const user = await getAuthUser();
-  if (!user) throw new Error("Unauthorized");
-  return user;
-}
-
-function now() {
-  return Math.floor(Date.now() / 1000);
-}
-
 const setlistColumns = {
   id: schema.setlists.id,
   title: schema.setlists.title,
@@ -42,6 +33,18 @@ const setlistColumns = {
   createdAt: schema.setlists.createdAt,
   updatedAt: schema.setlists.updatedAt,
 } as const;
+
+async function requireSetlistOwner(db: Database, setlistId: string, userId: string) {
+  const setlist = await db.query.setlists.findFirst({
+    where: and(
+      eq(schema.setlists.id, setlistId),
+      eq(schema.setlists.userId, userId),
+      isNull(schema.setlists.deletedAt),
+    ),
+  });
+  if (!setlist) throw new Error("Setlist not found");
+  return setlist;
+}
 
 // ─── listSetlists ──────────────────────────────────────
 
@@ -141,7 +144,6 @@ export const createSetlist = createServerFn({ method: "POST" })
     const title = data.title.trim();
     if (!title) throw new Error("Title is required");
 
-    // Compute next sortOrder
     const [result] = await db
       .select({ maxOrder: max(schema.setlists.sortOrder) })
       .from(schema.setlists)
@@ -244,34 +246,25 @@ export const addSongToSetlist = createServerFn({ method: "POST" })
     const user = await requireUser();
     const db = getDb(env.DB);
 
-    // Verify setlist ownership
-    const setlist = await db.query.setlists.findFirst({
-      where: and(
-        eq(schema.setlists.id, data.setlistId),
-        eq(schema.setlists.userId, user.userId),
-        isNull(schema.setlists.deletedAt),
-      ),
-    });
-    if (!setlist) throw new Error("Setlist not found");
-
-    // Verify song ownership
-    const song = await db.query.songs.findFirst({
-      where: and(
-        eq(schema.songs.id, data.songId),
-        eq(schema.songs.userId, user.userId),
-        isNull(schema.songs.deletedAt),
-      ),
-    });
+    // Verify ownership + get max sortOrder in parallel
+    const [, song, [sortResult]] = await Promise.all([
+      requireSetlistOwner(db, data.setlistId, user.userId),
+      db.query.songs.findFirst({
+        where: and(
+          eq(schema.songs.id, data.songId),
+          eq(schema.songs.userId, user.userId),
+          isNull(schema.songs.deletedAt),
+        ),
+      }),
+      db
+        .select({ maxOrder: max(schema.setlistSongs.sortOrder) })
+        .from(schema.setlistSongs)
+        .where(eq(schema.setlistSongs.setlistId, data.setlistId)),
+    ]);
     if (!song) throw new Error("Song not found");
 
-    // Compute next sortOrder
-    const [result] = await db
-      .select({ maxOrder: max(schema.setlistSongs.sortOrder) })
-      .from(schema.setlistSongs)
-      .where(eq(schema.setlistSongs.setlistId, data.setlistId));
-    const sortOrder = (result?.maxOrder ?? -1) + 1;
+    const sortOrder = (sortResult?.maxOrder ?? -1) + 1;
 
-    // Insert (ignore duplicate via onConflictDoNothing)
     await db
       .insert(schema.setlistSongs)
       .values({
@@ -290,15 +283,7 @@ export const removeSongFromSetlist = createServerFn({ method: "POST" })
     const user = await requireUser();
     const db = getDb(env.DB);
 
-    // Verify setlist ownership
-    const setlist = await db.query.setlists.findFirst({
-      where: and(
-        eq(schema.setlists.id, data.setlistId),
-        eq(schema.setlists.userId, user.userId),
-        isNull(schema.setlists.deletedAt),
-      ),
-    });
-    if (!setlist) throw new Error("Setlist not found");
+    await requireSetlistOwner(db, data.setlistId, user.userId);
 
     await db
       .delete(schema.setlistSongs)
@@ -320,37 +305,32 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
     const user = await requireUser();
     const db = getDb(env.DB);
 
-    // Verify setlist ownership
-    const setlist = await db.query.setlists.findFirst({
-      where: and(
-        eq(schema.setlists.id, data.setlistId),
-        eq(schema.setlists.userId, user.userId),
-        isNull(schema.setlists.deletedAt),
-      ),
-    });
-    if (!setlist) throw new Error("Setlist not found");
+    await requireSetlistOwner(db, data.setlistId, user.userId);
 
-    // Delete all existing entries for this setlist
+    // Delete all existing entries
     await db
       .delete(schema.setlistSongs)
       .where(eq(schema.setlistSongs.setlistId, data.setlistId));
 
-    // Re-insert with new sortOrder
-    if (data.songIds.length > 0) {
-      await db.insert(schema.setlistSongs).values(
-        data.songIds.map((songId, index) => ({
-          setlistId: data.setlistId,
-          songId,
-          sortOrder: index,
-        })),
-      );
-    }
+    // Re-insert with new sortOrder + update timestamp in parallel
+    const insertSongs =
+      data.songIds.length > 0
+        ? db.insert(schema.setlistSongs).values(
+            data.songIds.map((songId, index) => ({
+              setlistId: data.setlistId,
+              songId,
+              sortOrder: index,
+            })),
+          )
+        : Promise.resolve();
 
-    // Update setlist timestamp
-    await db
-      .update(schema.setlists)
-      .set({ updatedAt: now() })
-      .where(eq(schema.setlists.id, data.setlistId));
+    await Promise.all([
+      insertSongs,
+      db
+        .update(schema.setlists)
+        .set({ updatedAt: now() })
+        .where(eq(schema.setlists.id, data.setlistId)),
+    ]);
   });
 
 // ─── listSongsForPicker ───────────────────────────────

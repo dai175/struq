@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   createFileRoute,
   Link,
@@ -51,11 +51,8 @@ export const Route = createFileRoute("/setlists/$id")({
 function SetlistDetailPage() {
   const data = Route.useLoaderData();
   const { id } = Route.useParams();
-  const { t } = useI18n();
   const navigate = useNavigate();
-  const router = useRouter();
 
-  // Redirect if not found
   useEffect(() => {
     if (!data) navigate({ to: "/setlists" });
   }, [data, navigate]);
@@ -94,6 +91,11 @@ function SetlistEditor({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    return () => clearTimeout(savedTimerRef.current);
+  }, []);
 
   // Dnd sensors
   const sensors = useSensors(
@@ -141,7 +143,8 @@ function SetlistEditor({
         }),
       ]);
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch {
       alert(t.common.error);
     } finally {

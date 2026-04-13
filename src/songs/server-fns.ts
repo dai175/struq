@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getAuthUser } from "@/auth/server-fns";
 import { getDb, schema } from "@/db";
 import { eq, and, isNull, inArray, desc } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import type { SectionData } from "@/songs/components/SectionCard";
 import { DEFAULT_BARS } from "@/songs/constants";
+import { requireUser, now } from "@/server/helpers";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -18,18 +18,6 @@ export type SectionRow = Omit<
   typeof schema.sections.$inferSelect,
   "deletedAt"
 >;
-
-// ─── Helpers ────────────────────────────────────────────
-
-async function requireUser() {
-  const user = await getAuthUser();
-  if (!user) throw new Error("Unauthorized");
-  return user;
-}
-
-function now() {
-  return Math.floor(Date.now() / 1000);
-}
 
 const songColumns = {
   id: schema.songs.id,
