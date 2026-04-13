@@ -7,8 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n, getSectionLabel } from "@/i18n";
-import type { Locale, SectionType } from "@/i18n/types";
-import type { Translations } from "@/i18n/types";
+import type { Locale, SectionType, Translations } from "@/i18n/types";
 import {
   getSongWithSections,
   type SongRow,
@@ -73,8 +72,15 @@ function formatBars(section: SectionRow, t: Translations): string {
 }
 
 function sectionLabel(section: SectionRow, locale: Locale): string {
-  return getSectionLabel(section.type as SectionType, locale, section.label);
+  return getSectionLabel(section.type, locale, section.label);
 }
+
+const SAFE_AREA_STYLE = {
+  paddingTop: "env(safe-area-inset-top)",
+  paddingBottom: "env(safe-area-inset-bottom)",
+  paddingLeft: "env(safe-area-inset-left)",
+  paddingRight: "env(safe-area-inset-right)",
+} as const;
 
 // ─── Main View ─────────────────────────────────
 
@@ -94,8 +100,8 @@ function PerformView({
   const { t, locale } = useI18n();
   const navigate = useNavigate();
 
+  // currentIndex === total means END state
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isEnded, setIsEnded] = useState(false);
 
   // Swipe tracking
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -108,10 +114,11 @@ function PerformView({
   const hasNextSong = isSetlistMode && currentSongIdx < setlistSongs.length - 1;
   const hasPrevSong = isSetlistMode && currentSongIdx > 0;
 
-  // Current / prev / next sections
+  // Derived section state
   const total = sections.length;
-  const current = sections[currentIndex] as SectionRow | undefined;
-  const prev = currentIndex > 0 ? sections[currentIndex - 1] : null;
+  const isEnded = currentIndex >= total;
+  const current = !isEnded ? sections[currentIndex] : undefined;
+  const prev = currentIndex > 0 && currentIndex <= total ? sections[currentIndex - 1] : null;
   const next = currentIndex < total - 1 ? sections[currentIndex + 1] : null;
 
   // ── Handlers ──────────────────────────────────
@@ -121,10 +128,9 @@ function PerformView({
       swipedRef.current = false;
       return;
     }
-    if (isEnded || total === 0) return;
+    if (total === 0 || isEnded) return;
 
     if (currentIndex >= total - 1) {
-      // Last section of current song
       if (isSetlistMode && hasNextSong) {
         const nextSong = setlistSongs[currentSongIdx + 1];
         navigate({
@@ -133,7 +139,7 @@ function PerformView({
           search: { setlistId },
         });
       } else {
-        setIsEnded(true);
+        setCurrentIndex(total);
       }
       return;
     }
@@ -141,17 +147,12 @@ function PerformView({
   }
 
   function handleBack() {
-    if (isEnded) {
-      setIsEnded(false);
-      return;
-    }
-    if (currentIndex <= 0) return; // no-op at first section
+    if (currentIndex <= 0) return;
     setCurrentIndex((i) => i - 1);
   }
 
   function handleReset() {
     setCurrentIndex(0);
-    setIsEnded(false);
   }
 
   function goExit() {
@@ -162,11 +163,10 @@ function PerformView({
     }
   }
 
-  // Setlist song navigation
-  function navigateToSong(song: SetlistSongItem) {
+  function navigateToSong(target: SetlistSongItem) {
     navigate({
       to: "/songs/$id/perform",
-      params: { id: song.songId },
+      params: { id: target.songId },
       search: { setlistId },
     });
   }
@@ -237,20 +237,12 @@ function PerformView({
   return (
     <div
       className="fixed inset-0 flex select-none flex-col bg-surface-dark text-text-on-dark"
-      style={{
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-        paddingLeft: "env(safe-area-inset-left)",
-        paddingRight: "env(safe-area-inset-right)",
-      }}
+      style={SAFE_AREA_STYLE}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* ── Header ──────────────────────────────── */}
-      <header
-        className="flex items-center gap-3 px-4 pb-2 pt-3 lg:px-8"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <header className="flex items-center gap-3 px-4 pb-2 pt-3 lg:px-8">
         <button
           type="button"
           onClick={goExit}
@@ -288,8 +280,7 @@ function PerformView({
               className="h-2 min-w-1 rounded-full transition-opacity duration-150 lg:h-3"
               style={{
                 flex: sec.bars,
-                backgroundColor:
-                  SECTION_COLORS[sec.type as SectionType],
+                backgroundColor: SECTION_COLORS[sec.type],
                 opacity: isEnded || i <= currentIndex ? 1 : 0.25,
               }}
             />
@@ -322,14 +313,13 @@ function PerformView({
         tabIndex={0}
         onClick={handleAdvance}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
+          if (e.key === "Enter") {
             e.preventDefault();
             handleAdvance();
           }
         }}
       >
         {total === 0 ? (
-          /* No sections */
           <div className="text-center">
             <p className="text-lg opacity-40">{t.song.noSections}</p>
             <Link
@@ -342,12 +332,10 @@ function PerformView({
             </Link>
           </div>
         ) : isEnded ? (
-          /* END state */
           <p className="text-6xl font-bold opacity-50 lg:text-8xl">
             {t.common.end}
           </p>
         ) : current ? (
-          /* Active section display */
           <>
             {/* Previous section */}
             <div className="mb-6 h-7 lg:mb-8 lg:h-8">
@@ -362,10 +350,7 @@ function PerformView({
             <div className="text-center">
               <p
                 className="text-5xl font-bold lg:text-7xl"
-                style={{
-                  color:
-                    SECTION_COLORS[current.type as SectionType],
-                }}
+                style={{ color: SECTION_COLORS[current.type] }}
               >
                 {sectionLabel(current, locale)}
               </p>
@@ -414,18 +399,13 @@ function PerformView({
 
       {/* ── Bottom controls ─────────────────────── */}
       {total > 0 && (
-        <div
-          className="flex items-center justify-between px-4 pb-4 pt-2 lg:px-8"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="flex items-center justify-between px-4 pb-4 pt-2 lg:px-8">
           <button
             type="button"
             onClick={handleBack}
-            aria-disabled={currentIndex === 0 && !isEnded}
+            aria-disabled={currentIndex === 0}
             className={`min-w-[72px] rounded-full px-4 py-2 text-sm transition-opacity active:opacity-80 ${
-              currentIndex === 0 && !isEnded
-                ? "opacity-20"
-                : "opacity-50"
+              currentIndex === 0 ? "opacity-20" : "opacity-50"
             }`}
           >
             {t.common.back}
