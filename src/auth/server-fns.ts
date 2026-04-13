@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { clearSession, updateSession } from "@tanstack/react-start/server";
+import { clearSession, getSession, updateSession } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { LOCALES, type Locale } from "@/i18n/types";
