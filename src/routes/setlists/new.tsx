@@ -61,8 +61,11 @@ function NewSetlistPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">{t.setlist.title} *</label>
+          <label htmlFor="setlist-title" className="mb-1 block text-sm text-text-secondary">
+            {t.setlist.title} *
+          </label>
           <input
+            id="setlist-title"
             type="text"
             value={title}
             onChange={(e) => {
@@ -72,14 +75,16 @@ function NewSetlistPage() {
             className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
               titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
             }`}
-            autoFocus
           />
           {titleError && <p className="mt-1 text-xs text-red-500">{t.setlist.titleRequired}</p>}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">{t.setlist.description}</label>
+          <label htmlFor="setlist-desc" className="mb-1 block text-sm text-text-secondary">
+            {t.setlist.description}
+          </label>
           <textarea
+            id="setlist-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
@@ -89,8 +94,11 @@ function NewSetlistPage() {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">{t.setlist.sessionDate}</label>
+            <label htmlFor="setlist-date" className="mb-1 block text-sm text-text-secondary">
+              {t.setlist.sessionDate}
+            </label>
             <input
+              id="setlist-date"
               type="date"
               value={sessionDate}
               onChange={(e) => setSessionDate(e.target.value)}
@@ -98,8 +106,11 @@ function NewSetlistPage() {
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">{t.setlist.venue}</label>
+            <label htmlFor="setlist-venue" className="mb-1 block text-sm text-text-secondary">
+              {t.setlist.venue}
+            </label>
             <input
+              id="setlist-venue"
               type="text"
               value={venue}
               onChange={(e) => setVenue(e.target.value)}

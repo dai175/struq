@@ -282,70 +282,68 @@ function PerformView({
       )}
 
       {/* ── Main tap area ───────────────────────── */}
-      <div
-        className="flex flex-1 cursor-pointer flex-col items-center justify-center px-6 lg:px-12"
-        role="button"
-        tabIndex={0}
-        onClick={handleAdvance}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            handleAdvance();
-          }
-        }}
-      >
-        {total === 0 ? (
+      {total === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 lg:px-12">
           <div className="text-center">
             <p className="text-lg opacity-40">{t.song.noSections}</p>
-            <Link
-              to="/songs/$id"
-              params={{ id: songId }}
-              className="mt-4 inline-block text-sm opacity-50 underline"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Link to="/songs/$id" params={{ id: songId }} className="mt-4 inline-block text-sm opacity-50 underline">
               {t.common.back}
             </Link>
           </div>
-        ) : isEnded ? (
-          <p className="text-6xl font-bold opacity-50 lg:text-8xl">{t.common.end}</p>
-        ) : current ? (
-          <>
-            {/* Previous section */}
-            <div className="mb-6 h-7 lg:mb-8 lg:h-8">
-              {prev && <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p>}
-            </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="flex flex-1 cursor-pointer flex-col items-center justify-center px-6 lg:px-12"
+          onClick={handleAdvance}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAdvance();
+            }
+          }}
+        >
+          {isEnded ? (
+            <p className="text-6xl font-bold opacity-50 lg:text-8xl">{t.common.end}</p>
+          ) : current ? (
+            <>
+              {/* Previous section */}
+              <div className="mb-6 h-7 lg:mb-8 lg:h-8">
+                {prev && <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p>}
+              </div>
 
-            {/* Current section */}
-            <div className="text-center">
-              <p className="text-5xl font-bold lg:text-7xl" style={{ color: SECTION_COLORS[current.type] }}>
-                {sectionLabel(current, locale)}
-              </p>
-              {current.chordProgression && (
-                <p className="mt-4 font-mono text-xl opacity-80 lg:mt-6 lg:text-2xl">{current.chordProgression}</p>
-              )}
-              <p className="mt-3 font-mono text-base opacity-40 lg:text-lg">{formatBars(current, t)}</p>
-              {current.memo && <p className="mt-2 text-sm opacity-30 lg:text-base">{current.memo}</p>}
-            </div>
+              {/* Current section */}
+              <div className="text-center">
+                <p className="text-5xl font-bold lg:text-7xl" style={{ color: SECTION_COLORS[current.type] }}>
+                  {sectionLabel(current, locale)}
+                </p>
+                {current.chordProgression && (
+                  <p className="mt-4 font-mono text-xl opacity-80 lg:mt-6 lg:text-2xl">{current.chordProgression}</p>
+                )}
+                <p className="mt-3 font-mono text-base opacity-40 lg:text-lg">{formatBars(current, t)}</p>
+                {current.memo && <p className="mt-2 text-sm opacity-30 lg:text-base">{current.memo}</p>}
+              </div>
 
-            {/* Next section hint */}
-            <div className="mt-6 h-10 text-center lg:mt-8">
-              {next ? (
-                <div className="opacity-30">
-                  <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
-                  <p className="text-sm lg:text-base">{sectionLabel(next, locale)}</p>
-                </div>
-              ) : isSetlistMode && hasNextSong ? (
-                <div className="opacity-25">
-                  <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
-                  <p className="text-sm lg:text-base">{setlistSongs[currentSongIdx + 1].title}</p>
-                </div>
-              ) : (
-                <p className="text-sm opacity-20">{t.common.end}</p>
-              )}
-            </div>
-          </>
-        ) : null}
-      </div>
+              {/* Next section hint */}
+              <div className="mt-6 h-10 text-center lg:mt-8">
+                {next ? (
+                  <div className="opacity-30">
+                    <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
+                    <p className="text-sm lg:text-base">{sectionLabel(next, locale)}</p>
+                  </div>
+                ) : isSetlistMode && hasNextSong ? (
+                  <div className="opacity-25">
+                    <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
+                    <p className="text-sm lg:text-base">{setlistSongs[currentSongIdx + 1].title}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm opacity-20">{t.common.end}</p>
+                )}
+              </div>
+            </>
+          ) : null}
+        </button>
+      )}
 
       {/* ── Bottom controls ─────────────────────── */}
       {total > 0 && (

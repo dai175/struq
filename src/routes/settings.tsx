@@ -28,15 +28,16 @@ function SettingsPage() {
       <h1 className="text-xl font-sans text-text-primary mb-6">{t.nav.settings}</h1>
 
       <div className="mb-6 flex items-center gap-3">
-        {user!.avatarUrl && <img src={user!.avatarUrl} alt={user!.name} className="w-10 h-10 rounded-full" />}
+        {user?.avatarUrl && <img src={user?.avatarUrl} alt={user?.name} className="w-10 h-10 rounded-full" />}
         <div>
-          <p className="text-sm font-medium text-text-primary">{user!.name}</p>
-          <p className="text-xs text-text-secondary">{user!.email}</p>
+          <p className="text-sm font-medium text-text-primary">{user?.name}</p>
+          <p className="text-xs text-text-secondary">{user?.email}</p>
         </div>
       </div>
 
       <div className="border-t border-gray-200 pt-4">
         <button
+          type="button"
           onClick={handleLogout}
           className="text-sm text-red-600 hover:text-red-700 transition-colors duration-150"
         >

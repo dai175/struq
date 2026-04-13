@@ -205,8 +205,11 @@ function SetlistEditor({
       {/* Metadata form */}
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">{t.setlist.title} *</label>
+          <label htmlFor="setlist-title" className="mb-1 block text-sm text-text-secondary">
+            {t.setlist.title} *
+          </label>
           <input
+            id="setlist-title"
             type="text"
             value={title}
             onChange={(e) => {
@@ -221,8 +224,11 @@ function SetlistEditor({
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">{t.setlist.description}</label>
+          <label htmlFor="setlist-desc" className="mb-1 block text-sm text-text-secondary">
+            {t.setlist.description}
+          </label>
           <textarea
+            id="setlist-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
@@ -232,8 +238,11 @@ function SetlistEditor({
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">{t.setlist.sessionDate}</label>
+            <label htmlFor="setlist-date" className="mb-1 block text-sm text-text-secondary">
+              {t.setlist.sessionDate}
+            </label>
             <input
+              id="setlist-date"
               type="date"
               value={sessionDate}
               onChange={(e) => setSessionDate(e.target.value)}
@@ -241,8 +250,11 @@ function SetlistEditor({
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">{t.setlist.venue}</label>
+            <label htmlFor="setlist-venue" className="mb-1 block text-sm text-text-secondary">
+              {t.setlist.venue}
+            </label>
             <input
+              id="setlist-venue"
               type="text"
               value={venue}
               onChange={(e) => setVenue(e.target.value)}
@@ -396,7 +408,7 @@ function SongPickerModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <button type="button" className="absolute inset-0 bg-black/40" aria-label="Close" onClick={onClose} />
       {/* Sheet */}
       <div className="relative z-10 w-full max-w-md rounded-t-2xl bg-surface pb-8">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">

@@ -2,7 +2,7 @@ import type { SectionType } from "@/i18n/types";
 import { SECTION_COLORS } from "@/songs/constants";
 
 interface StructurePreviewProps {
-  sections: { type: SectionType; bars: number }[];
+  sections: { id: string; type: SectionType; bars: number }[];
 }
 
 export function StructurePreview({ sections }: StructurePreviewProps) {
@@ -10,9 +10,9 @@ export function StructurePreview({ sections }: StructurePreviewProps) {
 
   return (
     <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
-      {sections.map((sec, i) => (
+      {sections.map((sec) => (
         <div
-          key={i}
+          key={sec.id}
           className="min-w-1 rounded-full"
           style={{
             flex: sec.bars,

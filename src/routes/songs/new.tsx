@@ -65,8 +65,11 @@ function NewSongPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">{t.song.title} *</label>
+          <label htmlFor="song-title" className="mb-1 block text-sm text-text-secondary">
+            {t.song.title} *
+          </label>
           <input
+            id="song-title"
             type="text"
             value={title}
             onChange={(e) => {
@@ -76,14 +79,16 @@ function NewSongPage() {
             className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
               titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
             }`}
-            autoFocus
           />
           {titleError && <p className="mt-1 text-xs text-red-500">{t.song.titleRequired}</p>}
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">{t.song.artist}</label>
+          <label htmlFor="song-artist" className="mb-1 block text-sm text-text-secondary">
+            {t.song.artist}
+          </label>
           <input
+            id="song-artist"
             type="text"
             value={artist}
             onChange={(e) => setArtist(e.target.value)}
@@ -93,8 +98,11 @@ function NewSongPage() {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">{t.song.bpm}</label>
+            <label htmlFor="song-bpm" className="mb-1 block text-sm text-text-secondary">
+              {t.song.bpm}
+            </label>
             <input
+              id="song-bpm"
               type="number"
               value={bpm}
               onChange={(e) => setBpm(e.target.value)}
@@ -103,8 +111,11 @@ function NewSongPage() {
             />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-sm text-text-secondary">{t.song.key}</label>
+            <label htmlFor="song-key" className="mb-1 block text-sm text-text-secondary">
+              {t.song.key}
+            </label>
             <input
+              id="song-key"
               type="text"
               value={key}
               onChange={(e) => setKey(e.target.value)}
@@ -115,8 +126,11 @@ function NewSongPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">{t.song.referenceUrl}</label>
+          <label htmlFor="song-ref-url" className="mb-1 block text-sm text-text-secondary">
+            {t.song.referenceUrl}
+          </label>
           <input
+            id="song-ref-url"
             type="url"
             value={referenceUrl}
             onChange={(e) => setReferenceUrl(e.target.value)}
