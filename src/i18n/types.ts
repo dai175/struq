@@ -89,6 +89,7 @@ export interface Translations {
   perform: {
     section: string;
     of: string;
+    songOf: string;
   };
 
   auth: {

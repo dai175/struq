@@ -78,6 +78,7 @@ export const ja: Translations = {
   perform: {
     section: "セクション",
     of: "/",
+    songOf: "曲 {current}/{total}",
   },
   auth: {
     loginWith: "Googleでログイン",

@@ -37,11 +37,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootLayout() {
   const { user } = Route.useRouteContext();
+  const matches = useMatches();
+  const currentPath = matches[matches.length - 1]?.fullPath ?? "";
+  const isPerformView = currentPath.endsWith("/perform");
 
   return (
     <>
       <Outlet />
-      {user && <BottomNav />}
+      {user && !isPerformView && <BottomNav />}
     </>
   );
 }

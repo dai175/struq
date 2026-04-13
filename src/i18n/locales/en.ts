@@ -78,6 +78,7 @@ export const en: Translations = {
   perform: {
     section: "Section",
     of: "/",
+    songOf: "Song {current}/{total}",
   },
   auth: {
     loginWith: "Login with Google",

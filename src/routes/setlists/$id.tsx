@@ -40,6 +40,7 @@ import {
   Plus,
   Trash2,
   Music,
+  Play,
 } from "lucide-react";
 
 export const Route = createFileRoute("/setlists/$id")({
@@ -201,13 +202,26 @@ function SetlistEditor({
           </Link>
           <h1 className="text-xl font-bold">{t.nav.setlists}</h1>
         </div>
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="p-2 text-text-secondary transition-colors hover:text-red-500"
-        >
-          <Trash2 size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          {songs.length > 0 && (
+            <Link
+              to="/songs/$id/perform"
+              params={{ id: songs[0].songId }}
+              search={{ setlistId }}
+              className="rounded-full p-2 transition-colors hover:bg-surface-muted"
+              aria-label="Perform"
+            >
+              <Play size={18} />
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="p-2 text-text-secondary transition-colors hover:text-red-500"
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Metadata form */}
