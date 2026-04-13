@@ -1,193 +1,129 @@
-Welcome to your new TanStack Start app! 
+# Struq
 
-# Getting Started
+ミュージシャンがセッション中にさっと曲構成を確認するための Web アプリ。[focuswave](https://focuswave.cc) ブランドのプロダクト。
 
-To run this application:
+**URL:** https://struq.focuswave.cc
+
+## 主な機能
+
+- **曲構成マッピング** — イントロ / A / B / コーラス / ブリッジ / ソロ / アウトロ / カスタムのセクションを並べて曲の流れを可視化
+- **AI 生成** — Google Gemini Flash API でタイトル・アーティスト名から曲構成を自動生成
+- **パフォーマンスビュー** — iPad ランドスケープに最適化したフルスクリーン黒背景のライブ参照画面
+- **セットリスト管理** — 日付・会場つきのセットリストに曲を並べて管理
+- **ドラッグ&ドロップ並べ替え** — セクションとセットリスト内の曲を自由に並べ替え
+- **日本語 / 英語** — ユーザー設定で切り替え可能な i18n
+
+## Tech Stack
+
+| 項目 | 技術 |
+|---|---|
+| Framework | TanStack Start (React 19) + Vite |
+| Database | Cloudflare D1 (SQLite) + Drizzle ORM |
+| Deployment | Cloudflare Workers |
+| Auth | Google OAuth |
+| AI | Google Gemini Flash API |
+| Styling | Tailwind CSS v4 |
+| Language | TypeScript |
+| Linter / Formatter | Biome |
+| Testing | Vitest |
+
+## Getting Started
+
+### 前提条件
+
+- Node.js 20+
+- pnpm
+- Wrangler CLI (`pnpm add -g wrangler`)
+
+### インストール
 
 ```bash
 pnpm install
-pnpm dev
 ```
 
-# Building For Production
+### 環境変数
 
-To build this application for production:
+プロジェクトルートに `.dev.vars` を作成（`.env` ではなく `.dev.vars`）:
+
+```
+GOOGLE_CLIENT_ID=xxx
+GOOGLE_CLIENT_SECRET=xxx
+GEMINI_API_KEY=xxx
+SESSION_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # 32文字以上
+```
+
+### ローカル DB の初期化
 
 ```bash
-pnpm build
+pnpm db:migrate
 ```
 
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+### 開発サーバー起動
 
 ```bash
-pnpm test
+pnpm dev   # http://localhost:3000
 ```
 
-## Styling
+## Development Commands
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+| コマンド | 説明 |
+|---|---|
+| `pnpm dev` | 開発サーバー起動 (port 3000) |
+| `pnpm build` | プロダクションビルド |
+| `pnpm preview` | ビルド → ローカルプレビュー |
+| `pnpm deploy` | ビルド → Cloudflare にデプロイ |
+| `pnpm test` | テスト実行 (Vitest) |
+| `pnpm lint` | Biome でリント |
+| `pnpm lint:fix` | リント自動修正 |
+| `pnpm format` | Biome でフォーマット |
+| `pnpm db:generate` | Drizzle マイグレーションファイル生成 |
+| `pnpm db:migrate` | マイグレーション適用 (ローカル) |
+| `pnpm db:migrate:production` | マイグレーション適用 (本番 D1) |
+| `pnpm cf-typegen` | Cloudflare Worker 型定義再生成 |
 
-### Removing Tailwind CSS
+## Project Structure
 
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `pnpm add @tailwindcss/vite tailwindcss --dev`
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
+```
+src/
+├── routes/          # ファイルベースルーティング (routeTree.gen.ts は自動生成 — 直接編集不可)
+├── auth/            # セッション管理、Google OAuth、サーバー関数
+├── db/              # Drizzle スキーマ + getDb() ファクトリー
+├── songs/           # 曲 CRUD サーバー関数 + コンポーネント
+├── setlists/        # セットリスト CRUD サーバー関数
+├── i18n/            # 翻訳キー + I18nProvider (ja / en)
+├── server/          # 共通サーバーヘルパー (requireUser, now)
+└── lib/             # ユーティリティ (logger など)
 ```
 
-Then anywhere in your JSX you can use it like so:
+## Routes
 
-```tsx
-<Link to="/about">About</Link>
+| パス | 説明 |
+|---|---|
+| `/` | ランディング → `/setlists` にリダイレクト |
+| `/login` | Google OAuth ログイン |
+| `/setlists` | セットリスト一覧 |
+| `/setlists/:id` | セットリスト詳細（曲順） |
+| `/setlists/new` | 新規セットリスト作成 |
+| `/songs` | 曲一覧 |
+| `/songs/new` | 新規曲作成（AI 生成オプションあり） |
+| `/songs/:id` | 曲編集 |
+| `/songs/:id/perform` | パフォーマンスビュー（フルスクリーン） |
+| `/settings` | ユーザー設定（言語、アカウント） |
+
+## Deployment
+
+```bash
+# Wrangler シークレット設定
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put GEMINI_API_KEY
+wrangler secret put SESSION_SECRET
+
+# 本番 DB マイグレーション
+pnpm db:migrate:production
+
+# デプロイ
+pnpm deploy
 ```
 
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+D1 データベース名: `struq-db`（`wrangler.jsonc` の `DB` バインディング）
