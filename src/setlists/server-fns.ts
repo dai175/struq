@@ -227,15 +227,15 @@ export const deleteSetlist = createServerFn({ method: "POST" })
     });
     if (!setlist) return;
 
-    await Promise.all([
-      db
+    await db.transaction(async (tx) => {
+      await tx
         .update(schema.setlists)
         .set({ deletedAt: now() })
-        .where(eq(schema.setlists.id, data.id)),
-      db
+        .where(eq(schema.setlists.id, data.id));
+      await tx
         .delete(schema.setlistSongs)
-        .where(eq(schema.setlistSongs.setlistId, data.id)),
-    ]);
+        .where(eq(schema.setlistSongs.setlistId, data.id));
+    });
   });
 
 // ─── addSongToSetlist ──────────────────────────────────

@@ -113,6 +113,7 @@ function SetlistEditor({
 
     const oldIndex = songs.findIndex((s) => s.songId === active.id);
     const newIndex = songs.findIndex((s) => s.songId === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
     setSongs(arrayMove(songs, oldIndex, newIndex));
   }
 
@@ -432,6 +433,14 @@ function SongPickerModal({
       .finally(() => setLoading(false));
   }, [setlistId]);
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   async function handleAdd(song: {
     id: string;
     title: string;
@@ -455,10 +464,6 @@ function SongPickerModal({
       <div
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
-        onKeyDown={(e) => e.key === "Escape" && onClose()}
-        role="button"
-        tabIndex={0}
-        aria-label="Close"
       />
       {/* Sheet */}
       <div className="relative z-10 w-full max-w-md rounded-t-2xl bg-surface pb-8">
