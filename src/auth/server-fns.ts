@@ -1,10 +1,11 @@
 import { env } from "cloudflare:workers";
 import { redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { clearSession, getSession, updateSession } from "@tanstack/react-start/server";
+import { clearSession, updateSession } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { LOCALES, type Locale } from "@/i18n/types";
+import { requireUser } from "@/server/helpers";
 import { type AppSessionData, getSessionConfig, type SessionUser } from "./session";
 
 export const getAuthUser = createServerFn({ method: "GET" }).handler(async (): Promise<SessionUser | null> => {
@@ -28,10 +29,7 @@ export const updateLocale = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    const session = await getSession<AppSessionData>(getSessionConfig());
-    const user = session.data?.user;
-    if (!user) throw new Error("Unauthorized");
-
+    const user = await requireUser();
     const db = getDb(env.DB);
     await db.update(schema.users).set({ locale: data.locale }).where(eq(schema.users.id, user.userId));
     await updateSession<AppSessionData>(getSessionConfig(), {

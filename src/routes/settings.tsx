@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { logout, requireAuth, updateLocale } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
@@ -20,6 +21,7 @@ function SettingsPage() {
   const { user } = Route.useRouteContext();
   const logoutFn = useServerFn(logout);
   const updateLocaleFn = useServerFn(updateLocale);
+  const [localeUpdating, setLocaleUpdating] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -31,12 +33,16 @@ function SettingsPage() {
   };
 
   const handleLocaleChange = async (newLocale: Locale) => {
+    if (localeUpdating || newLocale === locale) return;
+    setLocaleUpdating(true);
     setLocale(newLocale);
     try {
       await updateLocaleFn({ data: { locale: newLocale } });
     } catch (error) {
       console.error("Failed to update locale:", error);
-      setLocale(locale); // revert on error
+      setLocale(locale);
+    } finally {
+      setLocaleUpdating(false);
     }
   };
 
@@ -61,7 +67,8 @@ function SettingsPage() {
                 key={l}
                 type="button"
                 onClick={() => handleLocaleChange(l)}
-                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
+                disabled={localeUpdating}
+                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
                   locale === l ? "bg-text-primary text-white" : "text-text-secondary hover:bg-surface-muted"
                 }`}
               >
