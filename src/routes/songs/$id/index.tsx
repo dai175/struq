@@ -150,7 +150,8 @@ function SongEditPage() {
         data: { title: trimmedTitle, artist: artist.trim() },
       });
       setSectionsList(sections);
-    } catch {
+    } catch (error) {
+      console.error("Failed to generate sections:", error);
       setAiError(true);
     } finally {
       setAiGenerating(false);
@@ -222,7 +223,8 @@ function SongEditPage() {
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       router.invalidate();
-    } catch {
+    } catch (error) {
+      console.error("Failed to save song:", error);
       alert(t.common.error);
     } finally {
       setSaving(false);
@@ -234,7 +236,8 @@ function SongEditPage() {
     try {
       await deleteSong({ data: { id } });
       navigate({ to: "/songs" });
-    } catch {
+    } catch (error) {
+      console.error("Failed to delete song:", error);
       alert(t.common.error);
     }
   }

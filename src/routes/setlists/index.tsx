@@ -23,7 +23,8 @@ function SetlistsPage() {
     try {
       await deleteSetlist({ data: { id } });
       router.invalidate();
-    } catch {
+    } catch (error) {
+      console.error("Failed to delete setlist:", error);
       alert(t.common.error);
     } finally {
       setDeletingId(null);

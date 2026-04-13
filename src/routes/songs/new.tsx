@@ -43,7 +43,8 @@ function NewSongPage() {
         },
       });
       navigate({ to: "/songs/$id", params: { id: result.id } });
-    } catch {
+    } catch (error) {
+      console.error("Failed to create song:", error);
       alert(t.common.error);
     } finally {
       setSaving(false);

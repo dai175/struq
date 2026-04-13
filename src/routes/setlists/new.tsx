@@ -39,7 +39,8 @@ function NewSetlistPage() {
         },
       });
       navigate({ to: "/setlists/$id", params: { id: result.id } });
-    } catch {
+    } catch (error) {
+      console.error("Failed to create setlist:", error);
       alert(t.common.error);
     } finally {
       setSaving(false);

@@ -125,7 +125,8 @@ function SetlistEditor({
       setSaved(true);
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
-    } catch {
+    } catch (error) {
+      console.error("Failed to update setlist:", error);
       alert(t.common.error);
     } finally {
       setSaving(false);
@@ -137,7 +138,8 @@ function SetlistEditor({
     try {
       await deleteSetlist({ data: { id: setlistId } });
       navigate({ to: "/setlists" });
-    } catch {
+    } catch (error) {
+      console.error("Failed to delete setlist:", error);
       alert(t.common.error);
     }
   }
@@ -146,7 +148,8 @@ function SetlistEditor({
     setSongs((prev) => prev.filter((s) => s.songId !== songId));
     try {
       await removeSongFromSetlist({ data: { setlistId, songId } });
-    } catch {
+    } catch (error) {
+      console.error("Failed to remove song from setlist:", error);
       // Revert on error
       router.invalidate();
     }
@@ -382,7 +385,8 @@ function SongPickerModal({
       await addSongToSetlist({ data: { setlistId, songId: song.id } });
       onAdd(song);
       setAvailableSongs((prev) => prev.filter((s) => s.id !== song.id));
-    } catch {
+    } catch (error) {
+      console.error("Failed to add song to setlist:", error);
       alert(t.common.error);
     } finally {
       setAddingId(null);
