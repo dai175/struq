@@ -4,6 +4,7 @@ import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { useToast } from "@/lib/toast";
 import { deleteSetlist, listSetlists } from "@/setlists/server-fns";
 
 export const Route = createFileRoute("/setlists/")({
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/setlists/")({
 function SetlistsPage() {
   const setlists = Route.useLoaderData();
   const { t } = useI18n();
+  const { toast } = useToast();
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -26,7 +28,7 @@ function SetlistsPage() {
       router.invalidate();
     } catch (error) {
       clientLogger.error("deleteSetlist", error);
-      alert(t.common.error);
+      toast.error(t.common.errorDeleteFailed);
     } finally {
       setDeletingId(null);
     }

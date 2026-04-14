@@ -5,6 +5,7 @@ import type { SessionUser } from "../auth/session";
 import { useI18n } from "../i18n";
 import { I18nProvider } from "../i18n/provider";
 import { DEFAULT_LOCALE } from "../i18n/types";
+import { ToastProvider } from "../lib/toast";
 import appCss from "../styles.css?url";
 
 export interface RouterContext {
@@ -94,7 +95,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <I18nProvider initialLocale={locale}>{children}</I18nProvider>
+        <I18nProvider initialLocale={locale}>
+          <ToastProvider>{children}</ToastProvider>
+        </I18nProvider>
         <Scripts />
       </body>
     </html>

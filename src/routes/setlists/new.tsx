@@ -4,6 +4,7 @@ import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { useToast } from "@/lib/toast";
 import { createSetlist } from "@/setlists/server-fns";
 
 export const Route = createFileRoute("/setlists/new")({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/setlists/new")({
 
 function NewSetlistPage() {
   const { t } = useI18n();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
@@ -42,7 +44,7 @@ function NewSetlistPage() {
       navigate({ to: "/setlists/$id", params: { id: result.id } });
     } catch (error) {
       clientLogger.error("createSetlist", error);
-      alert(t.common.error);
+      toast.error(t.common.errorCreateFailed);
     } finally {
       setSaving(false);
     }

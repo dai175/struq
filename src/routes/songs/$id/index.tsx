@@ -16,6 +16,7 @@ import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
+import { useToast } from "@/lib/toast";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { StructurePreview } from "@/songs/components/StructurePreview";
@@ -84,6 +85,7 @@ function SongEditPage() {
   const loaderData = Route.useLoaderData();
   const { id } = Route.useParams();
   const { t } = useI18n();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const router = useRouter();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -226,7 +228,7 @@ function SongEditPage() {
       router.invalidate();
     } catch (error) {
       clientLogger.error("saveSong", error);
-      alert(t.common.error);
+      toast.error(t.common.errorSaveFailed);
     } finally {
       setSaving(false);
     }
@@ -239,7 +241,7 @@ function SongEditPage() {
       navigate({ to: "/songs" });
     } catch (error) {
       clientLogger.error("deleteSong", error);
-      alert(t.common.error);
+      toast.error(t.common.errorDeleteFailed);
     }
   }
 

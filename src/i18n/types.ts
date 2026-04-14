@@ -23,6 +23,10 @@ export interface Translations {
     bars: string;
     barsWithExtra: string;
     extraBeats: string;
+    errorSaveFailed: string;
+    errorDeleteFailed: string;
+    errorCreateFailed: string;
+    errorAddFailed: string;
   };
 
   nav: {

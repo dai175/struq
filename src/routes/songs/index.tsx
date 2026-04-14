@@ -4,6 +4,7 @@ import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { useToast } from "@/lib/toast";
 import { StructurePreview } from "@/songs/components/StructurePreview";
 import { deleteSong, listSongs } from "@/songs/server-fns";
 
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/songs/")({
 function SongsPage() {
   const songs = Route.useLoaderData();
   const { t } = useI18n();
+  const { toast } = useToast();
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -27,7 +29,7 @@ function SongsPage() {
       router.invalidate();
     } catch (error) {
       clientLogger.error("deleteSong", error);
-      alert(t.common.error);
+      toast.error(t.common.errorDeleteFailed);
     } finally {
       setDeletingId(null);
     }

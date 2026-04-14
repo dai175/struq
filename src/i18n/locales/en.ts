@@ -27,6 +27,10 @@ export const en: Translations = {
     bars: "bars",
     barsWithExtra: "{bars} bars + {extra}",
     extraBeats: "Extra beats",
+    errorSaveFailed: "Failed to save",
+    errorDeleteFailed: "Failed to delete",
+    errorCreateFailed: "Failed to create",
+    errorAddFailed: "Failed to add",
   },
   nav: {
     setlists: "Setlists",

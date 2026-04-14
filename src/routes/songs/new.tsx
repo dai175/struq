@@ -4,6 +4,7 @@ import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { useToast } from "@/lib/toast";
 import { createSong } from "@/songs/server-fns";
 
 export const Route = createFileRoute("/songs/new")({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/songs/new")({
 
 function NewSongPage() {
   const { t } = useI18n();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
@@ -46,7 +48,7 @@ function NewSongPage() {
       navigate({ to: "/songs/$id", params: { id: result.id } });
     } catch (error) {
       clientLogger.error("createSong", error);
-      alert(t.common.error);
+      toast.error(t.common.errorCreateFailed);
     } finally {
       setSaving(false);
     }

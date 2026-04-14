@@ -27,6 +27,10 @@ export const ja: Translations = {
     bars: "小節",
     barsWithExtra: "{bars}小節 + {extra}",
     extraBeats: "端数拍",
+    errorSaveFailed: "保存に失敗しました",
+    errorDeleteFailed: "削除に失敗しました",
+    errorCreateFailed: "作成に失敗しました",
+    errorAddFailed: "追加に失敗しました",
   },
   nav: {
     setlists: "セットリスト",

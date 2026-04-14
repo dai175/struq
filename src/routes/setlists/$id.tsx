@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { useToast } from "@/lib/toast";
 import type { SetlistSongItem } from "@/setlists/server-fns";
 import {
   addSongToSetlist,
@@ -51,6 +52,7 @@ function SetlistEditor({
   data: NonNullable<Awaited<ReturnType<typeof getSetlist>>>;
 }) {
   const { t } = useI18n();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const router = useRouter();
 
@@ -125,7 +127,7 @@ function SetlistEditor({
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (error) {
       clientLogger.error("updateSetlist", error);
-      alert(t.common.error);
+      toast.error(t.common.errorSaveFailed);
     } finally {
       setSaving(false);
     }
@@ -138,7 +140,7 @@ function SetlistEditor({
       navigate({ to: "/setlists" });
     } catch (error) {
       clientLogger.error("deleteSetlist", error);
-      alert(t.common.error);
+      toast.error(t.common.errorDeleteFailed);
     }
   }
 
@@ -406,7 +408,7 @@ function SongPickerModal({
       setAvailableSongs((prev) => prev.filter((s) => s.id !== song.id));
     } catch (error) {
       clientLogger.error("addSong", error);
-      alert(t.common.error);
+      toast.error(t.common.errorAddFailed);
     } finally {
       setAddingId(null);
     }
