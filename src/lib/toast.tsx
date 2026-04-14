@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 type ToastVariant = "error" | "success";
@@ -7,6 +7,7 @@ interface ToastItem {
   id: string;
   message: string;
   variant: ToastVariant;
+  timerId: ReturnType<typeof setTimeout>;
 }
 
 interface ToastContextValue {
@@ -30,24 +31,33 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const dismiss = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => {
+      const item = prev.find((t) => t.id === id);
+      if (item) clearTimeout(item.timerId);
+      return prev.filter((t) => t.id !== id);
+    });
   }, []);
 
   const show = useCallback((message: string, variant: ToastVariant) => {
     const id = crypto.randomUUID();
-    setToasts((prev) => {
-      const next = [...prev, { id, message, variant }];
-      return next.slice(-MAX_TOASTS);
-    });
-    setTimeout(() => {
+    const timerId = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, TOAST_DURATION);
+    setToasts((prev) => {
+      const next = [...prev, { id, message, variant, timerId }];
+      const evicted = next.slice(0, next.length - MAX_TOASTS);
+      for (const t of evicted) clearTimeout(t.timerId);
+      return next.slice(-MAX_TOASTS);
+    });
   }, []);
 
-  const toast = {
-    error: (message: string) => show(message, "error"),
-    success: (message: string) => show(message, "success"),
-  };
+  const toast = useMemo(
+    () => ({
+      error: (message: string) => show(message, "error"),
+      success: (message: string) => show(message, "success"),
+    }),
+    [show],
+  );
 
   return (
     <ToastContext.Provider value={{ toast }}>

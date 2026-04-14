@@ -29,9 +29,7 @@ function SongsPage() {
     setDeletingId(id);
     try {
       await deleteSong({ data: { id } });
-      const refreshed = await listSongs({ data: {} });
-      setSongs(refreshed.items);
-      setHasMore(refreshed.hasMore);
+      setSongs((prev) => prev.filter((item) => item.song.id !== id));
       router.invalidate();
     } catch (error) {
       clientLogger.error("deleteSong", error);

@@ -1,6 +1,8 @@
 import type { Database } from "@/db";
 import { schema } from "@/db";
 
+export const RATE_LIMIT_ERROR = "Rate limited";
+
 const COOLDOWN_MS = 10_000; // 10 seconds between AI generation calls per user
 
 export async function checkAiRateLimit(db: Database, userId: string): Promise<boolean> {

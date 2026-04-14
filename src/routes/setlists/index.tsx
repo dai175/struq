@@ -28,9 +28,7 @@ function SetlistsPage() {
     setDeletingId(id);
     try {
       await deleteSetlist({ data: { id } });
-      const refreshed = await listSetlists({ data: {} });
-      setSetlists(refreshed.items);
-      setHasMore(refreshed.hasMore);
+      setSetlists((prev) => prev.filter((item) => item.id !== id));
       router.invalidate();
     } catch (error) {
       clientLogger.error("deleteSetlist", error);
