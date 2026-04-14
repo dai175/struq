@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import { logger } from "@/lib/logger";
+import { checkAiRateLimit } from "@/lib/rate-limit";
 import { isValidUrl } from "@/lib/validation";
 import { now, requireUser } from "@/server/helpers";
 import type { SectionData } from "@/songs/components/SectionCard";
@@ -227,7 +228,11 @@ function normalizeSection(raw: unknown): SectionData {
 export const generateSections = createServerFn({ method: "POST" })
   .inputValidator((input: { title: string; artist: string }) => input)
   .handler(async ({ data }): Promise<SectionData[]> => {
-    await requireUser();
+    const user = await requireUser();
+    const db = getDb(env.DB);
+
+    const allowed = await checkAiRateLimit(db, user.userId);
+    if (!allowed) throw new Error("Rate limited");
 
     const title = data.title.trim();
     if (!title) throw new Error("Title is required");

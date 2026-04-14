@@ -58,6 +58,7 @@ export interface Translations {
     aiError: string;
     aiConfirmReplace: string;
     invalidUrl: string;
+    aiRateLimited: string;
   };
 
   setlist: {

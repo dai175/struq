@@ -103,6 +103,7 @@ function SongEditPage() {
   const [saved, setSaved] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState(false);
+  const [aiRateLimited, setAiRateLimited] = useState(false);
 
   // Sync state when loader data changes (e.g., after router.invalidate)
   useEffect(() => {
@@ -150,6 +151,7 @@ function SongEditPage() {
 
     setAiGenerating(true);
     setAiError(false);
+    setAiRateLimited(false);
     try {
       const sections = await generateSections({
         data: { title: trimmedTitle, artist: artist.trim() },
@@ -157,7 +159,11 @@ function SongEditPage() {
       setSectionsList(sections);
     } catch (error) {
       clientLogger.error("generateSections", error);
-      setAiError(true);
+      if (error instanceof Error && error.message === "Rate limited") {
+        setAiRateLimited(true);
+      } else {
+        setAiError(true);
+      }
     } finally {
       setAiGenerating(false);
     }
@@ -404,6 +410,9 @@ function SongEditPage() {
           <Sparkles size={16} />
           {aiGenerating ? t.common.loading : t.song.aiGenerate}
         </button>
+        {aiRateLimited && (
+          <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{t.song.aiRateLimited}</div>
+        )}
         {aiError && (
           <div className="mt-2 flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
             <span>{t.song.aiError}</span>

@@ -60,6 +60,7 @@ export const ja: Translations = {
     aiError: "構成の生成に失敗しました。再試行するか、手動で入力してください。",
     aiConfirmReplace: "既存のセクションをAI生成で置き換えますか？",
     invalidUrl: "有効なURLを入力してください（http/https）",
+    aiRateLimited: "連続で生成できません。少し待ってからお試しください。",
   },
   setlist: {
     title: "タイトル",

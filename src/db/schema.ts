@@ -68,6 +68,14 @@ export const setlistSongs = sqliteTable(
   (table) => [primaryKey({ columns: [table.setlistId, table.songId] })],
 );
 
+// ─── AI Rate Limits ─────────────────────────────────────
+export const aiRateLimits = sqliteTable("ai_rate_limits", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  lastCalledAt: integer("last_called_at", { mode: "number" }).notNull(),
+});
+
 // ─── Sections ───────────────────────────────────────────
 export const sections = sqliteTable(
   "sections",

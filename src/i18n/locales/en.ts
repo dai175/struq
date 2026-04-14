@@ -60,6 +60,7 @@ export const en: Translations = {
     aiError: "Failed to generate structure. Please retry or input manually.",
     aiConfirmReplace: "Replace existing sections with AI-generated structure?",
     invalidUrl: "Please enter a valid URL (http/https)",
+    aiRateLimited: "Please wait a moment before generating again.",
   },
   setlist: {
     title: "Title",
