@@ -16,6 +16,7 @@ import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
+import { RATE_LIMIT_ERROR } from "@/lib/rate-limit";
 import { useToast } from "@/lib/toast";
 import { isValidUrl } from "@/lib/validation";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
@@ -159,7 +160,7 @@ function SongEditPage() {
       setSectionsList(sections);
     } catch (error) {
       clientLogger.error("generateSections", error);
-      if (error instanceof Error && error.message === "Rate limited") {
+      if (error instanceof Error && error.message === RATE_LIMIT_ERROR) {
         setAiRateLimited(true);
       } else {
         setAiError(true);
