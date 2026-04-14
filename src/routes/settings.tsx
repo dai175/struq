@@ -4,6 +4,7 @@ import { useState } from "react";
 import { logout, requireAuth, updateLocale } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
+import { clientLogger } from "@/lib/client-logger";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: requireAuth,
@@ -28,7 +29,7 @@ function SettingsPage() {
       await logoutFn();
       router.navigate({ to: "/login" });
     } catch (error) {
-      console.error("Logout failed:", error);
+      clientLogger.error("logout", error);
     }
   };
 
@@ -39,7 +40,7 @@ function SettingsPage() {
     try {
       await updateLocaleFn({ data: { locale: newLocale } });
     } catch (error) {
-      console.error("Failed to update locale:", error);
+      clientLogger.error("updateLocale", error);
       setLocale(locale);
     } finally {
       setLocaleUpdating(false);

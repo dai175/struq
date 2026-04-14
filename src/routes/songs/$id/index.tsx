@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
+import { clientLogger } from "@/lib/client-logger";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { StructurePreview } from "@/songs/components/StructurePreview";
@@ -151,7 +152,7 @@ function SongEditPage() {
       });
       setSectionsList(sections);
     } catch (error) {
-      console.error("Failed to generate sections:", error);
+      clientLogger.error("generateSections", error);
       setAiError(true);
     } finally {
       setAiGenerating(false);
@@ -224,7 +225,7 @@ function SongEditPage() {
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       router.invalidate();
     } catch (error) {
-      console.error("Failed to save song:", error);
+      clientLogger.error("saveSong", error);
       alert(t.common.error);
     } finally {
       setSaving(false);
@@ -237,7 +238,7 @@ function SongEditPage() {
       await deleteSong({ data: { id } });
       navigate({ to: "/songs" });
     } catch (error) {
-      console.error("Failed to delete song:", error);
+      clientLogger.error("deleteSong", error);
       alert(t.common.error);
     }
   }

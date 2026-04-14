@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
+import { clientLogger } from "@/lib/client-logger";
 import { createSetlist } from "@/setlists/server-fns";
 
 export const Route = createFileRoute("/setlists/new")({
@@ -40,7 +41,7 @@ function NewSetlistPage() {
       });
       navigate({ to: "/setlists/$id", params: { id: result.id } });
     } catch (error) {
-      console.error("Failed to create setlist:", error);
+      clientLogger.error("createSetlist", error);
       alert(t.common.error);
     } finally {
       setSaving(false);

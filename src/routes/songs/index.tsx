@@ -3,6 +3,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
+import { clientLogger } from "@/lib/client-logger";
 import { StructurePreview } from "@/songs/components/StructurePreview";
 import { deleteSong, listSongs } from "@/songs/server-fns";
 
@@ -25,7 +26,7 @@ function SongsPage() {
       await deleteSong({ data: { id } });
       router.invalidate();
     } catch (error) {
-      console.error("Failed to delete song:", error);
+      clientLogger.error("deleteSong", error);
       alert(t.common.error);
     } finally {
       setDeletingId(null);

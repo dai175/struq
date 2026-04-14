@@ -14,6 +14,7 @@ import { ArrowLeft, GripVertical, Music, Play, Plus, Trash2, X } from "lucide-re
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
+import { clientLogger } from "@/lib/client-logger";
 import type { SetlistSongItem } from "@/setlists/server-fns";
 import {
   addSongToSetlist,
@@ -123,7 +124,7 @@ function SetlistEditor({
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (error) {
-      console.error("Failed to update setlist:", error);
+      clientLogger.error("updateSetlist", error);
       alert(t.common.error);
     } finally {
       setSaving(false);
@@ -136,7 +137,7 @@ function SetlistEditor({
       await deleteSetlist({ data: { id: setlistId } });
       navigate({ to: "/setlists" });
     } catch (error) {
-      console.error("Failed to delete setlist:", error);
+      clientLogger.error("deleteSetlist", error);
       alert(t.common.error);
     }
   }
@@ -146,7 +147,7 @@ function SetlistEditor({
     try {
       await removeSongFromSetlist({ data: { setlistId, songId } });
     } catch (error) {
-      console.error("Failed to remove song from setlist:", error);
+      clientLogger.error("removeSong", error);
       // Revert on error
       router.invalidate();
     }
@@ -404,7 +405,7 @@ function SongPickerModal({
       onAdd(song);
       setAvailableSongs((prev) => prev.filter((s) => s.id !== song.id));
     } catch (error) {
-      console.error("Failed to add song to setlist:", error);
+      clientLogger.error("addSong", error);
       alert(t.common.error);
     } finally {
       setAddingId(null);

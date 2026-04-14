@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
+import { clientLogger } from "@/lib/client-logger";
 import { createSong } from "@/songs/server-fns";
 
 export const Route = createFileRoute("/songs/new")({
@@ -44,7 +45,7 @@ function NewSongPage() {
       });
       navigate({ to: "/songs/$id", params: { id: result.id } });
     } catch (error) {
-      console.error("Failed to create song:", error);
+      clientLogger.error("createSong", error);
       alert(t.common.error);
     } finally {
       setSaving(false);

@@ -3,6 +3,7 @@ import { Calendar, MapPin, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
+import { clientLogger } from "@/lib/client-logger";
 import { deleteSetlist, listSetlists } from "@/setlists/server-fns";
 
 export const Route = createFileRoute("/setlists/")({
@@ -24,7 +25,7 @@ function SetlistsPage() {
       await deleteSetlist({ data: { id } });
       router.invalidate();
     } catch (error) {
-      console.error("Failed to delete setlist:", error);
+      clientLogger.error("deleteSetlist", error);
       alert(t.common.error);
     } finally {
       setDeletingId(null);
