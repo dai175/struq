@@ -25,7 +25,7 @@
 | Styling | Tailwind CSS v4 |
 | Language | TypeScript |
 | Linter / Formatter | Biome |
-| Testing | Vitest |
+| Testing | Vitest (unit) + Playwright (E2E) |
 
 ## Getting Started
 
@@ -72,7 +72,9 @@ pnpm dev   # http://localhost:3000
 | `pnpm build` | プロダクションビルド |
 | `pnpm preview` | ビルド → ローカルプレビュー |
 | `pnpm deploy` | ビルド → Cloudflare にデプロイ |
-| `pnpm test` | テスト実行 (Vitest) |
+| `pnpm test` | ユニットテスト実行 (Vitest) |
+| `pnpm test:e2e` | E2E テスト実行 (Playwright) |
+| `pnpm typecheck` | TypeScript 型チェック |
 | `pnpm lint` | Biome でリント |
 | `pnpm lint:fix` | リント自動修正 |
 | `pnpm format` | Biome でフォーマット |
