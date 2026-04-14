@@ -6,7 +6,6 @@ import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { createSongInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
-import { isValidUrl } from "@/lib/validation";
 import { createSong } from "@/songs/server-fns";
 
 export const Route = createFileRoute("/songs/new")({
@@ -30,17 +29,6 @@ function NewSongPage() {
 
   async function handleSave() {
     const trimmed = title.trim();
-    if (!trimmed) {
-      setTitleError(true);
-      return;
-    }
-
-    const trimmedUrl = referenceUrl.trim();
-    if (trimmedUrl && !isValidUrl(trimmedUrl)) {
-      setUrlError(true);
-      return;
-    }
-
     const parsedBpm = bpm ? parseInt(bpm, 10) : undefined;
     const payload = {
       title: trimmed,

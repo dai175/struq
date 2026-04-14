@@ -103,11 +103,6 @@ function SetlistEditor({
 
   async function handleSave() {
     const trimmed = title.trim();
-    if (!trimmed) {
-      setTitleError(true);
-      return;
-    }
-
     const parsedSetlistInput = updateSetlistInputSchema.safeParse({
       id: setlistId,
       title: trimmed,

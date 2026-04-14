@@ -197,17 +197,6 @@ function SongEditPage() {
 
   async function handleSave() {
     const trimmed = title.trim();
-    if (!trimmed) {
-      setTitleError(true);
-      return;
-    }
-
-    const trimmedUrl = referenceUrl.trim();
-    if (trimmedUrl && !isValidUrl(trimmedUrl)) {
-      setUrlError(true);
-      return;
-    }
-
     const parsedBpm = bpm ? parseInt(bpm, 10) : undefined;
 
     const parsedSongInput = updateSongInputSchema.safeParse({

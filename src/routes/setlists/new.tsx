@@ -27,11 +27,6 @@ function NewSetlistPage() {
 
   async function handleSave() {
     const trimmed = title.trim();
-    if (!trimmed) {
-      setTitleError(true);
-      return;
-    }
-
     const payload = {
       title: trimmed,
       description: description.trim() || undefined,
