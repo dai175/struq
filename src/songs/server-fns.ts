@@ -48,7 +48,7 @@ export const listSongs = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<{ items: { song: SongRow; sections: SectionRow[] }[]; hasMore: boolean }> => {
     const user = await requireUser();
     const db = getDb(env.DB);
-    const offset = data.offset ?? 0;
+    const offset = Math.max(0, data.offset ?? 0);
 
     const rows = await db
       .select(songColumns)

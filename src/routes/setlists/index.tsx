@@ -46,6 +46,7 @@ function SetlistsPage() {
       setHasMore(next.hasMore);
     } catch (error) {
       clientLogger.error("loadMoreSetlists", error);
+      toast.error(t.common.errorLoadFailed);
     } finally {
       setLoadingMore(false);
     }

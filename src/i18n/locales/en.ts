@@ -31,6 +31,7 @@ export const en: Translations = {
     errorDeleteFailed: "Failed to delete",
     errorCreateFailed: "Failed to create",
     errorAddFailed: "Failed to add",
+    errorLoadFailed: "Failed to load",
     loadMore: "Load more",
   },
   nav: {

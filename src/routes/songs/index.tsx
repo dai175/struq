@@ -47,6 +47,7 @@ function SongsPage() {
       setHasMore(next.hasMore);
     } catch (error) {
       clientLogger.error("loadMoreSongs", error);
+      toast.error(t.common.errorLoadFailed);
     } finally {
       setLoadingMore(false);
     }

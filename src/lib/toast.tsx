@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type ToastVariant = "error" | "success";
@@ -25,9 +25,17 @@ const MAX_TOASTS = 3;
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [mounted, setMounted] = useState(false);
+  const toastsRef = useRef<ToastItem[]>([]);
+
+  useEffect(() => {
+    toastsRef.current = toasts;
+  }, [toasts]);
 
   useEffect(() => {
     setMounted(true);
+    return () => {
+      for (const t of toastsRef.current) clearTimeout(t.timerId);
+    };
   }, []);
 
   const dismiss = useCallback((id: string) => {

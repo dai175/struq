@@ -1,28 +1,30 @@
+import { sql } from "drizzle-orm";
 import type { Database } from "@/db";
 import { schema } from "@/db";
 
 export const RATE_LIMIT_ERROR = "Rate limited";
 
-const COOLDOWN_MS = 10_000; // 10 seconds between AI generation calls per user
+// Per-user cooldown for AI generation calls.
+// Uses a single atomic INSERT ... ON CONFLICT DO UPDATE SET ... WHERE ... RETURNING
+// to avoid a TOCTOU race between the read and write.
+const COOLDOWN_MS = 10_000;
 
 export async function checkAiRateLimit(db: Database, userId: string): Promise<boolean> {
   const now = Date.now();
+  const cutoff = now - COOLDOWN_MS;
 
-  const existing = await db.query.aiRateLimits.findFirst({
-    where: (t, { eq }) => eq(t.userId, userId),
-  });
-
-  if (existing && now - existing.lastCalledAt < COOLDOWN_MS) {
-    return false;
-  }
-
-  await db
+  // Atomic upsert: only overwrite last_called_at when the cooldown window has elapsed.
+  // If the DO UPDATE WHERE condition is false (still in cooldown), SQLite resolves the
+  // conflict as a no-op and RETURNING returns 0 rows → rate limited.
+  const rows = await db
     .insert(schema.aiRateLimits)
     .values({ userId, lastCalledAt: now })
     .onConflictDoUpdate({
       target: schema.aiRateLimits.userId,
       set: { lastCalledAt: now },
-    });
+      setWhere: sql`${schema.aiRateLimits.lastCalledAt} <= ${cutoff}`,
+    })
+    .returning({ lastCalledAt: schema.aiRateLimits.lastCalledAt });
 
-  return true;
+  return rows.length > 0;
 }

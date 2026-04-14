@@ -20,7 +20,7 @@ export const songs = sqliteTable(
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     artist: text("artist"),
     bpm: integer("bpm"),
@@ -40,7 +40,7 @@ export const setlists = sqliteTable(
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: text("description"),
     sessionDate: text("session_date"),
@@ -72,7 +72,7 @@ export const setlistSongs = sqliteTable(
 export const aiRateLimits = sqliteTable("ai_rate_limits", {
   userId: text("user_id")
     .primaryKey()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
   lastCalledAt: integer("last_called_at", { mode: "number" }).notNull(),
 });
 
@@ -83,7 +83,7 @@ export const sections = sqliteTable(
     id: text("id").primaryKey(),
     songId: text("song_id")
       .notNull()
-      .references(() => songs.id),
+      .references(() => songs.id, { onDelete: "cascade" }),
     type: text("type", { enum: SECTION_TYPES }).notNull(),
     label: text("label"),
     bars: integer("bars").notNull().default(8),

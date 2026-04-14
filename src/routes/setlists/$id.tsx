@@ -381,6 +381,7 @@ function SongPickerModal({
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  const { toast } = useToast();
   const [availableSongs, setAvailableSongs] = useState<{ id: string; title: string; artist: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
