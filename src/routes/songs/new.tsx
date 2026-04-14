@@ -4,6 +4,7 @@ import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { createSongInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { isValidUrl } from "@/lib/validation";
 import { createSong } from "@/songs/server-fns";
@@ -41,17 +42,26 @@ function NewSongPage() {
     }
 
     const parsedBpm = bpm ? parseInt(bpm, 10) : undefined;
+    const payload = {
+      title: trimmed,
+      artist: artist.trim() || undefined,
+      bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
+      key: key.trim() || undefined,
+      referenceUrl: referenceUrl.trim() || undefined,
+    };
+    const parsed = createSongInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      const hasTitleIssue = parsed.error.issues.some((issue) => issue.path[0] === "title");
+      const hasUrlIssue = parsed.error.issues.some((issue) => issue.path[0] === "referenceUrl");
+      if (hasTitleIssue) setTitleError(true);
+      if (hasUrlIssue) setUrlError(true);
+      return;
+    }
 
     setSaving(true);
     try {
       const result = await createSong({
-        data: {
-          title: trimmed,
-          artist: artist.trim() || undefined,
-          bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
-          key: key.trim() || undefined,
-          referenceUrl: referenceUrl.trim() || undefined,
-        },
+        data: parsed.data,
       });
       navigate({ to: "/songs/$id", params: { id: result.id } });
     } catch (error) {

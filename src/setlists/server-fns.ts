@@ -3,6 +3,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, eq, isNull, max, sql } from "drizzle-orm";
 import type { Database } from "@/db";
 import { getDb, schema } from "@/db";
+import {
+  createSetlistInputSchema,
+  deleteByIdInputSchema,
+  listInputSchema,
+  reorderSetlistSongsInputSchema,
+  setlistIdInputSchema,
+  setlistSongPairInputSchema,
+  updateSetlistInputSchema,
+} from "@/lib/schemas";
 import { now, requireUser } from "@/server/helpers";
 
 // ─── Types ──────────────────────────────────────────────
@@ -48,7 +57,7 @@ async function requireSetlistOwner(db: Database, setlistId: string, userId: stri
 const LIST_SETLISTS_LIMIT = 30;
 
 export const listSetlists = createServerFn({ method: "GET" })
-  .inputValidator((input: { offset?: number } | undefined) => input ?? {})
+  .inputValidator((input: { offset?: number } | undefined) => listInputSchema.parse(input ?? {}))
   .handler(async ({ data }): Promise<{ items: SetlistWithSongCount[]; hasMore: boolean }> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -75,7 +84,7 @@ export const listSetlists = createServerFn({ method: "GET" })
 // ─── getSetlist ────────────────────────────────────────
 
 export const getSetlist = createServerFn({ method: "GET" })
-  .inputValidator((input: { setlistId: string }) => input)
+  .inputValidator((input: { setlistId: string }) => setlistIdInputSchema.parse(input))
   .handler(
     async ({
       data,
@@ -119,7 +128,9 @@ export const getSetlist = createServerFn({ method: "GET" })
 // ─── createSetlist ─────────────────────────────────────
 
 export const createSetlist = createServerFn({ method: "POST" })
-  .inputValidator((input: { title: string; description?: string; sessionDate?: string; venue?: string }) => input)
+  .inputValidator((input: { title: string; description?: string; sessionDate?: string; venue?: string }) =>
+    createSetlistInputSchema.parse(input),
+  )
   .handler(async ({ data }): Promise<{ id: string }> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -154,8 +165,8 @@ export const createSetlist = createServerFn({ method: "POST" })
 // ─── updateSetlist ─────────────────────────────────────
 
 export const updateSetlist = createServerFn({ method: "POST" })
-  .inputValidator(
-    (input: { id: string; title: string; description?: string; sessionDate?: string; venue?: string }) => input,
+  .inputValidator((input: { id: string; title: string; description?: string; sessionDate?: string; venue?: string }) =>
+    updateSetlistInputSchema.parse(input),
   )
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
@@ -185,7 +196,7 @@ export const updateSetlist = createServerFn({ method: "POST" })
 // ─── deleteSetlist ─────────────────────────────────────
 
 export const deleteSetlist = createServerFn({ method: "POST" })
-  .inputValidator((input: { id: string }) => input)
+  .inputValidator((input: { id: string }) => deleteByIdInputSchema.parse(input))
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -208,7 +219,7 @@ export const deleteSetlist = createServerFn({ method: "POST" })
 // ─── addSongToSetlist ──────────────────────────────────
 
 export const addSongToSetlist = createServerFn({ method: "POST" })
-  .inputValidator((input: { setlistId: string; songId: string }) => input)
+  .inputValidator((input: { setlistId: string; songId: string }) => setlistSongPairInputSchema.parse(input))
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -245,7 +256,7 @@ export const addSongToSetlist = createServerFn({ method: "POST" })
 // ─── removeSongFromSetlist ─────────────────────────────
 
 export const removeSongFromSetlist = createServerFn({ method: "POST" })
-  .inputValidator((input: { setlistId: string; songId: string }) => input)
+  .inputValidator((input: { setlistId: string; songId: string }) => setlistSongPairInputSchema.parse(input))
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -260,7 +271,7 @@ export const removeSongFromSetlist = createServerFn({ method: "POST" })
 // ─── reorderSetlistSongs ───────────────────────────────
 
 export const reorderSetlistSongs = createServerFn({ method: "POST" })
-  .inputValidator((input: { setlistId: string; songIds: string[] }) => input)
+  .inputValidator((input: { setlistId: string; songIds: string[] }) => reorderSetlistSongsInputSchema.parse(input))
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -291,7 +302,7 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
 // ─── listSongsForPicker ───────────────────────────────
 
 export const listSongsForPicker = createServerFn({ method: "GET" })
-  .inputValidator((input: { setlistId: string }) => input)
+  .inputValidator((input: { setlistId: string }) => setlistIdInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ id: string; title: string; artist: string | null }[]> => {
     const user = await requireUser();
     const db = getDb(env.DB);

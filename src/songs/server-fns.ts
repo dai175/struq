@@ -5,6 +5,16 @@ import { getDb, schema } from "@/db";
 import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import { logger } from "@/lib/logger";
 import { checkAiRateLimit, RATE_LIMIT_ERROR } from "@/lib/rate-limit";
+import {
+  aiSectionsSchema,
+  createSongInputSchema,
+  deleteByIdInputSchema,
+  generateSectionsInputSchema,
+  listInputSchema,
+  saveSectionsInputSchema,
+  songIdInputSchema,
+  updateSongInputSchema,
+} from "@/lib/schemas";
 import { isValidUrl } from "@/lib/validation";
 import { now, requireUser } from "@/server/helpers";
 import type { SectionData } from "@/songs/components/SectionCard";
@@ -44,7 +54,7 @@ const sectionColumns = {
 const LIST_SONGS_LIMIT = 30;
 
 export const listSongs = createServerFn({ method: "GET" })
-  .inputValidator((input: { offset?: number } | undefined) => input ?? {})
+  .inputValidator((input: { offset?: number } | undefined) => listInputSchema.parse(input ?? {}))
   .handler(async ({ data }): Promise<{ items: { song: SongRow; sections: SectionRow[] }[]; hasMore: boolean }> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -86,7 +96,7 @@ export const listSongs = createServerFn({ method: "GET" })
 // ─── getSongWithSections ────────────────────────────────
 
 export const getSongWithSections = createServerFn({ method: "GET" })
-  .inputValidator((input: { songId: string }) => input)
+  .inputValidator((input: { songId: string }) => songIdInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ song: SongRow; sections: SectionRow[] } | null> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -113,8 +123,8 @@ export const getSongWithSections = createServerFn({ method: "GET" })
 // ─── createSong ─────────────────────────────────────────
 
 export const createSong = createServerFn({ method: "POST" })
-  .inputValidator(
-    (input: { title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string }) => input,
+  .inputValidator((input: { title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string }) =>
+    createSongInputSchema.parse(input),
   )
   .handler(async ({ data }): Promise<{ id: string }> => {
     const user = await requireUser();
@@ -145,7 +155,8 @@ export const createSong = createServerFn({ method: "POST" })
 
 export const updateSong = createServerFn({ method: "POST" })
   .inputValidator(
-    (input: { id: string; title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string }) => input,
+    (input: { id: string; title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string }) =>
+      updateSongInputSchema.parse(input),
   )
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
@@ -171,7 +182,7 @@ export const updateSong = createServerFn({ method: "POST" })
 // ─── deleteSong ─────────────────────────────────────────
 
 export const deleteSong = createServerFn({ method: "POST" })
-  .inputValidator((input: { id: string }) => input)
+  .inputValidator((input: { id: string }) => deleteByIdInputSchema.parse(input))
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -234,7 +245,7 @@ function normalizeSection(raw: unknown): SectionData {
 }
 
 export const generateSections = createServerFn({ method: "POST" })
-  .inputValidator((input: { title: string; artist: string }) => input)
+  .inputValidator((input: { title: string; artist: string }) => generateSectionsInputSchema.parse(input))
   .handler(async ({ data }): Promise<SectionData[]> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -297,12 +308,16 @@ Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"t
       throw new Error("Invalid JSON response from AI");
     }
 
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      logger.warn("AI returned empty or invalid structure", { parsed: JSON.stringify(parsed).slice(0, 200) });
+    const aiParse = aiSectionsSchema.safeParse(parsed);
+    if (!aiParse.success) {
+      logger.warn("AI returned empty or invalid structure", {
+        parsed: JSON.stringify(parsed).slice(0, 200),
+        issues: aiParse.error.issues.map((issue) => issue.message).join(", "),
+      });
       throw new Error("AI returned empty or invalid structure");
     }
 
-    return parsed.slice(0, 50).map(normalizeSection);
+    return aiParse.data.map(normalizeSection);
   });
 
 // ─── saveSections ───────────────────────────────────────
@@ -320,7 +335,7 @@ export const saveSections = createServerFn({ method: "POST" })
         memo?: string | null;
         sortOrder: number;
       }>;
-    }) => input,
+    }) => saveSectionsInputSchema.parse(input),
   )
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();

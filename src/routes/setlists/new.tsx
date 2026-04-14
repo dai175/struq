@@ -4,6 +4,7 @@ import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { createSetlistInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { createSetlist } from "@/setlists/server-fns";
 
@@ -31,15 +32,23 @@ function NewSetlistPage() {
       return;
     }
 
+    const payload = {
+      title: trimmed,
+      description: description.trim() || undefined,
+      sessionDate: sessionDate || undefined,
+      venue: venue.trim() || undefined,
+    };
+    const parsed = createSetlistInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      const hasTitleIssue = parsed.error.issues.some((issue) => issue.path[0] === "title");
+      if (hasTitleIssue) setTitleError(true);
+      return;
+    }
+
     setSaving(true);
     try {
       const result = await createSetlist({
-        data: {
-          title: trimmed,
-          description: description.trim() || undefined,
-          sessionDate: sessionDate || undefined,
-          venue: venue.trim() || undefined,
-        },
+        data: parsed.data,
       });
       navigate({ to: "/setlists/$id", params: { id: result.id } });
     } catch (error) {

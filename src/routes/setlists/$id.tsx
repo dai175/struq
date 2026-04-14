@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { reorderSetlistSongsInputSchema, updateSetlistInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import type { SetlistSongItem } from "@/setlists/server-fns";
 import {
@@ -107,23 +108,36 @@ function SetlistEditor({
       return;
     }
 
+    const parsedSetlistInput = updateSetlistInputSchema.safeParse({
+      id: setlistId,
+      title: trimmed,
+      description: description.trim() || undefined,
+      sessionDate: sessionDate || undefined,
+      venue: venue.trim() || undefined,
+    });
+    if (!parsedSetlistInput.success) {
+      const hasTitleIssue = parsedSetlistInput.error.issues.some((issue) => issue.path[0] === "title");
+      if (hasTitleIssue) setTitleError(true);
+      return;
+    }
+
+    const parsedReorderInput = reorderSetlistSongsInputSchema.safeParse({
+      setlistId,
+      songIds: songs.map((s) => s.songId),
+    });
+    if (!parsedReorderInput.success) {
+      toast.error(t.common.errorSaveFailed);
+      return;
+    }
+
     setSaving(true);
     try {
       await Promise.all([
         updateSetlist({
-          data: {
-            id: setlistId,
-            title: trimmed,
-            description: description.trim() || undefined,
-            sessionDate: sessionDate || undefined,
-            venue: venue.trim() || undefined,
-          },
+          data: parsedSetlistInput.data,
         }),
         reorderSetlistSongs({
-          data: {
-            setlistId,
-            songIds: songs.map((s) => s.songId),
-          },
+          data: parsedReorderInput.data,
         }),
       ]);
       setSaved(true);

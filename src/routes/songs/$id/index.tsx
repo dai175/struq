@@ -17,6 +17,7 @@ import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
 import { RATE_LIMIT_ERROR } from "@/lib/rate-limit";
+import { generateSectionsInputSchema, saveSectionsInputSchema, updateSongInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { isValidUrl } from "@/lib/validation";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
@@ -154,8 +155,9 @@ function SongEditPage() {
     setAiError(false);
     setAiRateLimited(false);
     try {
+      const aiInput = generateSectionsInputSchema.parse({ title: trimmedTitle, artist: artist.trim() });
       const sections = await generateSections({
-        data: { title: trimmedTitle, artist: artist.trim() },
+        data: aiInput,
       });
       setSectionsList(sections);
     } catch (error) {
@@ -208,32 +210,47 @@ function SongEditPage() {
 
     const parsedBpm = bpm ? parseInt(bpm, 10) : undefined;
 
+    const parsedSongInput = updateSongInputSchema.safeParse({
+      id,
+      title: trimmed,
+      artist: artist.trim() || undefined,
+      bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
+      key: key.trim() || undefined,
+      referenceUrl: referenceUrl.trim() || undefined,
+    });
+    if (!parsedSongInput.success) {
+      const hasTitleIssue = parsedSongInput.error.issues.some((issue) => issue.path[0] === "title");
+      const hasUrlIssue = parsedSongInput.error.issues.some((issue) => issue.path[0] === "referenceUrl");
+      if (hasTitleIssue) setTitleError(true);
+      if (hasUrlIssue) setUrlError(true);
+      return;
+    }
+
+    const parsedSectionsInput = saveSectionsInputSchema.safeParse({
+      songId: id,
+      sections: sectionsList.map((s, i) => ({
+        type: s.type,
+        label: s.label,
+        bars: s.bars,
+        extraBeats: s.extraBeats,
+        chordProgression: s.chordProgression,
+        memo: s.memo,
+        sortOrder: i,
+      })),
+    });
+    if (!parsedSectionsInput.success) {
+      toast.error(t.common.errorSaveFailed);
+      return;
+    }
+
     setSaving(true);
     try {
       await Promise.all([
         updateSong({
-          data: {
-            id,
-            title: trimmed,
-            artist: artist.trim() || undefined,
-            bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
-            key: key.trim() || undefined,
-            referenceUrl: referenceUrl.trim() || undefined,
-          },
+          data: parsedSongInput.data,
         }),
         saveSections({
-          data: {
-            songId: id,
-            sections: sectionsList.map((s, i) => ({
-              type: s.type,
-              label: s.label,
-              bars: s.bars,
-              extraBeats: s.extraBeats,
-              chordProgression: s.chordProgression,
-              memo: s.memo,
-              sortOrder: i,
-            })),
-          },
+          data: parsedSectionsInput.data,
         }),
       ]);
 
