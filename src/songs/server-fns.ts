@@ -263,13 +263,17 @@ Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"t
         headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+          },
         }),
         signal: AbortSignal.timeout(30_000),
       },
     );
 
     if (!response.ok) {
-      logger.error("Gemini API error", { status: response.status });
+      const errorBody = await response.text();
+      logger.error("Gemini API error", { status: response.status, body: errorBody });
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
@@ -285,14 +289,11 @@ Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"t
       throw new Error("No response from AI");
     }
 
-    // Strip markdown code fences if present
-    const jsonStr = text.replace(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/, "$1").trim();
-
     let parsed: unknown;
     try {
-      parsed = JSON.parse(jsonStr);
+      parsed = JSON.parse(text);
     } catch {
-      logger.error("Invalid JSON response from AI", { raw: jsonStr.slice(0, 200) });
+      logger.error("Invalid JSON response from AI", { raw: text.slice(0, 200) });
       throw new Error("Invalid JSON response from AI");
     }
 
