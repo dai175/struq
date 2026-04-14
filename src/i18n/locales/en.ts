@@ -59,6 +59,7 @@ export const en: Translations = {
     chordProgression: "Chords",
     aiError: "Failed to generate structure. Please retry or input manually.",
     aiConfirmReplace: "Replace existing sections with AI-generated structure?",
+    invalidUrl: "Please enter a valid URL (http/https)",
   },
   setlist: {
     title: "Title",

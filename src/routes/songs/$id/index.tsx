@@ -17,6 +17,7 @@ import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
+import { isValidUrl } from "@/lib/validation";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { StructurePreview } from "@/songs/components/StructurePreview";
@@ -96,6 +97,7 @@ function SongEditPage() {
   const [key, setKey] = useState(loaderData.song.key ?? "");
   const [referenceUrl, setReferenceUrl] = useState(loaderData.song.referenceUrl ?? "");
   const [titleError, setTitleError] = useState(false);
+  const [urlError, setUrlError] = useState(false);
   const [sectionsList, setSectionsList] = useState<SectionData[]>(loaderData.sections.map(toSectionData));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -188,6 +190,12 @@ function SongEditPage() {
     const trimmed = title.trim();
     if (!trimmed) {
       setTitleError(true);
+      return;
+    }
+
+    const trimmedUrl = referenceUrl.trim();
+    if (trimmedUrl && !isValidUrl(trimmedUrl)) {
+      setUrlError(true);
       return;
     }
 
@@ -350,11 +358,17 @@ function SongEditPage() {
               id="song-reference-url"
               type="url"
               value={referenceUrl}
-              onChange={(e) => setReferenceUrl(e.target.value)}
+              onChange={(e) => {
+                setReferenceUrl(e.target.value);
+                if (urlError) setUrlError(false);
+              }}
               placeholder="https://..."
-              className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm focus:border-gray-400 focus:outline-none"
+              aria-describedby={urlError ? "song-reference-url-error" : undefined}
+              className={`min-w-0 flex-1 rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
+                urlError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
+              }`}
             />
-            {referenceUrl.trim() && (
+            {isValidUrl(referenceUrl.trim()) && (
               <a
                 href={referenceUrl.trim()}
                 target="_blank"
@@ -366,6 +380,11 @@ function SongEditPage() {
               </a>
             )}
           </div>
+          {urlError && (
+            <p id="song-reference-url-error" className="mt-1 text-xs text-red-500">
+              {t.song.invalidUrl}
+            </p>
+          )}
         </div>
       </div>
 

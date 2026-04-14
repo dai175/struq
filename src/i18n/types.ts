@@ -57,6 +57,7 @@ export interface Translations {
     chordProgression: string;
     aiError: string;
     aiConfirmReplace: string;
+    invalidUrl: string;
   };
 
   setlist: {

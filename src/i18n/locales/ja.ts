@@ -59,6 +59,7 @@ export const ja: Translations = {
     chordProgression: "コード進行",
     aiError: "構成の生成に失敗しました。再試行するか、手動で入力してください。",
     aiConfirmReplace: "既存のセクションをAI生成で置き換えますか？",
+    invalidUrl: "有効なURLを入力してください（http/https）",
   },
   setlist: {
     title: "タイトル",

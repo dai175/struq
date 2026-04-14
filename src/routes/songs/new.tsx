@@ -5,6 +5,7 @@ import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
+import { isValidUrl } from "@/lib/validation";
 import { createSong } from "@/songs/server-fns";
 
 export const Route = createFileRoute("/songs/new")({
@@ -23,12 +24,19 @@ function NewSongPage() {
   const [key, setKey] = useState("");
   const [referenceUrl, setReferenceUrl] = useState("");
   const [titleError, setTitleError] = useState(false);
+  const [urlError, setUrlError] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     const trimmed = title.trim();
     if (!trimmed) {
       setTitleError(true);
+      return;
+    }
+
+    const trimmedUrl = referenceUrl.trim();
+    if (trimmedUrl && !isValidUrl(trimmedUrl)) {
+      setUrlError(true);
       return;
     }
 
@@ -142,10 +150,21 @@ function NewSongPage() {
             id="song-ref-url"
             type="url"
             value={referenceUrl}
-            onChange={(e) => setReferenceUrl(e.target.value)}
+            onChange={(e) => {
+              setReferenceUrl(e.target.value);
+              if (urlError) setUrlError(false);
+            }}
             placeholder="https://..."
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm focus:border-gray-400 focus:outline-none"
+            aria-describedby={urlError ? "song-ref-url-error" : undefined}
+            className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
+              urlError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
+            }`}
           />
+          {urlError && (
+            <p id="song-ref-url-error" className="mt-1 text-xs text-red-500">
+              {t.song.invalidUrl}
+            </p>
+          )}
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import { logger } from "@/lib/logger";
+import { isValidUrl } from "@/lib/validation";
 import { now, requireUser } from "@/server/helpers";
 import type { SectionData } from "@/songs/components/SectionCard";
 import { DEFAULT_BARS } from "@/songs/constants";
@@ -123,7 +124,7 @@ export const createSong = createServerFn({ method: "POST" })
       artist: data.artist?.trim() || null,
       bpm: data.bpm ?? null,
       key: data.key?.trim() || null,
-      referenceUrl: data.referenceUrl?.trim() || null,
+      referenceUrl: data.referenceUrl?.trim() && isValidUrl(data.referenceUrl.trim()) ? data.referenceUrl.trim() : null,
       createdAt: timestamp,
       updatedAt: timestamp,
     });
@@ -151,7 +152,8 @@ export const updateSong = createServerFn({ method: "POST" })
         artist: data.artist?.trim() || null,
         bpm: data.bpm ?? null,
         key: data.key?.trim() || null,
-        referenceUrl: data.referenceUrl?.trim() || null,
+        referenceUrl:
+          data.referenceUrl?.trim() && isValidUrl(data.referenceUrl.trim()) ? data.referenceUrl.trim() : null,
         updatedAt: now(),
       })
       .where(and(eq(schema.songs.id, data.id), eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)));
