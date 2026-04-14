@@ -29,15 +29,18 @@ export const Route = createFileRoute("/api/auth/test-login")({
 
         if (!user) {
           const id = crypto.randomUUID();
-          await db.insert(schema.users).values({
-            id,
-            googleId: testGoogleId,
-            email: testEmail,
-            name: "E2E Test User",
-            avatarUrl: null,
-            locale: "en",
-            createdAt: now(),
-          });
+          await db
+            .insert(schema.users)
+            .values({
+              id,
+              googleId: testGoogleId,
+              email: testEmail,
+              name: "E2E Test User",
+              avatarUrl: null,
+              locale: "en",
+              createdAt: now(),
+            })
+            .onConflictDoNothing();
           user = await db.query.users.findFirst({
             where: eq(schema.users.googleId, testGoogleId),
           });
