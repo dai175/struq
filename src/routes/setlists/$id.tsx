@@ -70,10 +70,14 @@ function SetlistEditor({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    return () => clearTimeout(savedTimerRef.current);
+    return () => {
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+    };
   }, []);
 
   // Dnd sensors
@@ -123,7 +127,9 @@ function SetlistEditor({
         }),
       ]);
       setSaved(true);
-      clearTimeout(savedTimerRef.current);
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (error) {
       clientLogger.error("updateSetlist", error);

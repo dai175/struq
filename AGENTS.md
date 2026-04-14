@@ -73,11 +73,17 @@ pnpm test             # Run tests (Vitest)
 pnpm lint             # Lint with Biome
 pnpm lint:fix         # Auto-fix lint issues
 pnpm format           # Auto-format with Biome
+pnpm typecheck        # TypeScript type check (tsc --noEmit)
 pnpm db:generate      # Generate Drizzle migrations
 pnpm db:migrate       # Apply migrations locally
 pnpm db:migrate:production  # Apply to remote D1
 pnpm cf-typegen       # Regenerate Cloudflare Worker types
 ```
+
+## Git Hooks
+
+- `pre-commit` runs `pnpm run typecheck` and `pnpm exec lint-staged`
+- `prepare` script enables Husky hooks
 
 ## Environment Variables
 

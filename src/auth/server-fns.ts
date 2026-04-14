@@ -32,7 +32,7 @@ export const updateLocale = createServerFn({ method: "POST" })
     const user = await requireUser();
     const db = getDb(env.DB);
     const result = await db.update(schema.users).set({ locale: data.locale }).where(eq(schema.users.id, user.userId));
-    if (result.rowsAffected === 0) throw new Error("User not found");
+    if (!result.meta.changes) throw new Error("User not found");
     await updateSession<AppSessionData>(getSessionConfig(), {
       user: { ...user, locale: data.locale },
     });
