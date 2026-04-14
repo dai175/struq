@@ -31,6 +31,7 @@ export const ja: Translations = {
     errorDeleteFailed: "削除に失敗しました",
     errorCreateFailed: "作成に失敗しました",
     errorAddFailed: "追加に失敗しました",
+    loadMore: "もっと読み込む",
   },
   nav: {
     setlists: "セットリスト",

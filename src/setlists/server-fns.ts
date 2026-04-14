@@ -45,24 +45,32 @@ async function requireSetlistOwner(db: Database, setlistId: string, userId: stri
 
 // ─── listSetlists ──────────────────────────────────────
 
-export const listSetlists = createServerFn({ method: "GET" }).handler(async (): Promise<SetlistWithSongCount[]> => {
-  const user = await requireUser();
-  const db = getDb(env.DB);
+const LIST_SETLISTS_LIMIT = 30;
 
-  const rows = await db
-    .select({
-      ...setlistColumns,
-      songCount: sql<number>`(
-          SELECT COUNT(*) FROM setlist_songs
-          WHERE setlist_songs.setlist_id = ${schema.setlists.id}
-        )`.as("song_count"),
-    })
-    .from(schema.setlists)
-    .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt)))
-    .orderBy(schema.setlists.sortOrder);
+export const listSetlists = createServerFn({ method: "GET" })
+  .inputValidator((input: { offset?: number } | undefined) => input ?? {})
+  .handler(async ({ data }): Promise<{ items: SetlistWithSongCount[]; hasMore: boolean }> => {
+    const user = await requireUser();
+    const db = getDb(env.DB);
+    const offset = data.offset ?? 0;
 
-  return rows;
-});
+    const rows = await db
+      .select({
+        ...setlistColumns,
+        songCount: sql<number>`(
+            SELECT COUNT(*) FROM setlist_songs
+            WHERE setlist_songs.setlist_id = ${schema.setlists.id}
+          )`.as("song_count"),
+      })
+      .from(schema.setlists)
+      .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt)))
+      .orderBy(schema.setlists.sortOrder)
+      .limit(LIST_SETLISTS_LIMIT + 1)
+      .offset(offset);
+
+    const hasMore = rows.length > LIST_SETLISTS_LIMIT;
+    return { items: hasMore ? rows.slice(0, LIST_SETLISTS_LIMIT) : rows, hasMore };
+  });
 
 // ─── getSetlist ────────────────────────────────────────
 

@@ -41,18 +41,27 @@ const sectionColumns = {
 
 // ─── listSongs ──────────────────────────────────────────
 
-export const listSongs = createServerFn({ method: "GET" }).handler(
-  async (): Promise<{ song: SongRow; sections: SectionRow[] }[]> => {
+const LIST_SONGS_LIMIT = 30;
+
+export const listSongs = createServerFn({ method: "GET" })
+  .inputValidator((input: { offset?: number } | undefined) => input ?? {})
+  .handler(async ({ data }): Promise<{ items: { song: SongRow; sections: SectionRow[] }[]; hasMore: boolean }> => {
     const user = await requireUser();
     const db = getDb(env.DB);
+    const offset = data.offset ?? 0;
 
-    const songs = await db
+    const rows = await db
       .select(songColumns)
       .from(schema.songs)
       .where(and(eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)))
-      .orderBy(desc(schema.songs.updatedAt));
+      .orderBy(desc(schema.songs.updatedAt))
+      .limit(LIST_SONGS_LIMIT + 1)
+      .offset(offset);
 
-    if (songs.length === 0) return [];
+    const hasMore = rows.length > LIST_SONGS_LIMIT;
+    const songs = hasMore ? rows.slice(0, LIST_SONGS_LIMIT) : rows;
+
+    if (songs.length === 0) return { items: [], hasMore: false };
 
     const songIds = songs.map((s) => s.id);
     const allSections = await db
@@ -68,12 +77,11 @@ export const listSongs = createServerFn({ method: "GET" }).handler(
       sectionsBySong.set(sec.songId, list);
     }
 
-    return songs.map((song) => ({
-      song,
-      sections: sectionsBySong.get(song.id) ?? [],
-    }));
-  },
-);
+    return {
+      items: songs.map((song) => ({ song, sections: sectionsBySong.get(song.id) ?? [] })),
+      hasMore,
+    };
+  });
 
 // ─── getSongWithSections ────────────────────────────────
 

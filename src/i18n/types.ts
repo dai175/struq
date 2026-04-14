@@ -27,6 +27,7 @@ export interface Translations {
     errorDeleteFailed: string;
     errorCreateFailed: string;
     errorAddFailed: string;
+    loadMore: string;
   };
 
   nav: {
