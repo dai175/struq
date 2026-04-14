@@ -37,6 +37,7 @@ function NewSetlistPage() {
     if (!parsed.success) {
       const hasTitleIssue = parsed.error.issues.some((issue) => issue.path[0] === "title");
       if (hasTitleIssue) setTitleError(true);
+      else toast.error(t.common.errorSaveFailed);
       return;
     }
 

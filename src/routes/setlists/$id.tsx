@@ -113,6 +113,7 @@ function SetlistEditor({
     if (!parsedSetlistInput.success) {
       const hasTitleIssue = parsedSetlistInput.error.issues.some((issue) => issue.path[0] === "title");
       if (hasTitleIssue) setTitleError(true);
+      else toast.error(t.common.errorSaveFailed);
       return;
     }
 
