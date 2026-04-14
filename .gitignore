@@ -24,3 +24,8 @@ todos.json
 
 # Junie
 .junie/
+
+# Playwright
+e2e/.auth/
+test-results/
+playwright-report/

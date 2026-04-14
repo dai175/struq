@@ -9,7 +9,11 @@
       "!drizzle",
       "!**/*.gen.ts",
       "!worker-configuration.d.ts",
-      "!wrangler.jsonc"
+      "!wrangler.jsonc",
+      "!playwright-report",
+      "!test-results",
+      "!e2e/.auth",
+      "!.junie"
     ]
   },
   "formatter": {

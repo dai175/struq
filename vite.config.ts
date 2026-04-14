@@ -8,15 +8,22 @@ import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-const config = defineConfig({
-  plugins: [
-    devtools(),
-    cloudflare({ viteEnvironment: { name: "ssr" } }),
-    tsconfigPaths({ projects: ["./tsconfig.json"] }),
-    tailwindcss(),
-    tanstackStart(),
-    viteReact(),
-  ],
+const config = defineConfig(({ mode }) => {
+  const isTest = mode === "test";
+
+  return {
+    test: {
+      exclude: ["node_modules", "dist", "e2e"],
+    },
+    plugins: [
+      devtools(),
+      ...(isTest ? [] : [cloudflare({ viteEnvironment: { name: "ssr" } })]),
+      tsconfigPaths({ projects: ["./tsconfig.json"] }),
+      tailwindcss(),
+      tanstackStart(),
+      viteReact(),
+    ],
+  };
 });
 
 export default config;
