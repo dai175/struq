@@ -110,6 +110,7 @@ For production, set via `wrangler secret put`.
 - `@/*` resolves to `./src/*`
 - `SESSION_SECRET` must be ≥32 characters
 - Soft deletes via `deleted_at`; exception: SetlistSongs uses hard delete
+- D1 has a 100 bound-parameter limit per statement; section inserts batch at 10 rows (9 columns × 10 = 90 params) to stay under the limit
 - Sections `label` field is only used for `custom` type — fixed types derive their label from locale at render time
 - Unit tests cover pure functions only (schemas, validation, constants); server functions depend on D1 + session and are tested via E2E only
 - Server functions that operate on both a setlist and songs must verify ownership of **both** (see `addSongToSetlist` for the reference pattern)
