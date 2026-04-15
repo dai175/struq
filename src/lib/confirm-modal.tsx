@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface ConfirmModalProps {
   open: boolean;
@@ -12,10 +14,22 @@ interface ConfirmModalProps {
 
 export function ConfirmModal({ open, message, confirmLabel, cancelLabel, onConfirm, onCancel }: ConfirmModalProps) {
   const [mounted, setMounted] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<Element | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    previousFocusRef.current = document.activeElement;
+    const first = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE)?.[0];
+    first?.focus();
+    return () => {
+      (previousFocusRef.current as HTMLElement | null)?.focus();
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -26,6 +40,19 @@ export function ConfirmModal({ open, message, confirmLabel, cancelLabel, onConfi
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, onCancel]);
 
+  function handleDialogKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    e.stopPropagation();
+    if (e.key !== "Tab") return;
+    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
+    if (!focusable || focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
+    }
+  }
+
   if (!mounted || !open) return null;
 
   return createPortal(
@@ -33,11 +60,12 @@ export function ConfirmModal({ open, message, confirmLabel, cancelLabel, onConfi
     // biome-ignore lint/a11y/useKeyWithClickEvents: Escape is handled via document keydown listener
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4" onClick={onCancel}>
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
+        onKeyDown={handleDialogKeyDown}
       >
         <p className="text-sm text-gray-700">{message}</p>
         <div className="mt-5 flex flex-col gap-2">
