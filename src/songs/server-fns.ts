@@ -414,26 +414,29 @@ export const saveSections = createServerFn({ method: "POST" })
       .set({ deletedAt: timestamp })
       .where(and(eq(schema.sections.songId, data.songId), isNull(schema.sections.deletedAt)));
 
-    // Insert new sections + update song timestamp in parallel
-    const insertSections =
-      data.sections.length > 0
-        ? db.insert(schema.sections).values(
-            data.sections.map((sec) => ({
-              id: crypto.randomUUID(),
-              songId: data.songId,
-              type: sec.type,
-              label: sec.type === "custom" ? sec.label?.trim() || null : null,
-              bars: sec.bars,
-              extraBeats: sec.extraBeats,
-              chordProgression: sec.chordProgression?.trim() || null,
-              memo: sec.memo?.trim() || null,
-              sortOrder: sec.sortOrder,
-            })),
-          )
-        : Promise.resolve();
+    // D1 limits bound parameters to 100 per statement; sections has 9 bound columns,
+    // so batch at 10 rows (90 params) to stay safely under the limit.
+    const SECTION_INSERT_BATCH = 10;
+
+    const sectionRows = data.sections.map((sec) => ({
+      id: crypto.randomUUID(),
+      songId: data.songId,
+      type: sec.type,
+      label: sec.type === "custom" ? sec.label?.trim() || null : null,
+      bars: sec.bars,
+      extraBeats: sec.extraBeats,
+      chordProgression: sec.chordProgression?.trim() || null,
+      memo: sec.memo?.trim() || null,
+      sortOrder: sec.sortOrder,
+    }));
+
+    const insertBatches: Promise<unknown>[] = [];
+    for (let i = 0; i < sectionRows.length; i += SECTION_INSERT_BATCH) {
+      insertBatches.push(db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH)));
+    }
 
     await Promise.all([
-      insertSections,
+      ...insertBatches,
       db.update(schema.songs).set({ updatedAt: timestamp }).where(eq(schema.songs.id, data.songId)),
     ]);
   });
