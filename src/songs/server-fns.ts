@@ -228,6 +228,27 @@ const SECTION_TYPE_ALIASES: ReadonlyMap<string, SectionType> = new Map([
   ["アウトロ", "outro"],
 ]);
 
+const AI_RESPONSE_JSON_SCHEMA = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      type: { type: "string", enum: SECTION_TYPES.filter((t) => t !== "custom") },
+      bars: { type: "integer", description: "Number of bars in this section" },
+      extra_beats: {
+        type: "integer",
+        description: "Additional beats beyond the bar count (0 if none or uncertain)",
+      },
+      chord_progression: {
+        type: "string",
+        nullable: true,
+        description: "Chord symbols separated by spaces, or null if uncertain",
+      },
+    },
+    required: ["type", "bars", "extra_beats", "chord_progression"],
+  },
+} as const;
+
 const AI_SYSTEM_INSTRUCTION = `You are a music theory expert that analyzes song structures.
 Use this section naming convention:
 - "intro" = introduction
@@ -311,29 +332,7 @@ export const generateSections = createServerFn({ method: "POST" })
           generationConfig: {
             responseMimeType: "application/json",
             temperature: 0.2,
-            responseJsonSchema: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  type: {
-                    type: "string",
-                    enum: ["intro", "a", "b", "chorus", "bridge", "solo", "outro", "interlude"],
-                  },
-                  bars: { type: "integer", description: "Number of bars in this section" },
-                  extra_beats: {
-                    type: "integer",
-                    description: "Additional beats beyond the bar count (0 if none or uncertain)",
-                  },
-                  chord_progression: {
-                    type: "string",
-                    nullable: true,
-                    description: "Chord symbols separated by spaces, or null if uncertain",
-                  },
-                },
-                required: ["type", "bars", "extra_beats", "chord_progression"],
-              },
-            },
+            responseJsonSchema: AI_RESPONSE_JSON_SCHEMA,
           },
         }),
         signal: AbortSignal.timeout(30_000),
