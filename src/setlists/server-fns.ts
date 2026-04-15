@@ -276,20 +276,23 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
     const user = await requireUser();
     const db = getDb(env.DB);
 
-    await requireSetlistOwner(db, data.setlistId, user.userId);
-
-    // Verify all songs belong to the current user
-    if (data.songIds.length > 0) {
-      const ownedSongs = await db.query.songs.findMany({
-        where: and(
-          inArray(schema.songs.id, data.songIds),
-          eq(schema.songs.userId, user.userId),
-          isNull(schema.songs.deletedAt),
-        ),
-      });
-      if (ownedSongs.length !== data.songIds.length) {
-        throw new Error("Song not found");
-      }
+    const [, ownedSongIds] = await Promise.all([
+      requireSetlistOwner(db, data.setlistId, user.userId),
+      data.songIds.length > 0
+        ? db
+            .select({ id: schema.songs.id })
+            .from(schema.songs)
+            .where(
+              and(
+                inArray(schema.songs.id, data.songIds),
+                eq(schema.songs.userId, user.userId),
+                isNull(schema.songs.deletedAt),
+              ),
+            )
+        : Promise.resolve([] as { id: string }[]),
+    ]);
+    if (ownedSongIds.length !== data.songIds.length) {
+      throw new Error("Song not found");
     }
 
     // Delete all existing entries
