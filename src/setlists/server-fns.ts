@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { createServerFn } from "@tanstack/react-start";
-import { and, eq, isNull, max, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, max, sql } from "drizzle-orm";
 import type { Database } from "@/db";
 import { getDb, schema } from "@/db";
 import {
@@ -277,6 +277,20 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
     const db = getDb(env.DB);
 
     await requireSetlistOwner(db, data.setlistId, user.userId);
+
+    // Verify all songs belong to the current user
+    if (data.songIds.length > 0) {
+      const ownedSongs = await db.query.songs.findMany({
+        where: and(
+          inArray(schema.songs.id, data.songIds),
+          eq(schema.songs.userId, user.userId),
+          isNull(schema.songs.deletedAt),
+        ),
+      });
+      if (ownedSongs.length !== data.songIds.length) {
+        throw new Error("Song not found");
+      }
+    }
 
     // Delete all existing entries
     await db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.setlistId));
