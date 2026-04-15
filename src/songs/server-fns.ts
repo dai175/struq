@@ -240,8 +240,7 @@ const AI_RESPONSE_JSON_SCHEMA = {
         description: "Additional beats beyond the bar count (0 if none or uncertain)",
       },
       chord_progression: {
-        type: "string",
-        nullable: true,
+        type: ["string", "null"],
         description: "Chord symbols separated by spaces, or null if uncertain",
       },
     },
