@@ -30,7 +30,7 @@ src/
 ├── songs/           # Song CRUD server functions + components
 ├── setlists/        # Setlist CRUD server functions
 ├── i18n/            # Translation keys + I18nProvider
-└── server/          # Shared server helpers (requireUser, now)
+├── server/          # Shared server helpers (requireUser, now)
 └── lib/             # Utilities (logger etc.)
 ```
 
@@ -111,3 +111,5 @@ For production, set via `wrangler secret put`.
 - `SESSION_SECRET` must be ≥32 characters
 - Soft deletes via `deleted_at`; exception: SetlistSongs uses hard delete
 - Sections `label` field is only used for `custom` type — fixed types derive their label from locale at render time
+- Unit tests cover pure functions only (schemas, validation, constants); server functions depend on D1 + session and are tested via E2E only
+- Server functions that operate on both a setlist and songs must verify ownership of **both** (see `addSongToSetlist` for the reference pattern)
