@@ -208,6 +208,10 @@ export const deleteSong = createServerFn({ method: "POST" })
 
 const KNOWN_SECTION_TYPES: ReadonlySet<string> = new Set(SECTION_TYPES.filter((t) => t !== "custom"));
 
+// D1 limits bound parameters to 100 per statement; sections has 9 bound columns,
+// so batch at 10 rows (90 params) to stay safely under the limit.
+const SECTION_INSERT_BATCH = 10;
+
 // Fallback mapping for common music terms not in the app's section type set.
 // Used when responseJsonSchema enum constraint doesn't apply (e.g. older API behaviour).
 const SECTION_TYPE_ALIASES: ReadonlyMap<string, SectionType> = new Map([
@@ -414,10 +418,6 @@ export const saveSections = createServerFn({ method: "POST" })
       .set({ deletedAt: timestamp })
       .where(and(eq(schema.sections.songId, data.songId), isNull(schema.sections.deletedAt)));
 
-    // D1 limits bound parameters to 100 per statement; sections has 9 bound columns,
-    // so batch at 10 rows (90 params) to stay safely under the limit.
-    const SECTION_INSERT_BATCH = 10;
-
     const sectionRows = data.sections.map((sec) => ({
       id: crypto.randomUUID(),
       songId: data.songId,
@@ -430,13 +430,9 @@ export const saveSections = createServerFn({ method: "POST" })
       sortOrder: sec.sortOrder,
     }));
 
-    const insertBatches: Promise<unknown>[] = [];
+    // Sequential to avoid partial commits if a later batch fails
     for (let i = 0; i < sectionRows.length; i += SECTION_INSERT_BATCH) {
-      insertBatches.push(db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH)));
+      await db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH));
     }
-
-    await Promise.all([
-      ...insertBatches,
-      db.update(schema.songs).set({ updatedAt: timestamp }).where(eq(schema.songs.id, data.songId)),
-    ]);
+    await db.update(schema.songs).set({ updatedAt: timestamp }).where(eq(schema.songs.id, data.songId));
   });
