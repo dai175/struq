@@ -196,6 +196,25 @@ describe("generateSectionsInputSchema", () => {
   it("throws when artist is omitted", () => {
     expect(() => generateSectionsInputSchema.parse({ title: "Song" })).toThrow();
   });
+
+  it("succeeds with key", () => {
+    const result = generateSectionsInputSchema.parse({ title: "Song", artist: "Artist", key: "Am" });
+    expect(result.key).toBe("Am");
+  });
+
+  it("succeeds when key is omitted", () => {
+    const result = generateSectionsInputSchema.parse({ title: "Song", artist: "Artist" });
+    expect(result.key).toBeUndefined();
+  });
+
+  it("converts empty key to undefined", () => {
+    const result = generateSectionsInputSchema.parse({ title: "Song", artist: "", key: "" });
+    expect(result.key).toBeUndefined();
+  });
+
+  it("throws when key exceeds 32 characters", () => {
+    expect(() => generateSectionsInputSchema.parse({ title: "Song", artist: "", key: "K".repeat(33) })).toThrow();
+  });
 });
 
 // ─── aiSectionSchema ───────────────────────────────────────────────────────────

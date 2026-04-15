@@ -155,7 +155,11 @@ function SongEditPage() {
     setAiError(false);
     setAiRateLimited(false);
     try {
-      const aiInput = generateSectionsInputSchema.parse({ title: trimmedTitle, artist: artist.trim() });
+      const aiInput = generateSectionsInputSchema.parse({
+        title: trimmedTitle,
+        artist: artist.trim(),
+        key: key.trim() || undefined,
+      });
       const sections = await generateSections({
         data: aiInput,
       });

@@ -53,6 +53,12 @@ export const deleteByIdInputSchema = z.object({
 export const generateSectionsInputSchema = z.object({
   title: z.string().trim().min(1).max(200),
   artist: z.string().trim().max(200),
+  key: z
+    .string()
+    .trim()
+    .max(32)
+    .optional()
+    .transform((v) => v || undefined),
 });
 
 export const aiSectionSchema = z.object({

@@ -208,6 +208,44 @@ export const deleteSong = createServerFn({ method: "POST" })
 
 const KNOWN_SECTION_TYPES: ReadonlySet<string> = new Set(SECTION_TYPES.filter((t) => t !== "custom"));
 
+// Fallback mapping for common music terms not in the app's section type set.
+// Used when responseJsonSchema enum constraint doesn't apply (e.g. older API behaviour).
+const SECTION_TYPE_ALIASES: ReadonlyMap<string, SectionType> = new Map([
+  ["verse", "a"],
+  ["pre-chorus", "b"],
+  ["prechorus", "b"],
+  ["pre chorus", "b"],
+  ["hook", "chorus"],
+  ["refrain", "chorus"],
+  ["coda", "outro"],
+  ["ending", "outro"],
+  ["break", "interlude"],
+  ["aメロ", "a"],
+  ["bメロ", "b"],
+  ["サビ", "chorus"],
+  ["間奏", "interlude"],
+  ["イントロ", "intro"],
+  ["アウトロ", "outro"],
+]);
+
+const AI_SYSTEM_INSTRUCTION = `You are a music theory expert that analyzes song structures.
+Use this section naming convention:
+- "intro" = introduction
+- "a" = verse / A-melody (Aメロ)
+- "b" = pre-chorus / B-melody (Bメロ)
+- "chorus" = chorus / hook (サビ)
+- "bridge" = bridge section
+- "solo" = instrumental solo
+- "outro" = ending / conclusion
+- "interlude" = instrumental interlude between sections
+
+Rules for accuracy:
+- Most pop/rock sections are 4, 8, or 16 bars. Do not guess odd bar counts unless you are certain.
+- Set extra_beats to 0 unless the song genuinely has an incomplete bar at a section boundary. When unsure, use 0.
+- For chord_progression, write chord symbols separated by spaces (e.g. "Am F C G"). Set to null if you are not confident about the exact chords.
+- If the song key is provided, ensure chord symbols are consistent with that key.
+- Return sections in playback order from the beginning to the end of the song.`;
+
 function normalizeSection(raw: unknown): SectionData {
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
     return {
@@ -222,8 +260,10 @@ function normalizeSection(raw: unknown): SectionData {
   }
   const obj = raw as Record<string, unknown>;
 
-  const rawType = typeof obj.type === "string" ? obj.type.toLowerCase() : "";
-  const type: SectionType = KNOWN_SECTION_TYPES.has(rawType) ? (rawType as SectionType) : "custom";
+  const rawType = typeof obj.type === "string" ? obj.type.toLowerCase().trim() : "";
+  const type: SectionType = KNOWN_SECTION_TYPES.has(rawType)
+    ? (rawType as SectionType)
+    : (SECTION_TYPE_ALIASES.get(rawType) ?? "custom");
 
   const rawBars = typeof obj.bars === "number" ? Math.floor(obj.bars) : Number.NaN;
   const bars = rawBars > 0 ? rawBars : DEFAULT_BARS[type];
@@ -245,7 +285,7 @@ function normalizeSection(raw: unknown): SectionData {
 }
 
 export const generateSections = createServerFn({ method: "POST" })
-  .inputValidator((input: { title: string; artist: string }) => generateSectionsInputSchema.parse(input))
+  .inputValidator((input: { title: string; artist: string; key?: string }) => generateSectionsInputSchema.parse(input))
   .handler(async ({ data }): Promise<SectionData[]> => {
     const user = await requireUser();
     const db = getDb(env.DB);
@@ -257,15 +297,8 @@ export const generateSections = createServerFn({ method: "POST" })
     if (!title) throw new Error("Title is required");
 
     const artist = data.artist.trim();
-    const prompt = `Given the song "${title}"${artist ? ` by "${artist}"` : ""}, return the song structure as a JSON array.
-Each element should have:
-- "type": one of "intro", "a", "b", "chorus", "bridge", "solo", "outro", "interlude"
-- "bars": number of bars (integer)
-- "extra_beats": additional beats beyond the bar count (integer, 0 if none)
-- "chord_progression": chord symbols separated by spaces (e.g. "Am F C G"), or null if unknown
-
-Return ONLY valid JSON, no explanation.
-Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"type":"a","bars":8,"extra_beats":2,"chord_progression":"Am F C G"}]`;
+    const keyClause = data.key ? ` in the key of ${data.key}` : "";
+    const prompt = `Analyze the song "${title}"${artist ? ` by "${artist}"` : ""}${keyClause} and return its structure as a JSON array.`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
@@ -273,9 +306,34 @@ Example: [{"type":"intro","bars":4,"extra_beats":0,"chord_progression":null},{"t
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
         body: JSON.stringify({
+          system_instruction: { parts: [{ text: AI_SYSTEM_INSTRUCTION }] },
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
+            temperature: 0.2,
+            responseJsonSchema: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  type: {
+                    type: "string",
+                    enum: ["intro", "a", "b", "chorus", "bridge", "solo", "outro", "interlude"],
+                  },
+                  bars: { type: "integer", description: "Number of bars in this section" },
+                  extra_beats: {
+                    type: "integer",
+                    description: "Additional beats beyond the bar count (0 if none or uncertain)",
+                  },
+                  chord_progression: {
+                    type: "string",
+                    nullable: true,
+                    description: "Chord symbols separated by spaces, or null if uncertain",
+                  },
+                },
+                required: ["type", "bars", "extra_beats", "chord_progression"],
+              },
+            },
           },
         }),
         signal: AbortSignal.timeout(30_000),
