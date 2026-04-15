@@ -16,6 +16,7 @@ import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
+import { ConfirmModal } from "@/lib/confirm-modal";
 import { RATE_LIMIT_ERROR } from "@/lib/rate-limit";
 import { generateSectionsInputSchema, saveSectionsInputSchema, updateSongInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
@@ -106,6 +107,7 @@ function SongEditPage() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState(false);
   const [aiRateLimited, setAiRateLimited] = useState(false);
+  const [showAiConfirm, setShowAiConfirm] = useState(false);
 
   // Sync state when loader data changes (e.g., after router.invalidate)
   useEffect(() => {
@@ -140,7 +142,7 @@ function SongEditPage() {
     });
   }
 
-  async function handleAiGenerate() {
+  function handleAiGenerate() {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       setTitleError(true);
@@ -148,12 +150,19 @@ function SongEditPage() {
     }
 
     if (sectionsList.length > 0) {
-      if (!confirm(t.song.aiConfirmReplace)) return;
+      setShowAiConfirm(true);
+      return;
     }
 
+    void executeAiGenerate();
+  }
+
+  async function executeAiGenerate() {
+    setShowAiConfirm(false);
     setAiGenerating(true);
     setAiError(false);
     setAiRateLimited(false);
+    const trimmedTitle = title.trim();
     try {
       const aiInput = generateSectionsInputSchema.parse({
         title: trimmedTitle,
@@ -421,13 +430,21 @@ function SongEditPage() {
           <Sparkles size={16} />
           {aiGenerating ? t.common.loading : t.song.aiGenerate}
         </button>
+        <ConfirmModal
+          open={showAiConfirm}
+          message={t.song.aiConfirmReplace}
+          confirmLabel={t.song.aiGenerate}
+          cancelLabel={t.common.cancel}
+          onConfirm={executeAiGenerate}
+          onCancel={() => setShowAiConfirm(false)}
+        />
         {aiRateLimited && (
           <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{t.song.aiRateLimited}</div>
         )}
         {aiError && (
           <div className="mt-2 flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
             <span>{t.song.aiError}</span>
-            <button type="button" onClick={handleAiGenerate} className="ml-2 shrink-0 font-medium underline">
+            <button type="button" onClick={executeAiGenerate} className="ml-2 shrink-0 font-medium underline">
               {t.common.retry}
             </button>
           </div>
