@@ -412,12 +412,6 @@ export const saveSections = createServerFn({ method: "POST" })
     });
     if (!song) throw new Error("Song not found");
 
-    // Soft-delete existing sections
-    await db
-      .update(schema.sections)
-      .set({ deletedAt: timestamp })
-      .where(and(eq(schema.sections.songId, data.songId), isNull(schema.sections.deletedAt)));
-
     const sectionRows = data.sections.map((sec) => ({
       id: crypto.randomUUID(),
       songId: data.songId,
@@ -430,9 +424,17 @@ export const saveSections = createServerFn({ method: "POST" })
       sortOrder: sec.sortOrder,
     }));
 
-    // Sequential to avoid partial commits if a later batch fails
+    // D1 batch: soft-delete + inserts + song timestamp execute atomically in one request.
+    const insertStatements = [];
     for (let i = 0; i < sectionRows.length; i += SECTION_INSERT_BATCH) {
-      await db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH));
+      insertStatements.push(db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH)));
     }
-    await db.update(schema.songs).set({ updatedAt: timestamp }).where(eq(schema.songs.id, data.songId));
+    await db.batch([
+      db
+        .update(schema.sections)
+        .set({ deletedAt: timestamp })
+        .where(and(eq(schema.sections.songId, data.songId), isNull(schema.sections.deletedAt))),
+      ...insertStatements,
+      db.update(schema.songs).set({ updatedAt: timestamp }).where(eq(schema.songs.id, data.songId)),
+    ] as Parameters<typeof db.batch>[0]);
   });
