@@ -11,7 +11,7 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink, Play, Sparkles, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
@@ -108,6 +108,7 @@ function SongEditPage() {
   const [aiError, setAiError] = useState(false);
   const [aiRateLimited, setAiRateLimited] = useState(false);
   const [showAiConfirm, setShowAiConfirm] = useState(false);
+  const handleCancelAiConfirm = useCallback(() => setShowAiConfirm(false), []);
 
   // Sync state when loader data changes (e.g., after router.invalidate)
   useEffect(() => {
@@ -436,7 +437,7 @@ function SongEditPage() {
           confirmLabel={t.song.aiGenerate}
           cancelLabel={t.common.cancel}
           onConfirm={executeAiGenerate}
-          onCancel={() => setShowAiConfirm(false)}
+          onCancel={handleCancelAiConfirm}
         />
         {aiRateLimited && (
           <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{t.song.aiRateLimited}</div>
