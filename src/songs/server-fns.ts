@@ -387,7 +387,7 @@ export const saveSongWithSections = createServerFn({ method: "POST" })
     if (!song) throw new Error("Song not found");
 
     const title = data.song.title.trim();
-    if (!title) throw new Error("Title is required");
+    const referenceUrl = data.song.referenceUrl?.trim();
 
     const sectionRows = data.sections.map((sec) => ({
       id: crypto.randomUUID(),
@@ -416,10 +416,7 @@ export const saveSongWithSections = createServerFn({ method: "POST" })
           artist: data.song.artist?.trim() || null,
           bpm: data.song.bpm ?? null,
           key: data.song.key?.trim() || null,
-          referenceUrl:
-            data.song.referenceUrl?.trim() && isValidUrl(data.song.referenceUrl.trim())
-              ? data.song.referenceUrl.trim()
-              : null,
+          referenceUrl: referenceUrl && isValidUrl(referenceUrl) ? referenceUrl : null,
           updatedAt: timestamp,
         })
         .where(
