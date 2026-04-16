@@ -268,6 +268,10 @@ export const removeSongFromSetlist = createServerFn({ method: "POST" })
       .where(and(eq(schema.setlistSongs.setlistId, data.setlistId), eq(schema.setlistSongs.songId, data.songId)));
   });
 
+// D1 limits bound parameters to 100 per statement; setlist_songs has 3 columns
+// (setlistId, songId, sortOrder), so batch at 30 rows (90 params) to stay under the limit.
+const SETLIST_SONGS_INSERT_BATCH = 30;
+
 // ─── reorderSetlistSongs ───────────────────────────────
 
 export const reorderSetlistSongs = createServerFn({ method: "POST" })
@@ -295,28 +299,29 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
       throw new Error("Song not found");
     }
 
-    // Delete all existing entries
-    await db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.setlistId));
-
-    // Re-insert with new sortOrder + update timestamp in parallel
-    const insertSongs =
-      data.songIds.length > 0
-        ? db.insert(schema.setlistSongs).values(
-            data.songIds.map((songId, index) => ({
-              setlistId: data.setlistId,
-              songId,
-              sortOrder: index,
-            })),
-          )
-        : Promise.resolve();
-
-    await Promise.all([
-      insertSongs,
+    // Executes as a single batched request (not a true ACID transaction —
+    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
+    // batch are not rolled back if a later one fails).
+    const insertStatements = [];
+    for (let i = 0; i < data.songIds.length; i += SETLIST_SONGS_INSERT_BATCH) {
+      insertStatements.push(
+        db.insert(schema.setlistSongs).values(
+          data.songIds.slice(i, i + SETLIST_SONGS_INSERT_BATCH).map((songId, j) => ({
+            setlistId: data.setlistId,
+            songId,
+            sortOrder: i + j,
+          })),
+        ),
+      );
+    }
+    await db.batch([
+      db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.setlistId)),
+      ...insertStatements,
       db.update(schema.setlists).set({ updatedAt: now() }).where(eq(schema.setlists.id, data.setlistId)),
-    ]);
+    ] as Parameters<typeof db.batch>[0]);
   });
 
-// ─── listSongsForPicker ───────────────────────────────
+// ─── listSongsForPicker ──────────────────────────────
 
 export const listSongsForPicker = createServerFn({ method: "GET" })
   .inputValidator((input: { setlistId: string }) => setlistIdInputSchema.parse(input))

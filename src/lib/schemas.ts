@@ -69,21 +69,19 @@ export const aiSectionsSchema = z.array(aiSectionSchema).min(1).max(50);
 
 export const sectionTypeSchema = z.enum(SECTION_TYPES);
 
-export const saveSectionsInputSchema = z.object({
-  songId: z.string().uuid(),
-  sections: z
-    .array(
-      z.object({
-        type: sectionTypeSchema,
-        label: z.string().max(100).nullable().optional(),
-        bars: z.number().int().positive(),
-        extraBeats: z.number().int().min(0).max(7),
-        chordProgression: z.string().max(255).nullable().optional(),
-        memo: z.string().max(1000).nullable().optional(),
-        sortOrder: z.number().int().min(0),
-      }),
-    )
-    .max(200),
+const sectionItemSchema = z.object({
+  type: sectionTypeSchema,
+  label: z.string().max(100).nullable().optional(),
+  bars: z.number().int().positive(),
+  extraBeats: z.number().int().min(0).max(7),
+  chordProgression: z.string().max(255).nullable().optional(),
+  memo: z.string().max(1000).nullable().optional(),
+  sortOrder: z.number().int().min(0),
+});
+
+export const saveSongWithSectionsInputSchema = z.object({
+  song: updateSongInputSchema,
+  sections: z.array(sectionItemSchema).max(200),
 });
 
 export const setlistIdInputSchema = z.object({

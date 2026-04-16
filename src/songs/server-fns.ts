@@ -11,9 +11,8 @@ import {
   deleteByIdInputSchema,
   generateSectionsInputSchema,
   listInputSchema,
-  saveSectionsInputSchema,
+  saveSongWithSectionsInputSchema,
   songIdInputSchema,
-  updateSongInputSchema,
 } from "@/lib/schemas";
 import { isValidUrl } from "@/lib/validation";
 import { now, requireUser } from "@/server/helpers";
@@ -151,34 +150,6 @@ export const createSong = createServerFn({ method: "POST" })
     return { id };
   });
 
-// ─── updateSong ─────────────────────────────────────────
-
-export const updateSong = createServerFn({ method: "POST" })
-  .inputValidator(
-    (input: { id: string; title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string }) =>
-      updateSongInputSchema.parse(input),
-  )
-  .handler(async ({ data }): Promise<void> => {
-    const user = await requireUser();
-    const db = getDb(env.DB);
-
-    const title = data.title.trim();
-    if (!title) throw new Error("Title is required");
-
-    await db
-      .update(schema.songs)
-      .set({
-        title,
-        artist: data.artist?.trim() || null,
-        bpm: data.bpm ?? null,
-        key: data.key?.trim() || null,
-        referenceUrl:
-          data.referenceUrl?.trim() && isValidUrl(data.referenceUrl.trim()) ? data.referenceUrl.trim() : null,
-        updatedAt: now(),
-      })
-      .where(and(eq(schema.songs.id, data.id), eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)));
-  });
-
 // ─── deleteSong ─────────────────────────────────────────
 
 export const deleteSong = createServerFn({ method: "POST" })
@@ -194,14 +165,17 @@ export const deleteSong = createServerFn({ method: "POST" })
     });
     if (!song) return;
 
-    await Promise.all([
+    // Executes as a single batched request (not a true ACID transaction —
+    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
+    // batch are not rolled back if a later one fails).
+    await db.batch([
       db.update(schema.songs).set({ deletedAt: timestamp }).where(eq(schema.songs.id, data.id)),
       db
         .update(schema.sections)
         .set({ deletedAt: timestamp })
         .where(and(eq(schema.sections.songId, data.id), isNull(schema.sections.deletedAt))),
       db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.songId, data.id)),
-    ]);
+    ] as Parameters<typeof db.batch>[0]);
   });
 
 // ─── generateSections (AI) ──────────────────────────────
@@ -380,12 +354,12 @@ export const generateSections = createServerFn({ method: "POST" })
     return aiParse.data.map(normalizeSection);
   });
 
-// ─── saveSections ───────────────────────────────────────
+// ─── saveSongWithSections ────────────────────────────────
 
-export const saveSections = createServerFn({ method: "POST" })
+export const saveSongWithSections = createServerFn({ method: "POST" })
   .inputValidator(
     (input: {
-      songId: string;
+      song: { id: string; title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string };
       sections: Array<{
         type: SectionType;
         label?: string | null;
@@ -395,7 +369,7 @@ export const saveSections = createServerFn({ method: "POST" })
         memo?: string | null;
         sortOrder: number;
       }>;
-    }) => saveSectionsInputSchema.parse(input),
+    }) => saveSongWithSectionsInputSchema.parse(input),
   )
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
@@ -405,16 +379,19 @@ export const saveSections = createServerFn({ method: "POST" })
     // Verify song ownership
     const song = await db.query.songs.findFirst({
       where: and(
-        eq(schema.songs.id, data.songId),
+        eq(schema.songs.id, data.song.id),
         eq(schema.songs.userId, user.userId),
         isNull(schema.songs.deletedAt),
       ),
     });
     if (!song) throw new Error("Song not found");
 
+    const title = data.song.title.trim();
+    if (!title) throw new Error("Title is required");
+
     const sectionRows = data.sections.map((sec) => ({
       id: crypto.randomUUID(),
-      songId: data.songId,
+      songId: data.song.id,
       type: sec.type,
       label: sec.type === "custom" ? sec.label?.trim() || null : null,
       bars: sec.bars,
@@ -424,17 +401,34 @@ export const saveSections = createServerFn({ method: "POST" })
       sortOrder: sec.sortOrder,
     }));
 
-    // D1 batch: soft-delete + inserts + song timestamp execute atomically in one request.
+    // Executes as a single batched request (not a true ACID transaction —
+    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
+    // batch are not rolled back if a later one fails).
     const insertStatements = [];
     for (let i = 0; i < sectionRows.length; i += SECTION_INSERT_BATCH) {
       insertStatements.push(db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH)));
     }
     await db.batch([
       db
+        .update(schema.songs)
+        .set({
+          title,
+          artist: data.song.artist?.trim() || null,
+          bpm: data.song.bpm ?? null,
+          key: data.song.key?.trim() || null,
+          referenceUrl:
+            data.song.referenceUrl?.trim() && isValidUrl(data.song.referenceUrl.trim())
+              ? data.song.referenceUrl.trim()
+              : null,
+          updatedAt: timestamp,
+        })
+        .where(
+          and(eq(schema.songs.id, data.song.id), eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)),
+        ),
+      db
         .update(schema.sections)
         .set({ deletedAt: timestamp })
-        .where(and(eq(schema.sections.songId, data.songId), isNull(schema.sections.deletedAt))),
+        .where(and(eq(schema.sections.songId, data.song.id), isNull(schema.sections.deletedAt))),
       ...insertStatements,
-      db.update(schema.songs).set({ updatedAt: timestamp }).where(eq(schema.songs.id, data.songId)),
     ] as Parameters<typeof db.batch>[0]);
   });

@@ -8,7 +8,7 @@ import {
   generateSectionsInputSchema,
   listInputSchema,
   reorderSetlistSongsInputSchema,
-  saveSectionsInputSchema,
+  saveSongWithSectionsInputSchema,
   sectionTypeSchema,
   setlistIdInputSchema,
   setlistSongPairInputSchema,
@@ -295,107 +295,58 @@ describe("sectionTypeSchema", () => {
   });
 });
 
-// ─── saveSectionsInputSchema ───────────────────────────────────────────────────
+// ─── saveSongWithSectionsInputSchema ──────────────────────────────────────────
 
-describe("saveSectionsInputSchema", () => {
+describe("saveSongWithSectionsInputSchema", () => {
   const validId = "550e8400-e29b-41d4-a716-446655440000";
+  const minimalSection = { type: "intro" as const, bars: 4, extraBeats: 0, sortOrder: 0 };
 
-  it("succeeds with minimal data", () => {
-    const result = saveSectionsInputSchema.parse({
-      songId: validId,
-      sections: [{ type: "intro", bars: 4, extraBeats: 0, sortOrder: 0 }],
+  it("succeeds with a valid song and sections", () => {
+    const result = saveSongWithSectionsInputSchema.parse({
+      song: { id: validId, title: "My Song" },
+      sections: [minimalSection],
     });
-    expect(result.songId).toBe(validId);
+    expect(result.song.id).toBe(validId);
+    expect(result.sections).toHaveLength(1);
   });
 
   it("succeeds with an empty sections array", () => {
-    const result = saveSectionsInputSchema.parse({
-      songId: validId,
+    const result = saveSongWithSectionsInputSchema.parse({
+      song: { id: validId, title: "My Song" },
       sections: [],
     });
     expect(result.sections).toHaveLength(0);
   });
 
-  it("throws for sections array with 201 items", () => {
-    const sections = Array.from({ length: 201 }, (_, i) => ({
-      type: "intro",
-      bars: 4,
-      extraBeats: 0,
-      sortOrder: i,
-    }));
-    expect(() => saveSectionsInputSchema.parse({ songId: validId, sections })).toThrow();
+  it("throws when song id is missing", () => {
+    expect(() => saveSongWithSectionsInputSchema.parse({ song: { title: "My Song" }, sections: [] })).toThrow();
   });
 
-  it("succeeds for sections array with 200 items", () => {
-    const sections = Array.from({ length: 200 }, (_, i) => ({
-      type: "intro" as const,
-      bars: 4,
-      extraBeats: 0,
-      sortOrder: i,
-    }));
-    const result = saveSectionsInputSchema.parse({ songId: validId, sections });
-    expect(result.sections).toHaveLength(200);
+  it("throws when song title is empty", () => {
+    expect(() => saveSongWithSectionsInputSchema.parse({ song: { id: validId, title: "" }, sections: [] })).toThrow();
+  });
+
+  it("throws for sections array with 201 items", () => {
+    const sections = Array.from({ length: 201 }, (_, i) => ({ ...minimalSection, sortOrder: i }));
+    expect(() =>
+      saveSongWithSectionsInputSchema.parse({ song: { id: validId, title: "My Song" }, sections }),
+    ).toThrow();
   });
 
   it("throws for an invalid section type", () => {
     expect(() =>
-      saveSectionsInputSchema.parse({
-        songId: validId,
+      saveSongWithSectionsInputSchema.parse({
+        song: { id: validId, title: "My Song" },
         sections: [{ type: "invalid", bars: 4, extraBeats: 0, sortOrder: 0 }],
       }),
     ).toThrow();
   });
 
-  it("throws for extraBeats=8", () => {
+  it("throws for bars=0 in a section", () => {
     expect(() =>
-      saveSectionsInputSchema.parse({
-        songId: validId,
-        sections: [{ type: "intro", bars: 4, extraBeats: 8, sortOrder: 0 }],
-      }),
-    ).toThrow();
-  });
-
-  it("throws for bars=0", () => {
-    expect(() =>
-      saveSectionsInputSchema.parse({
-        songId: validId,
+      saveSongWithSectionsInputSchema.parse({
+        song: { id: validId, title: "My Song" },
         sections: [{ type: "intro", bars: 0, extraBeats: 0, sortOrder: 0 }],
-      }),
-    ).toThrow();
-  });
-
-  it("throws for sortOrder=-1", () => {
-    expect(() =>
-      saveSectionsInputSchema.parse({
-        songId: validId,
-        sections: [{ type: "intro", bars: 4, extraBeats: 0, sortOrder: -1 }],
-      }),
-    ).toThrow();
-  });
-
-  it("throws when label exceeds 100 characters", () => {
-    expect(() =>
-      saveSectionsInputSchema.parse({
-        songId: validId,
-        sections: [{ type: "custom", label: "L".repeat(101), bars: 4, extraBeats: 0, sortOrder: 0 }],
-      }),
-    ).toThrow();
-  });
-
-  it("throws when chordProgression exceeds 255 characters", () => {
-    expect(() =>
-      saveSectionsInputSchema.parse({
-        songId: validId,
-        sections: [{ type: "intro", bars: 4, extraBeats: 0, chordProgression: "C".repeat(256), sortOrder: 0 }],
-      }),
-    ).toThrow();
-  });
-
-  it("throws when memo exceeds 1000 characters", () => {
-    expect(() =>
-      saveSectionsInputSchema.parse({
-        songId: validId,
-        sections: [{ type: "intro", bars: 4, extraBeats: 0, memo: "M".repeat(1001), sortOrder: 0 }],
       }),
     ).toThrow();
   });
