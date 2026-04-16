@@ -114,18 +114,60 @@ src/
 
 ## Deployment
 
+### 通常デプロイ（自動）
+
+`main` ブランチへの push が GitHub Actions の `deploy.yml` を自動起動し、D1 マイグレーション → Worker デプロイの順で本番に反映される。
+
+### 初回セットアップ（新規環境・1 回のみ）
+
+CI が動作するには事前に以下の手作業が必要。
+
+#### 1. D1 データベース確認
+
 ```bash
-# Wrangler シークレット設定
-wrangler secret put GOOGLE_CLIENT_ID
-wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put GEMINI_API_KEY
-wrangler secret put SESSION_SECRET
+pnpm exec wrangler d1 list
+# struq-db が存在しない場合
+pnpm exec wrangler d1 create struq-db
+# → 発行された UUID を wrangler.jsonc の database_id に書き換えてコミット
+```
 
-# 本番 DB マイグレーション
+#### 2. Worker シークレット設定
+
+```bash
+pnpm exec wrangler secret put GOOGLE_CLIENT_ID
+pnpm exec wrangler secret put GOOGLE_CLIENT_SECRET
+pnpm exec wrangler secret put GEMINI_API_KEY
+pnpm exec wrangler secret put SESSION_SECRET   # 32 文字以上の文字列
+```
+
+> `E2E_TEST` は本番に設定しない（認証バイパスが有効になるため）
+
+#### 3. 本番 DB マイグレーション（初回）
+
+```bash
 pnpm db:migrate:production
+```
 
-# デプロイ
-pnpm deploy
+#### 4. 初回デプロイ
+
+```bash
+pnpm run deploy
+```
+
+#### 5. GitHub Actions シークレット登録
+
+GitHub リポジトリの Settings → Secrets and variables → Actions に以下を登録:
+
+| シークレット名 | 値 |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token（Edit Cloudflare Workers + D1 権限） |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウント ID |
+
+### 緊急時の手動デプロイ
+
+```bash
+pnpm db:migrate:production
+pnpm run deploy
 ```
 
 D1 データベース名: `struq-db`（`wrangler.jsonc` の `DB` バインディング）
