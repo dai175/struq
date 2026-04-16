@@ -210,10 +210,13 @@ export const deleteSetlist = createServerFn({ method: "POST" })
     });
     if (!setlist) return;
 
-    await db.transaction(async (tx) => {
-      await tx.update(schema.setlists).set({ deletedAt: now() }).where(eq(schema.setlists.id, data.id));
-      await tx.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id));
-    });
+    // Executes as a single batched request (not a true ACID transaction —
+    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
+    // batch are not rolled back if a later one fails).
+    await db.batch([
+      db.update(schema.setlists).set({ deletedAt: now() }).where(eq(schema.setlists.id, data.id)),
+      db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
+    ] as Parameters<typeof db.batch>[0]);
   });
 
 // ─── addSongToSetlist ──────────────────────────────────
