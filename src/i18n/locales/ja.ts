@@ -83,11 +83,21 @@ export const ja: Translations = {
     language: "言語",
     account: "アカウント",
     deleteAccount: "アカウント削除",
+    clickSound: "クリック音",
+    clickSoundDescription: "自動モード中に拍ごとにクリックを鳴らす",
   },
   perform: {
     section: "セクション",
     of: "/",
     songOf: "曲 {current}/{total}",
+    modeSelect: {
+      manual: "手動",
+      auto: "自動",
+      bpmRequired: "BPMを設定してください",
+    },
+    paused: {
+      tapToResume: "タップで再開",
+    },
   },
   auth: {
     loginWith: "Googleでログイン",

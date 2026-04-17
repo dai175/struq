@@ -83,12 +83,22 @@ export interface Translations {
     language: string;
     account: string;
     deleteAccount: string;
+    clickSound: string;
+    clickSoundDescription: string;
   };
 
   perform: {
     section: string;
     of: string;
     songOf: string;
+    modeSelect: {
+      manual: string;
+      auto: string;
+      bpmRequired: string;
+    };
+    paused: {
+      tapToResume: string;
+    };
   };
 
   auth: {

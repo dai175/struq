@@ -4,9 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { getSectionLabel, useI18n } from "@/i18n";
 import type { Locale, Translations } from "@/i18n/types";
+import { type ClickScheduleHandle, scheduleClicks, unlockAudio } from "@/lib/audio";
 import { getSetlist, type SetlistSongItem } from "@/setlists/server-fns";
+import { useClickPreference } from "@/songs/click-preference";
+import { CountInOverlay } from "@/songs/components/count-in-overlay";
+import { ModeSelectOverlay } from "@/songs/components/mode-select-overlay";
 import { SECTION_COLORS } from "@/songs/constants";
+import { BEATS_PER_BAR, calculateSectionDurationMs } from "@/songs/perform-utils";
 import { getSongWithSections, type SectionRow, type SongRow } from "@/songs/server-fns";
+import { useSectionTimer } from "@/songs/use-section-timer";
 
 // ─── Route ─────────────────────────────────────
 
@@ -65,6 +71,14 @@ const SAFE_AREA_STYLE = {
 
 // ─── Main View ─────────────────────────────────
 
+// Mode state machine (see docs/improvement-proposals.md §1-2):
+//   selecting  — overlay shown; user picks manual or auto each time a song loads
+//   manual     — tap-to-advance (legacy behavior)
+//   countin    — 4→3→2→1 before auto playback starts
+//   auto       — timer running, clicks firing
+//   paused     — user tapped mid-section; resume picks up remainder
+type Mode = "selecting" | "manual" | "countin" | "auto" | "paused";
+
 function PerformView({
   song,
   sections,
@@ -81,44 +95,75 @@ function PerformView({
   const { t, locale } = useI18n();
   const navigate = useNavigate();
 
-  // currentIndex === total means END state
+  const [mode, setMode] = useState<Mode>("selecting");
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Swipe tracking
+  const [clickEnabled] = useClickPreference();
+
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipedRef = useRef(false);
 
-  // Setlist context
   const setlistSongs = setlistData?.songs ?? [];
   const currentSongIdx = setlistSongs.findIndex((s) => s.songId === songId);
   const isSetlistMode = !!setlistId && currentSongIdx >= 0;
   const hasNextSong = isSetlistMode && currentSongIdx < setlistSongs.length - 1;
   const hasPrevSong = isSetlistMode && currentSongIdx > 0;
 
-  // Derived section state
   const total = sections.length;
   const isEnded = currentIndex >= total;
   const current = !isEnded ? sections[currentIndex] : undefined;
   const prev = currentIndex > 0 && currentIndex <= total ? sections[currentIndex - 1] : null;
   const next = currentIndex < total - 1 ? sections[currentIndex + 1] : null;
 
+  // ── Auto-advance timer ────────────────────────
+  // Compute even when not in auto mode so useSectionTimer initializes its
+  // remaining-ms ref with the real value; isRunning still gates actual scheduling.
+  const sectionDurationMs = current && song.bpm ? calculateSectionDurationMs(current, song.bpm) : 0;
+
+  useSectionTimer({
+    durationMs: sectionDurationMs,
+    onComplete: handleAutoComplete,
+    isRunning: mode === "auto",
+    resetKey: currentIndex,
+  });
+
+  // ── Click stream during auto ──────────────────
+  const clickHandleRef = useRef<ClickScheduleHandle | null>(null);
+  useEffect(() => {
+    clickHandleRef.current?.cancel();
+    clickHandleRef.current = null;
+    if (mode === "auto" && clickEnabled && current && song.bpm) {
+      const beats = current.bars * BEATS_PER_BAR + current.extraBeats;
+      clickHandleRef.current = scheduleClicks(song.bpm, beats);
+    }
+    return () => {
+      clickHandleRef.current?.cancel();
+      clickHandleRef.current = null;
+    };
+  }, [mode, clickEnabled, current, song.bpm]);
+
+  // ── Count-in audio ────────────────────────────
+  useEffect(() => {
+    if (mode !== "countin" || !song.bpm) return;
+    const handle = scheduleClicks(song.bpm, 4);
+    return () => handle.cancel();
+  }, [mode, song.bpm]);
+
   // ── Handlers ──────────────────────────────────
 
-  function handleAdvance() {
-    if (swipedRef.current) {
-      swipedRef.current = false;
-      return;
-    }
-    if (total === 0 || isEnded) return;
+  function navigateToSong(target: SetlistSongItem) {
+    navigate({
+      to: "/songs/$id/perform",
+      params: { id: target.songId },
+      search: { setlistId },
+    });
+  }
 
+  function advanceSection() {
+    if (total === 0 || isEnded) return;
     if (currentIndex >= total - 1) {
       if (isSetlistMode && hasNextSong) {
-        const nextSong = setlistSongs[currentSongIdx + 1];
-        navigate({
-          to: "/songs/$id/perform",
-          params: { id: nextSong.songId },
-          search: { setlistId },
-        });
+        navigateToSong(setlistSongs[currentSongIdx + 1]);
       } else {
         setCurrentIndex(total);
       }
@@ -127,13 +172,33 @@ function PerformView({
     setCurrentIndex((i) => i + 1);
   }
 
+  function handleAutoComplete() {
+    advanceSection();
+  }
+
+  function handleManualAdvance() {
+    if (swipedRef.current) {
+      swipedRef.current = false;
+      return;
+    }
+    advanceSection();
+  }
+
   function handleBack() {
     if (currentIndex <= 0) return;
     setCurrentIndex((i) => i - 1);
+    // In auto mode, rewinding a section drops us into paused so the user
+    // can take a breath before resuming.
+    if (mode === "auto" || mode === "countin") {
+      setMode("paused");
+    }
   }
 
   function handleReset() {
     setCurrentIndex(0);
+    if (mode === "auto" || mode === "countin") {
+      setMode("paused");
+    }
   }
 
   function goExit() {
@@ -144,12 +209,41 @@ function PerformView({
     }
   }
 
-  function navigateToSong(target: SetlistSongItem) {
-    navigate({
-      to: "/songs/$id/perform",
-      params: { id: target.songId },
-      search: { setlistId },
-    });
+  function handleSelectManual() {
+    setMode("manual");
+  }
+
+  function handleSelectAuto() {
+    unlockAudio();
+    setMode("countin");
+  }
+
+  function handleCountInComplete() {
+    setMode("auto");
+  }
+
+  // Central dispatcher for tap / Space / ArrowRight based on current mode.
+  function handlePrimaryAction() {
+    if (swipedRef.current) {
+      swipedRef.current = false;
+      return;
+    }
+    switch (mode) {
+      case "selecting":
+        return;
+      case "manual":
+        advanceSection();
+        return;
+      case "countin":
+        setMode("paused");
+        return;
+      case "auto":
+        setMode("paused");
+        return;
+      case "paused":
+        setMode("auto");
+        return;
+    }
   }
 
   // ── Touch / Swipe ─────────────────────────────
@@ -168,6 +262,7 @@ function PerformView({
     touchStartRef.current = null;
 
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    if (mode === "selecting") return;
 
     if (isSetlistMode) {
       if (dx > 0 && hasPrevSong) {
@@ -182,8 +277,8 @@ function PerformView({
 
   // ── Keyboard ──────────────────────────────────
 
-  const handlersRef = useRef({ handleAdvance, handleBack, handleReset, goExit });
-  handlersRef.current = { handleAdvance, handleBack, handleReset, goExit };
+  const handlersRef = useRef({ handlePrimaryAction, handleBack, handleReset, goExit });
+  handlersRef.current = { handlePrimaryAction, handleBack, handleReset, goExit };
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -191,7 +286,7 @@ function PerformView({
         case " ":
         case "ArrowRight":
           e.preventDefault();
-          handlersRef.current.handleAdvance();
+          handlersRef.current.handlePrimaryAction();
           break;
         case "ArrowLeft":
           e.preventDefault();
@@ -212,6 +307,8 @@ function PerformView({
   if (song.artist) metaParts.push(song.artist);
   if (song.bpm) metaParts.push(`${song.bpm} BPM`);
   if (song.key) metaParts.push(song.key);
+
+  const showPausedHint = mode === "paused";
 
   // ── Render ────────────────────────────────────
 
@@ -246,129 +343,146 @@ function PerformView({
         </button>
       </header>
 
-      {/* ── Progress bar ────────────────────────── */}
-      {total > 0 && (
-        <div className="flex gap-0.5 px-4 lg:px-8">
-          {sections.map((sec, i) => (
-            <div
-              key={sec.id}
-              className="h-2 min-w-1 rounded-full transition-opacity duration-150 lg:h-3"
-              style={{
-                flex: sec.bars,
-                backgroundColor: SECTION_COLORS[sec.type],
-                opacity: isEnded || i <= currentIndex ? 1 : 0.25,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* ── Section counter ─────────────────────── */}
-      {total > 0 && !isEnded && (
-        <div className="mt-2 text-center">
-          <span className="font-mono text-xs opacity-40 lg:text-sm">
-            {currentIndex + 1}
-            {t.perform.of}
-            {total}
-          </span>
-          {isSetlistMode && (
-            <span className="ml-3 text-xs opacity-30">
-              {t.perform.songOf
-                .replace("{current}", String(currentSongIdx + 1))
-                .replace("{total}", String(setlistSongs.length))}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* ── Main tap area ───────────────────────── */}
-      {total === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center px-6 lg:px-12">
-          <div className="text-center">
-            <p className="text-lg opacity-40">{t.song.noSections}</p>
-            <Link to="/songs/$id" params={{ id: songId }} className="mt-4 inline-block text-sm opacity-50 underline">
-              {t.common.back}
-            </Link>
-          </div>
-        </div>
+      {mode === "selecting" ? (
+        <ModeSelectOverlay bpm={song.bpm} onSelectManual={handleSelectManual} onSelectAuto={handleSelectAuto} />
+      ) : mode === "countin" && song.bpm ? (
+        <CountInOverlay bpm={song.bpm} onComplete={handleCountInComplete} />
       ) : (
-        <button
-          type="button"
-          className="flex flex-1 cursor-pointer flex-col items-center justify-center px-6 lg:px-12"
-          onClick={handleAdvance}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleAdvance();
-            }
-          }}
-        >
-          {isEnded ? (
-            <p className="text-6xl font-bold opacity-50 lg:text-8xl">{t.common.end}</p>
-          ) : current ? (
-            <>
-              {/* Previous section */}
-              <div className="mb-6 h-7 lg:mb-8 lg:h-8">
-                {prev && <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p>}
-              </div>
+        <>
+          {/* ── Progress bar ────────────────────────── */}
+          {total > 0 && (
+            <div className="flex gap-0.5 px-4 lg:px-8">
+              {sections.map((sec, i) => (
+                <div
+                  key={sec.id}
+                  className="h-2 min-w-1 rounded-full transition-opacity duration-150 lg:h-3"
+                  style={{
+                    flex: sec.bars,
+                    backgroundColor: SECTION_COLORS[sec.type],
+                    opacity: isEnded || i <= currentIndex ? 1 : 0.25,
+                  }}
+                />
+              ))}
+            </div>
+          )}
 
-              {/* Current section */}
+          {/* ── Section counter ─────────────────────── */}
+          {total > 0 && !isEnded && (
+            <div className="mt-2 text-center">
+              <span className="font-mono text-xs opacity-40 lg:text-sm">
+                {currentIndex + 1}
+                {t.perform.of}
+                {total}
+              </span>
+              {isSetlistMode && (
+                <span className="ml-3 text-xs opacity-30">
+                  {t.perform.songOf
+                    .replace("{current}", String(currentSongIdx + 1))
+                    .replace("{total}", String(setlistSongs.length))}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* ── Main tap area ───────────────────────── */}
+          {total === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-6 lg:px-12">
               <div className="text-center">
-                <p className="text-5xl font-bold lg:text-7xl" style={{ color: SECTION_COLORS[current.type] }}>
-                  {sectionLabel(current, locale)}
-                </p>
-                {current.chordProgression && (
-                  <p className="mt-4 font-mono text-xl opacity-80 lg:mt-6 lg:text-2xl">{current.chordProgression}</p>
-                )}
-                <p className="mt-3 font-mono text-base opacity-40 lg:text-lg">{formatBars(current, t)}</p>
-                {current.memo && <p className="mt-2 text-sm opacity-30 lg:text-base">{current.memo}</p>}
+                <p className="text-lg opacity-40">{t.song.noSections}</p>
+                <Link
+                  to="/songs/$id"
+                  params={{ id: songId }}
+                  className="mt-4 inline-block text-sm opacity-50 underline"
+                >
+                  {t.common.back}
+                </Link>
               </div>
-
-              {/* Next section hint */}
-              <div className="mt-6 h-10 text-center lg:mt-8">
-                {next ? (
-                  <div className="opacity-30">
-                    <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
-                    <p className="text-sm lg:text-base">{sectionLabel(next, locale)}</p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="flex flex-1 cursor-pointer flex-col items-center justify-center px-6 lg:px-12"
+              onClick={mode === "manual" ? handleManualAdvance : handlePrimaryAction}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (mode === "manual") handleManualAdvance();
+                  else handlePrimaryAction();
+                }
+              }}
+            >
+              {isEnded ? (
+                <p className="text-6xl font-bold opacity-50 lg:text-8xl">{t.common.end}</p>
+              ) : current ? (
+                <>
+                  {/* Previous section */}
+                  <div className="mb-6 h-7 lg:mb-8 lg:h-8">
+                    {prev && <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p>}
                   </div>
-                ) : isSetlistMode && hasNextSong ? (
-                  <div className="opacity-25">
-                    <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
-                    <p className="text-sm lg:text-base">{setlistSongs[currentSongIdx + 1].title}</p>
-                  </div>
-                ) : (
-                  <p className="text-sm opacity-20">{t.common.end}</p>
-                )}
-              </div>
-            </>
-          ) : null}
-        </button>
-      )}
 
-      {/* ── Bottom controls ─────────────────────── */}
-      {total > 0 && (
-        <div className="flex items-center justify-between px-4 pb-4 pt-2 lg:px-8">
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-disabled={currentIndex === 0}
-            className={`min-w-[72px] rounded-full px-4 py-2 text-sm transition-opacity active:opacity-80 ${
-              currentIndex === 0 ? "opacity-20" : "opacity-50"
-            }`}
-          >
-            {t.common.back}
-          </button>
-          <span className="font-mono text-xs opacity-30">
-            {isEnded ? t.common.end : `${currentIndex + 1}${t.perform.of}${total}`}
-          </span>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="min-w-[72px] rounded-full px-4 py-2 text-sm opacity-50 transition-opacity active:opacity-80"
-          >
-            {t.common.reset}
-          </button>
-        </div>
+                  {/* Current section */}
+                  <div className="text-center">
+                    <p className="text-5xl font-bold lg:text-7xl" style={{ color: SECTION_COLORS[current.type] }}>
+                      {sectionLabel(current, locale)}
+                    </p>
+                    {current.chordProgression && (
+                      <p className="mt-4 font-mono text-xl opacity-80 lg:mt-6 lg:text-2xl">
+                        {current.chordProgression}
+                      </p>
+                    )}
+                    <p className="mt-3 font-mono text-base opacity-40 lg:text-lg">{formatBars(current, t)}</p>
+                    {current.memo && <p className="mt-2 text-sm opacity-30 lg:text-base">{current.memo}</p>}
+                  </div>
+
+                  {/* Next section hint or paused hint */}
+                  <div className="mt-6 h-10 text-center lg:mt-8">
+                    {showPausedHint ? (
+                      <p className="text-sm opacity-50">{t.perform.paused.tapToResume}</p>
+                    ) : next ? (
+                      <div className="opacity-30">
+                        <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
+                        <p className="text-sm lg:text-base">{sectionLabel(next, locale)}</p>
+                      </div>
+                    ) : isSetlistMode && hasNextSong ? (
+                      <div className="opacity-25">
+                        <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
+                        <p className="text-sm lg:text-base">{setlistSongs[currentSongIdx + 1].title}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm opacity-20">{t.common.end}</p>
+                    )}
+                  </div>
+                </>
+              ) : null}
+            </button>
+          )}
+
+          {/* ── Bottom controls ─────────────────────── */}
+          {total > 0 && (
+            <div className="flex items-center justify-between px-4 pb-4 pt-2 lg:px-8">
+              <button
+                type="button"
+                onClick={handleBack}
+                aria-disabled={currentIndex === 0}
+                className={`min-w-[72px] rounded-full px-4 py-2 text-sm transition-opacity active:opacity-80 ${
+                  currentIndex === 0 ? "opacity-20" : "opacity-50"
+                }`}
+              >
+                {t.common.back}
+              </button>
+              <span className="font-mono text-xs opacity-30">
+                {isEnded ? t.common.end : `${currentIndex + 1}${t.perform.of}${total}`}
+              </span>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="min-w-[72px] rounded-full px-4 py-2 text-sm opacity-50 transition-opacity active:opacity-80"
+              >
+                {t.common.reset}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

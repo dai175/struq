@@ -83,11 +83,21 @@ export const en: Translations = {
     language: "Language",
     account: "Account",
     deleteAccount: "Delete Account",
+    clickSound: "Click sound",
+    clickSoundDescription: "Play a click on each beat during auto mode",
   },
   perform: {
     section: "Section",
     of: "/",
     songOf: "Song {current}/{total}",
+    modeSelect: {
+      manual: "Manual",
+      auto: "Auto",
+      bpmRequired: "BPM required",
+    },
+    paused: {
+      tapToResume: "Tap to resume",
+    },
   },
   auth: {
     loginWith: "Login with Google",

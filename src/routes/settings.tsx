@@ -5,6 +5,7 @@ import { logout, requireAuth, updateLocale } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
+import { useClickPreference } from "@/songs/click-preference";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: requireAuth,
@@ -23,6 +24,7 @@ function SettingsPage() {
   const logoutFn = useServerFn(logout);
   const updateLocaleFn = useServerFn(updateLocale);
   const [localeUpdating, setLocaleUpdating] = useState(false);
+  const [clickEnabled, setClickEnabled] = useClickPreference();
 
   const handleLogout = async () => {
     try {
@@ -76,6 +78,29 @@ function SettingsPage() {
                 {LOCALE_LABELS[l]}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0 flex-1 pr-3">
+              <p className="text-sm">{t.settings.clickSound}</p>
+              <p className="mt-0.5 text-xs text-text-secondary">{t.settings.clickSoundDescription}</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={clickEnabled}
+              onClick={() => setClickEnabled(!clickEnabled)}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                clickEnabled ? "bg-text-primary" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className="absolute block h-5 w-5 rounded-full bg-white shadow-sm transition-all"
+                style={{ top: "2px", left: clickEnabled ? "22px" : "2px" }}
+              />
+            </button>
           </div>
         </div>
 
