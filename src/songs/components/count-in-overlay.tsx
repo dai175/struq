@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { msPerBeat } from "@/songs/perform-utils";
 
 interface CountInOverlayProps {
   /** BPM to space the count ticks at. */
@@ -10,20 +11,26 @@ interface CountInOverlayProps {
 const COUNT_BEATS = 4;
 
 export function CountInOverlay({ bpm, onComplete }: CountInOverlayProps) {
-  // Start at 4 and decrement; 0 means "done, call onComplete and unmount".
   const [count, setCount] = useState(COUNT_BEATS);
 
+  // Ref so a parent re-render (which rebuilds onComplete) does not reset the
+  // setInterval mid-count-in and shift beats.
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
   useEffect(() => {
-    const interval = 60_000 / bpm;
-    const timer = setTimeout(() => {
-      if (count > 1) {
-        setCount(count - 1);
+    let remaining = COUNT_BEATS;
+    const id = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(id);
+        onCompleteRef.current();
       } else {
-        onComplete();
+        setCount(remaining);
       }
-    }, interval);
-    return () => clearTimeout(timer);
-  }, [count, bpm, onComplete]);
+    }, msPerBeat(bpm));
+    return () => clearInterval(id);
+  }, [bpm]);
 
   return (
     <div className="flex flex-1 items-center justify-center">

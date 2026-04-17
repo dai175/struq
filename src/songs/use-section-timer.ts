@@ -4,44 +4,40 @@ import { useEffect, useRef } from "react";
 // remainder survives wall-clock jumps (NTP sync, device sleep).
 
 export interface UseSectionTimerOptions {
-  /** Total ms the current section should run. Use `calculateSectionDurationMs`. */
+  /** Total ms the current section should run. Captured when sectionId changes. */
   durationMs: number;
   /** Called once when the remainder hits zero. */
   onComplete: () => void;
   /** True = counting down; false = paused (preserves remaining). */
   isRunning: boolean;
-  /** Resets the remainder to `durationMs` when this changes (e.g. sectionId). */
-  resetKey: string | number;
+  /** Resets the remainder when this changes. Changing durationMs alone does NOT restart. */
+  sectionId: string | number;
 }
 
-export function useSectionTimer({ durationMs, onComplete, isRunning, resetKey }: UseSectionTimerOptions): void {
-  // Handle to the currently-scheduled setTimeout (null when not running).
+export function useSectionTimer({ durationMs, onComplete, isRunning, sectionId }: UseSectionTimerOptions): void {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // performance.now() at the moment the timer (re)started running.
   const startedAtRef = useRef<number | null>(null);
-  // How much time is left to count from; decremented on each pause.
   const remainingMsRef = useRef<number>(durationMs);
-  // Keep the latest onComplete so the scheduled setTimeout calls a fresh ref.
+
+  // Refs so deps stay minimal: updates to onComplete / durationMs alone must
+  // not restart the timer. durationMs is applied at the next sectionId change.
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const durationMsRef = useRef(durationMs);
+  durationMsRef.current = durationMs;
 
-  // Track the last-seen resetKey so we can detect section changes inside a
-  // single merged effect. Keeping reset + pause/resume in one effect avoids
-  // ordering hazards when multiple effects fire on the same render.
-  const prevResetKeyRef = useRef(resetKey);
+  const prevSectionIdRef = useRef(sectionId);
 
   useEffect(() => {
-    // Section changed → clear remaining and prior-run markers before deciding
-    // what to do for the current isRunning state.
-    if (prevResetKeyRef.current !== resetKey) {
-      prevResetKeyRef.current = resetKey;
-      remainingMsRef.current = durationMs;
+    if (prevSectionIdRef.current !== sectionId) {
+      prevSectionIdRef.current = sectionId;
+      remainingMsRef.current = durationMsRef.current;
       startedAtRef.current = null;
     }
 
-    // The cleanup below runs before the next body on re-run, so it clears
-    // timeoutRef. The pause branch therefore guards on startedAtRef (which
-    // cleanup doesn't touch) to detect that a run was in progress.
+    // Cleanup below clears timeoutRef on every re-run, so the pause branch
+    // guards on startedAtRef (which cleanup doesn't touch) to detect that
+    // a run was in progress and the remainder needs updating.
     if (isRunning) {
       startedAtRef.current = performance.now();
       timeoutRef.current = setTimeout(() => onCompleteRef.current(), remainingMsRef.current);
@@ -57,5 +53,5 @@ export function useSectionTimer({ durationMs, onComplete, isRunning, resetKey }:
         timeoutRef.current = null;
       }
     };
-  }, [isRunning, resetKey, durationMs]);
+  }, [isRunning, sectionId]);
 }

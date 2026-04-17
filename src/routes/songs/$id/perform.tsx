@@ -10,7 +10,7 @@ import { useClickPreference } from "@/songs/click-preference";
 import { CountInOverlay } from "@/songs/components/count-in-overlay";
 import { ModeSelectOverlay } from "@/songs/components/mode-select-overlay";
 import { SECTION_COLORS } from "@/songs/constants";
-import { BEATS_PER_BAR, calculateSectionDurationMs } from "@/songs/perform-utils";
+import { calculateSectionDurationMs, sectionBeats } from "@/songs/perform-utils";
 import { getSongWithSections, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { useSectionTimer } from "@/songs/use-section-timer";
 
@@ -71,12 +71,6 @@ const SAFE_AREA_STYLE = {
 
 // ─── Main View ─────────────────────────────────
 
-// Mode state machine (see docs/improvement-proposals.md §1-2):
-//   selecting  — overlay shown; user picks manual or auto each time a song loads
-//   manual     — tap-to-advance (legacy behavior)
-//   countin    — 4→3→2→1 before auto playback starts
-//   auto       — timer running, clicks firing
-//   paused     — user tapped mid-section; resume picks up remainder
 type Mode = "selecting" | "manual" | "countin" | "auto" | "paused";
 
 function PerformView({
@@ -122,9 +116,9 @@ function PerformView({
 
   useSectionTimer({
     durationMs: sectionDurationMs,
-    onComplete: handleAutoComplete,
+    onComplete: advanceSection,
     isRunning: mode === "auto",
-    resetKey: currentIndex,
+    sectionId: currentIndex,
   });
 
   // ── Click stream during auto ──────────────────
@@ -133,8 +127,7 @@ function PerformView({
     clickHandleRef.current?.cancel();
     clickHandleRef.current = null;
     if (mode === "auto" && clickEnabled && current && song.bpm) {
-      const beats = current.bars * BEATS_PER_BAR + current.extraBeats;
-      clickHandleRef.current = scheduleClicks(song.bpm, beats);
+      clickHandleRef.current = scheduleClicks(song.bpm, sectionBeats(current));
     }
     return () => {
       clickHandleRef.current?.cancel();
@@ -170,18 +163,6 @@ function PerformView({
       return;
     }
     setCurrentIndex((i) => i + 1);
-  }
-
-  function handleAutoComplete() {
-    advanceSection();
-  }
-
-  function handleManualAdvance() {
-    if (swipedRef.current) {
-      swipedRef.current = false;
-      return;
-    }
-    advanceSection();
   }
 
   function handleBack() {
@@ -402,12 +383,11 @@ function PerformView({
             <button
               type="button"
               className="flex flex-1 cursor-pointer flex-col items-center justify-center px-6 lg:px-12"
-              onClick={mode === "manual" ? handleManualAdvance : handlePrimaryAction}
+              onClick={handlePrimaryAction}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  if (mode === "manual") handleManualAdvance();
-                  else handlePrimaryAction();
+                  handlePrimaryAction();
                 }
               }}
             >
