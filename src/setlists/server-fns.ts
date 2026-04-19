@@ -263,9 +263,6 @@ export const saveSetlistWithSongs = createServerFn({ method: "POST" })
     const db = getDb(env.DB);
     const timestamp = now();
 
-    const title = data.title.trim();
-    if (!title) throw new Error("Title is required");
-
     const [, ownedSongIds] = await Promise.all([
       requireSetlistOwner(db, data.id, user.userId),
       data.songIds.length > 0
@@ -305,7 +302,7 @@ export const saveSetlistWithSongs = createServerFn({ method: "POST" })
       db
         .update(schema.setlists)
         .set({
-          title,
+          title: data.title,
           description: data.description?.trim() || null,
           sessionDate: data.sessionDate?.trim() || null,
           venue: data.venue?.trim() || null,
