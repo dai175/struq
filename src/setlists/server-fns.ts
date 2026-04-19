@@ -328,6 +328,10 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
 
 // ─── listSongsForPicker ──────────────────────────────
 
+// The picker has no pagination UI, so cap the response to avoid huge payloads
+// for large libraries. Users with more matches are expected to narrow via search.
+const PICKER_SONG_LIMIT = 100;
+
 export const listSongsForPicker = createServerFn({ method: "GET" })
   .inputValidator((input: { setlistId: string; query?: string }) => listSongsForPickerInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ id: string; title: string; artist: string | null }[]> => {
@@ -363,7 +367,8 @@ export const listSongsForPicker = createServerFn({ method: "GET" })
       })
       .from(schema.songs)
       .where(whereClause)
-      .orderBy(schema.songs.title);
+      .orderBy(schema.songs.title)
+      .limit(PICKER_SONG_LIMIT);
 
     return songs;
   });

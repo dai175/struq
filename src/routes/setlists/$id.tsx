@@ -404,7 +404,8 @@ function SongPickerModal({
   const [addingId, setAddingId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const debouncedInput = useDebouncedValue(input, 300);
-  // debounce 中に複数リクエストが並走するので、最新の query のみを採用して out-of-order 応答を捨てる。
+  // Debounced typing can leave multiple in-flight requests; keep only the latest
+  // query's response so a late earlier response can't clobber newer results.
   const latestQueryRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
