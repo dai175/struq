@@ -50,3 +50,13 @@ code {
 		outline-color: var(--color-text-on-dark);
 	}
 }
+
+/* Beat LED pulse — bright on beat impact, fades to dim before the next beat. */
+@keyframes led-pulse {
+	0% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0.2;
+	}
+}

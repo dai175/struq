@@ -13,6 +13,7 @@ import { SECTION_COLORS } from "@/songs/constants";
 import { calculateSectionDurationMs, sectionBeats } from "@/songs/perform-utils";
 import { getSongWithSections, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { useCurrentBar } from "@/songs/use-current-bar";
+import { useCurrentBeat } from "@/songs/use-current-beat";
 import { useSectionTimer } from "@/songs/use-section-timer";
 
 // ─── Route ─────────────────────────────────────
@@ -126,6 +127,13 @@ function PerformView({
   const currentBar = useCurrentBar({
     bpm: song.bpm,
     totalBars: current?.bars ?? 0,
+    isRunning: mode === "auto",
+    sectionId: currentIndex,
+  });
+
+  const currentBeat = useCurrentBeat({
+    bpm: song.bpm,
+    section: current,
     isRunning: mode === "auto",
     sectionId: currentIndex,
   });
@@ -301,6 +309,26 @@ function PerformView({
   const showPausedHint = mode === "paused";
   const hasDetails = !!(current?.chordProgression || current?.memo);
 
+  // Shared prev/next JSX so we can render them in the outer slots (portrait)
+  // or inside the right-hand details column (landscape) without duplication.
+  const prevLabel = prev ? <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p> : null;
+
+  const nextHint = showPausedHint ? (
+    <p className="text-sm opacity-50">{t.perform.paused.tapToResume}</p>
+  ) : next ? (
+    <div className="opacity-30">
+      <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
+      <p className="text-sm lg:text-base">{sectionLabel(next, locale)}</p>
+    </div>
+  ) : isSetlistMode && hasNextSong ? (
+    <div className="opacity-25">
+      <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
+      <p className="text-sm lg:text-base">{setlistSongs[currentSongIdx + 1].title}</p>
+    </div>
+  ) : (
+    <p className="text-sm opacity-20">{t.common.end}</p>
+  );
+
   // ── Render ────────────────────────────────────
 
   return (
@@ -405,9 +433,12 @@ function PerformView({
                 <p className="text-6xl font-bold opacity-50 lg:text-8xl">{t.common.end}</p>
               ) : current ? (
                 <>
-                  {/* Previous section */}
-                  <div className="mb-6 h-7 lg:mb-8 lg:h-8">
-                    {prev && <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p>}
+                  {/* Previous section — hidden in landscape when details column hosts it */}
+                  <div className={`mb-6 h-7 lg:mb-8 lg:h-8${hasDetails ? " landscape:hidden" : ""}`}>{prevLabel}</div>
+
+                  {/* Beat LED — reserved slot keeps layout stable across modes */}
+                  <div className="mb-4 flex h-3 items-center justify-center lg:mb-6 lg:h-3.5">
+                    {(mode === "auto" || mode === "paused") && <BeatStrip currentBeat={currentBeat} bpm={song.bpm} />}
                   </div>
 
                   <div className="flex w-full flex-col items-center text-center landscape:grid landscape:grid-cols-2 landscape:items-center landscape:gap-12 landscape:lg:gap-16">
@@ -426,36 +457,26 @@ function PerformView({
                       )}
                     </div>
                     {hasDetails && (
-                      <div className="flex flex-col items-center landscape:items-start landscape:text-left">
+                      <div className="flex flex-col items-center">
+                        {/* Prev label — landscape only */}
+                        <div className="hidden h-7 landscape:block lg:h-8">{prevLabel}</div>
                         {current.chordProgression && (
-                          <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl landscape:mt-0 landscape:text-2xl landscape:lg:text-3xl">
+                          <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl landscape:mt-4 landscape:text-2xl landscape:lg:mt-6 landscape:lg:text-3xl">
                             {current.chordProgression}
                           </p>
                         )}
                         {current.memo && (
                           <p className="mt-2 text-sm opacity-30 lg:text-base landscape:mt-3">{current.memo}</p>
                         )}
+                        {/* Next hint — landscape only */}
+                        <div className="hidden h-10 landscape:mt-4 landscape:block landscape:lg:mt-6">{nextHint}</div>
                       </div>
                     )}
                   </div>
 
-                  {/* Next section hint or paused hint */}
-                  <div className="mt-6 h-10 text-center lg:mt-8">
-                    {showPausedHint ? (
-                      <p className="text-sm opacity-50">{t.perform.paused.tapToResume}</p>
-                    ) : next ? (
-                      <div className="opacity-30">
-                        <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
-                        <p className="text-sm lg:text-base">{sectionLabel(next, locale)}</p>
-                      </div>
-                    ) : isSetlistMode && hasNextSong ? (
-                      <div className="opacity-25">
-                        <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
-                        <p className="text-sm lg:text-base">{setlistSongs[currentSongIdx + 1].title}</p>
-                      </div>
-                    ) : (
-                      <p className="text-sm opacity-20">{t.common.end}</p>
-                    )}
+                  {/* Next section hint or paused hint — hidden in landscape when details column hosts it */}
+                  <div className={`mt-6 h-10 text-center lg:mt-8${hasDetails ? " landscape:hidden" : ""}`}>
+                    {nextHint}
                   </div>
                 </>
               ) : null}
@@ -489,6 +510,38 @@ function PerformView({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// 4-LED strip that pulses in sync with the click during auto mode.
+// `currentBeat` is 0..3 within the current bar, or -1 before the first beat fires.
+// TODO(user): implement the LED rendering. Design decisions to make:
+//   1. Active LED: how bright? (opacity / brightness / glow)
+//   2. Passed beats in current bar: do they stay lit, fade, or go dark?
+//   3. Beat 1 accent: color swap, larger size, or no accent?
+//   4. Size & spacing: should match BarDots (h-2 w-2) or stand out more?
+// See BarDots above for a reference on Tailwind classes + inline color style.
+// Single LED that flashes on each beat and fades before the next one.
+// The `key={currentBeat}` remount restarts the CSS animation per beat so
+// the pulse is aligned with the click audio.
+const BEAT_LED_COLOR = "#ef4444";
+
+function BeatStrip({ currentBeat, bpm }: { currentBeat: number; bpm: number | null }) {
+  const isActive = currentBeat >= 0 && bpm !== null;
+  const beatDurationMs = bpm ? 60_000 / bpm : 500;
+  return (
+    <div className="flex items-center justify-center" aria-hidden="true">
+      <span
+        key={isActive ? currentBeat : "idle"}
+        className="block h-3 w-3 rounded-full lg:h-3.5 lg:w-3.5"
+        style={{
+          backgroundColor: BEAT_LED_COLOR,
+          opacity: isActive ? undefined : 0.2,
+          animation: isActive ? `led-pulse ${beatDurationMs}ms ease-out forwards` : undefined,
+          boxShadow: `0 0 12px ${BEAT_LED_COLOR}`,
+        }}
+      />
     </div>
   );
 }
