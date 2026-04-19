@@ -299,6 +299,7 @@ function PerformView({
   if (song.key) metaParts.push(song.key);
 
   const showPausedHint = mode === "paused";
+  const hasDetails = !!(current?.chordProgression || current?.memo);
 
   // ── Render ────────────────────────────────────
 
@@ -409,24 +410,33 @@ function PerformView({
                     {prev && <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p>}
                   </div>
 
-                  {/* Current section */}
-                  <div className="text-center">
-                    <p className="text-5xl font-bold lg:text-7xl" style={{ color: sectionColor }}>
-                      {sectionLabel(current, locale)}
-                    </p>
-                    <p
-                      className="mt-4 font-mono text-3xl font-bold opacity-90 lg:mt-6 lg:text-4xl"
-                      style={{ color: sectionColor }}
-                    >
-                      {formatBars(current, t)}
-                    </p>
-                    {(mode === "auto" || mode === "paused") && (
-                      <BarDots total={current.bars} currentBar={currentBar} color={sectionColor} />
+                  <div className="flex w-full flex-col items-center text-center landscape:grid landscape:grid-cols-2 landscape:items-center landscape:gap-12 landscape:lg:gap-16">
+                    <div className={`flex flex-col items-center${hasDetails ? "" : " landscape:col-span-2"}`}>
+                      <p className="text-5xl font-bold lg:text-7xl" style={{ color: sectionColor }}>
+                        {sectionLabel(current, locale)}
+                      </p>
+                      <p
+                        className="mt-4 font-mono text-3xl font-bold opacity-90 lg:mt-6 lg:text-4xl"
+                        style={{ color: sectionColor }}
+                      >
+                        {formatBars(current, t)}
+                      </p>
+                      {(mode === "auto" || mode === "paused") && (
+                        <BarDots total={current.bars} currentBar={currentBar} color={sectionColor} />
+                      )}
+                    </div>
+                    {hasDetails && (
+                      <div className="flex flex-col items-center landscape:items-start landscape:text-left">
+                        {current.chordProgression && (
+                          <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl landscape:mt-0 landscape:text-2xl landscape:lg:text-3xl">
+                            {current.chordProgression}
+                          </p>
+                        )}
+                        {current.memo && (
+                          <p className="mt-2 text-sm opacity-30 lg:text-base landscape:mt-3">{current.memo}</p>
+                        )}
+                      </div>
                     )}
-                    {current.chordProgression && (
-                      <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl">{current.chordProgression}</p>
-                    )}
-                    {current.memo && <p className="mt-2 text-sm opacity-30 lg:text-base">{current.memo}</p>}
                   </div>
 
                   {/* Next section hint or paused hint */}
