@@ -54,8 +54,13 @@ export function useCurrentBar({ bpm, totalBars, isRunning, sectionId }: UseCurre
     tick();
     const interval = setInterval(tick, TICK_MS);
 
+    // Accumulate elapsed on cleanup so bpm/totalBars changes mid-section
+    // don't drop the in-progress delta. The pause branch's guard on
+    // startedAtRef prevents double-counting on the immediate next run.
     return () => {
       clearInterval(interval);
+      elapsedMsRef.current += performance.now() - startedAt;
+      startedAtRef.current = null;
     };
   }, [isRunning, bpm, totalBars, sectionId]);
 
