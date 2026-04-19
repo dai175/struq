@@ -417,15 +417,17 @@ function SongPickerModal({
         if (latestQueryRef.current !== query) return;
         setAvailableSongs(songs);
       })
-      .catch(() => {
+      .catch((error) => {
         if (latestQueryRef.current !== query) return;
+        clientLogger.error("listSongsForPicker", error);
         setAvailableSongs([]);
+        toast.error(t.common.errorLoadFailed);
       })
       .finally(() => {
         if (latestQueryRef.current !== query) return;
         setLoading(false);
       });
-  }, [setlistId, debouncedInput]);
+  }, [setlistId, debouncedInput, t.common.errorLoadFailed, toast.error]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
