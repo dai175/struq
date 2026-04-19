@@ -14,6 +14,7 @@ import {
   saveSongWithSectionsInputSchema,
   songIdInputSchema,
 } from "@/lib/schemas";
+import { escapeLikePattern } from "@/lib/sql-like";
 import { isValidUrl } from "@/lib/validation";
 import { now, requireUser } from "@/server/helpers";
 import type { SectionData } from "@/songs/components/SectionCard";
@@ -51,12 +52,6 @@ const sectionColumns = {
 // ─── listSongs ──────────────────────────────────────────
 
 const LIST_SONGS_LIMIT = 30;
-
-// Escape LIKE metacharacters so user input like "50%" matches literally
-// rather than acting as a wildcard. Paired with `ESCAPE '\\'` in the SQL.
-function escapeLikePattern(value: string): string {
-  return value.replace(/[\\%_]/g, "\\$&");
-}
 
 export const listSongs = createServerFn({ method: "GET" })
   .inputValidator((input: { offset?: number; query?: string } | undefined) => listInputSchema.parse(input ?? {}))

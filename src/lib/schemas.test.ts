@@ -7,6 +7,7 @@ import {
   deleteByIdInputSchema,
   generateSectionsInputSchema,
   listInputSchema,
+  listSongsForPickerInputSchema,
   reorderSetlistSongsInputSchema,
   saveSongWithSectionsInputSchema,
   sectionTypeSchema,
@@ -92,6 +93,50 @@ describe("setlistIdInputSchema", () => {
 
   it("throws for a non-UUID string", () => {
     expect(() => setlistIdInputSchema.parse({ setlistId: "not-a-uuid" })).toThrow();
+  });
+});
+
+// ─── listSongsForPickerInputSchema ────────────────────────────────────────────
+
+describe("listSongsForPickerInputSchema", () => {
+  const validId = "550e8400-e29b-41d4-a716-446655440000";
+
+  it("succeeds with setlistId only", () => {
+    expect(listSongsForPickerInputSchema.parse({ setlistId: validId })).toEqual({ setlistId: validId });
+  });
+
+  it("succeeds with setlistId and query", () => {
+    expect(listSongsForPickerInputSchema.parse({ setlistId: validId, query: "hello" })).toEqual({
+      setlistId: validId,
+      query: "hello",
+    });
+  });
+
+  it("trims whitespace from query", () => {
+    expect(listSongsForPickerInputSchema.parse({ setlistId: validId, query: "  hello  " })).toEqual({
+      setlistId: validId,
+      query: "hello",
+    });
+  });
+
+  it("converts empty query to undefined", () => {
+    expect(listSongsForPickerInputSchema.parse({ setlistId: validId, query: "" })).toEqual({ setlistId: validId });
+  });
+
+  it("converts whitespace-only query to undefined", () => {
+    expect(listSongsForPickerInputSchema.parse({ setlistId: validId, query: "   " })).toEqual({ setlistId: validId });
+  });
+
+  it("throws when query exceeds 100 characters", () => {
+    expect(() => listSongsForPickerInputSchema.parse({ setlistId: validId, query: "a".repeat(101) })).toThrow();
+  });
+
+  it("throws when setlistId is missing", () => {
+    expect(() => listSongsForPickerInputSchema.parse({ query: "hello" })).toThrow();
+  });
+
+  it("throws for a non-UUID setlistId", () => {
+    expect(() => listSongsForPickerInputSchema.parse({ setlistId: "bad", query: "hello" })).toThrow();
   });
 });
 

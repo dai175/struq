@@ -10,13 +10,14 @@ import {
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, GripVertical, Music, Play, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, GripVertical, Music, Play, Plus, Search, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { reorderSetlistSongsInputSchema, updateSetlistInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import type { SetlistSongItem } from "@/setlists/server-fns";
 import {
   addSongToSetlist,
@@ -401,13 +402,29 @@ function SongPickerModal({
   const [availableSongs, setAvailableSongs] = useState<{ id: string; title: string; artist: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [input, setInput] = useState("");
+  const debouncedInput = useDebouncedValue(input, 300);
+  // debounce 中に複数リクエストが並走するので、最新の query のみを採用して out-of-order 応答を捨てる。
+  const latestQueryRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    listSongsForPicker({ data: { setlistId } })
-      .then(setAvailableSongs)
-      .catch(() => setAvailableSongs([]))
-      .finally(() => setLoading(false));
-  }, [setlistId]);
+    const query = debouncedInput.trim() || undefined;
+    latestQueryRef.current = query;
+    setLoading(true);
+    listSongsForPicker({ data: { setlistId, query } })
+      .then((songs) => {
+        if (latestQueryRef.current !== query) return;
+        setAvailableSongs(songs);
+      })
+      .catch(() => {
+        if (latestQueryRef.current !== query) return;
+        setAvailableSongs([]);
+      })
+      .finally(() => {
+        if (latestQueryRef.current !== query) return;
+        setLoading(false);
+      });
+  }, [setlistId, debouncedInput]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -448,11 +465,38 @@ function SongPickerModal({
             <X size={20} />
           </button>
         </div>
+        <div className="border-b border-gray-200 px-4 py-3">
+          <div className="relative">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
+            />
+            <input
+              type="search"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t.song.searchPlaceholder}
+              className="w-full rounded-full bg-white py-2.5 pl-9 pr-9 text-sm shadow-sm outline-none placeholder:text-text-secondary focus:ring-2 focus:ring-text-primary/10 [&::-webkit-search-cancel-button]:appearance-none"
+            />
+            {input && (
+              <button
+                type="button"
+                onClick={() => setInput("")}
+                aria-label={t.song.searchClear}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-text-secondary transition-colors hover:text-text-primary"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
         <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
           {loading ? (
             <p className="py-8 text-center text-sm text-text-secondary">{t.common.loading}</p>
           ) : availableSongs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-secondary">{t.song.noSongs}</p>
+            <p className="py-8 text-center text-sm text-text-secondary">
+              {debouncedInput.trim() ? t.song.searchNoResults : t.song.noSongs}
+            </p>
           ) : (
             <div className="space-y-2">
               {availableSongs.map((song) => (

@@ -94,6 +94,16 @@ export const setlistIdInputSchema = z.object({
   setlistId: z.string().uuid(),
 });
 
+export const listSongsForPickerInputSchema = z.object({
+  setlistId: z.string().uuid(),
+  query: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform((value) => value || undefined),
+});
+
 export const setlistBaseInputSchema = z.object({
   title: z.string().trim().min(1).max(200),
   description: z

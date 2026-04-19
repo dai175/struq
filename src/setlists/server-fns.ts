@@ -1,17 +1,19 @@
 import { env } from "cloudflare:workers";
 import { createServerFn } from "@tanstack/react-start";
-import { and, eq, inArray, isNull, max, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, max, or, sql } from "drizzle-orm";
 import type { Database } from "@/db";
 import { getDb, schema } from "@/db";
 import {
   createSetlistInputSchema,
   deleteByIdInputSchema,
   listInputSchema,
+  listSongsForPickerInputSchema,
   reorderSetlistSongsInputSchema,
   setlistIdInputSchema,
   setlistSongPairInputSchema,
   updateSetlistInputSchema,
 } from "@/lib/schemas";
+import { escapeLikePattern } from "@/lib/sql-like";
 import { now, requireUser } from "@/server/helpers";
 
 // ─── Types ──────────────────────────────────────────────
@@ -327,10 +329,31 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
 // ─── listSongsForPicker ──────────────────────────────
 
 export const listSongsForPicker = createServerFn({ method: "GET" })
-  .inputValidator((input: { setlistId: string }) => setlistIdInputSchema.parse(input))
+  .inputValidator((input: { setlistId: string; query?: string }) => listSongsForPickerInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ id: string; title: string; artist: string | null }[]> => {
     const user = await requireUser();
     const db = getDb(env.DB);
+
+    const baseScope = and(
+      eq(schema.songs.userId, user.userId),
+      isNull(schema.songs.deletedAt),
+      sql`${schema.songs.id} NOT IN (
+          SELECT ${schema.setlistSongs.songId}
+          FROM ${schema.setlistSongs}
+          WHERE ${schema.setlistSongs.setlistId} = ${data.setlistId}
+        )`,
+    );
+    let whereClause = baseScope;
+    if (data.query) {
+      const pattern = `%${escapeLikePattern(data.query)}%`;
+      whereClause = and(
+        baseScope,
+        or(
+          sql`${schema.songs.title} LIKE ${pattern} ESCAPE '\\'`,
+          sql`${schema.songs.artist} LIKE ${pattern} ESCAPE '\\'`,
+        ),
+      );
+    }
 
     const songs = await db
       .select({
@@ -339,17 +362,7 @@ export const listSongsForPicker = createServerFn({ method: "GET" })
         artist: schema.songs.artist,
       })
       .from(schema.songs)
-      .where(
-        and(
-          eq(schema.songs.userId, user.userId),
-          isNull(schema.songs.deletedAt),
-          sql`${schema.songs.id} NOT IN (
-              SELECT ${schema.setlistSongs.songId}
-              FROM ${schema.setlistSongs}
-              WHERE ${schema.setlistSongs.setlistId} = ${data.setlistId}
-            )`,
-        ),
-      )
+      .where(whereClause)
       .orderBy(schema.songs.title);
 
     return songs;
