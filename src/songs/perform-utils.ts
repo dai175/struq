@@ -8,6 +8,10 @@ export function msPerBeat(bpm: number): number {
   return 60_000 / bpm;
 }
 
+export function msPerBar(bpm: number): number {
+  return msPerBeat(bpm) * BEATS_PER_BAR;
+}
+
 export function sectionBeats(section: SectionRow): number {
   return section.bars * BEATS_PER_BAR + section.extraBeats;
 }

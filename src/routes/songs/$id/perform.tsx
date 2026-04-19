@@ -109,6 +109,7 @@ function PerformView({
   const current = !isEnded ? sections[currentIndex] : undefined;
   const prev = currentIndex > 0 && currentIndex <= total ? sections[currentIndex - 1] : null;
   const next = currentIndex < total - 1 ? sections[currentIndex + 1] : null;
+  const sectionColor = current ? SECTION_COLORS[current.type] : "";
 
   // ── Auto-advance timer ────────────────────────
   // Compute even when not in auto mode so useSectionTimer initializes its
@@ -410,17 +411,17 @@ function PerformView({
 
                   {/* Current section */}
                   <div className="text-center">
-                    <p className="text-5xl font-bold lg:text-7xl" style={{ color: SECTION_COLORS[current.type] }}>
+                    <p className="text-5xl font-bold lg:text-7xl" style={{ color: sectionColor }}>
                       {sectionLabel(current, locale)}
                     </p>
                     <p
                       className="mt-4 font-mono text-3xl font-bold opacity-90 lg:mt-6 lg:text-4xl"
-                      style={{ color: SECTION_COLORS[current.type] }}
+                      style={{ color: sectionColor }}
                     >
                       {formatBars(current, t)}
                     </p>
-                    {(mode === "auto" || mode === "paused") && current.bars > 0 && (
-                      <BarDots total={current.bars} currentBar={currentBar} color={SECTION_COLORS[current.type]} />
+                    {(mode === "auto" || mode === "paused") && (
+                      <BarDots total={current.bars} currentBar={currentBar} color={sectionColor} />
                     )}
                     {current.chordProgression && (
                       <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl">{current.chordProgression}</p>
@@ -481,10 +482,6 @@ function PerformView({
     </div>
   );
 }
-
-// ─── Bar progress dots ─────────────────────────
-// Rendered only while the section is timing (auto/paused). Section-colored
-// and toned down so the bars text stays the dominant secondary focus.
 
 function BarDots({ total, currentBar, color }: { total: number; currentBar: number; color: string }) {
   return (

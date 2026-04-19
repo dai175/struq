@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { BEATS_PER_BAR, msPerBeat } from "./perform-utils";
+import { msPerBar } from "./perform-utils";
 
-// Returns the 1-indexed current bar for the running section. Mirrors the
-// pause/resume semantics of useSectionTimer: accumulates elapsed ms into a
-// ref so pausing preserves progress, and resetting sectionId starts over.
-// Polling (vs setTimeout per bar) keeps the hook robust if the BPM-derived
-// duration drifts slightly from wall-clock — we always recompute from elapsed.
+// Tracks the 1-indexed current bar within a running section, preserving
+// progress across pause/resume. Polling (vs per-bar setTimeouts) keeps the
+// display robust if BPM changes or the tab is backgrounded.
 
 export interface UseCurrentBarOptions {
   /** Null when the song has no BPM; hook stays at bar 1 in that case. */
@@ -43,13 +41,14 @@ export function useCurrentBar({ bpm, totalBars, isRunning, sectionId }: UseCurre
       return;
     }
 
-    const barMs = msPerBeat(bpm) * BEATS_PER_BAR;
-    startedAtRef.current = performance.now();
+    const barMs = msPerBar(bpm);
+    const startedAt = performance.now();
+    startedAtRef.current = startedAt;
 
     const tick = () => {
-      const elapsed = elapsedMsRef.current + (performance.now() - (startedAtRef.current ?? performance.now()));
+      const elapsed = elapsedMsRef.current + (performance.now() - startedAt);
       const bar = Math.min(totalBars, Math.floor(elapsed / barMs) + 1);
-      setCurrentBar(bar);
+      setCurrentBar((prev) => (prev === bar ? prev : bar));
     };
 
     tick();
