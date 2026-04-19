@@ -8,10 +8,9 @@ import {
   deleteByIdInputSchema,
   listInputSchema,
   listSongsForPickerInputSchema,
-  reorderSetlistSongsInputSchema,
+  saveSetlistWithSongsInputSchema,
   setlistIdInputSchema,
   setlistSongPairInputSchema,
-  updateSetlistInputSchema,
 } from "@/lib/schemas";
 import { escapeLikePattern } from "@/lib/sql-like";
 import { now, requireUser } from "@/server/helpers";
@@ -164,37 +163,6 @@ export const createSetlist = createServerFn({ method: "POST" })
     return { id };
   });
 
-// ─── updateSetlist ─────────────────────────────────────
-
-export const updateSetlist = createServerFn({ method: "POST" })
-  .inputValidator((input: { id: string; title: string; description?: string; sessionDate?: string; venue?: string }) =>
-    updateSetlistInputSchema.parse(input),
-  )
-  .handler(async ({ data }): Promise<void> => {
-    const user = await requireUser();
-    const db = getDb(env.DB);
-
-    const title = data.title.trim();
-    if (!title) throw new Error("Title is required");
-
-    await db
-      .update(schema.setlists)
-      .set({
-        title,
-        description: data.description?.trim() || null,
-        sessionDate: data.sessionDate?.trim() || null,
-        venue: data.venue?.trim() || null,
-        updatedAt: now(),
-      })
-      .where(
-        and(
-          eq(schema.setlists.id, data.id),
-          eq(schema.setlists.userId, user.userId),
-          isNull(schema.setlists.deletedAt),
-        ),
-      );
-  });
-
 // ─── deleteSetlist ─────────────────────────────────────
 
 export const deleteSetlist = createServerFn({ method: "POST" })
@@ -277,16 +245,29 @@ export const removeSongFromSetlist = createServerFn({ method: "POST" })
 // (setlistId, songId, sortOrder), so batch at 30 rows (90 params) to stay under the limit.
 const SETLIST_SONGS_INSERT_BATCH = 30;
 
-// ─── reorderSetlistSongs ───────────────────────────────
+// ─── saveSetlistWithSongs ──────────────────────────────
 
-export const reorderSetlistSongs = createServerFn({ method: "POST" })
-  .inputValidator((input: { setlistId: string; songIds: string[] }) => reorderSetlistSongsInputSchema.parse(input))
+export const saveSetlistWithSongs = createServerFn({ method: "POST" })
+  .inputValidator(
+    (input: {
+      id: string;
+      title: string;
+      description?: string;
+      sessionDate?: string;
+      venue?: string;
+      songIds: string[];
+    }) => saveSetlistWithSongsInputSchema.parse(input),
+  )
   .handler(async ({ data }): Promise<void> => {
     const user = await requireUser();
     const db = getDb(env.DB);
+    const timestamp = now();
+
+    const title = data.title.trim();
+    if (!title) throw new Error("Title is required");
 
     const [, ownedSongIds] = await Promise.all([
-      requireSetlistOwner(db, data.setlistId, user.userId),
+      requireSetlistOwner(db, data.id, user.userId),
       data.songIds.length > 0
         ? db
             .select({ id: schema.songs.id })
@@ -312,17 +293,33 @@ export const reorderSetlistSongs = createServerFn({ method: "POST" })
       insertStatements.push(
         db.insert(schema.setlistSongs).values(
           data.songIds.slice(i, i + SETLIST_SONGS_INSERT_BATCH).map((songId, j) => ({
-            setlistId: data.setlistId,
+            setlistId: data.id,
             songId,
             sortOrder: i + j,
           })),
         ),
       );
     }
+
     await db.batch([
-      db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.setlistId)),
+      db
+        .update(schema.setlists)
+        .set({
+          title,
+          description: data.description?.trim() || null,
+          sessionDate: data.sessionDate?.trim() || null,
+          venue: data.venue?.trim() || null,
+          updatedAt: timestamp,
+        })
+        .where(
+          and(
+            eq(schema.setlists.id, data.id),
+            eq(schema.setlists.userId, user.userId),
+            isNull(schema.setlists.deletedAt),
+          ),
+        ),
+      db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
       ...insertStatements,
-      db.update(schema.setlists).set({ updatedAt: now() }).where(eq(schema.setlists.id, data.setlistId)),
     ] as Parameters<typeof db.batch>[0]);
   });
 

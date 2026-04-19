@@ -8,13 +8,12 @@ import {
   generateSectionsInputSchema,
   listInputSchema,
   listSongsForPickerInputSchema,
-  reorderSetlistSongsInputSchema,
+  saveSetlistWithSongsInputSchema,
   saveSongWithSectionsInputSchema,
   sectionTypeSchema,
   setlistIdInputSchema,
   setlistSongPairInputSchema,
   songIdInputSchema,
-  updateSetlistInputSchema,
   updateSongInputSchema,
 } from "./schemas";
 
@@ -487,30 +486,6 @@ describe("createSetlistInputSchema", () => {
   });
 });
 
-// ─── updateSetlistInputSchema ──────────────────────────────────────────────────
-
-describe("updateSetlistInputSchema", () => {
-  it("succeeds with id and title", () => {
-    const id = "550e8400-e29b-41d4-a716-446655440000";
-    const result = updateSetlistInputSchema.parse({ id, title: "Updated" });
-    expect(result.title).toBe("Updated");
-  });
-
-  it("throws when id is an invalid UUID", () => {
-    expect(() => updateSetlistInputSchema.parse({ id: "bad-id", title: "Updated" })).toThrow();
-  });
-
-  it("throws when title is empty", () => {
-    const id = "550e8400-e29b-41d4-a716-446655440000";
-    expect(() => updateSetlistInputSchema.parse({ id, title: "" })).toThrow();
-  });
-
-  it("throws when description exceeds 1000 characters", () => {
-    const id = "550e8400-e29b-41d4-a716-446655440000";
-    expect(() => updateSetlistInputSchema.parse({ id, title: "Updated", description: "d".repeat(1001) })).toThrow();
-  });
-});
-
 // ─── setlistSongPairInputSchema ────────────────────────────────────────────────
 
 describe("setlistSongPairInputSchema", () => {
@@ -527,36 +502,57 @@ describe("setlistSongPairInputSchema", () => {
   });
 });
 
-// ─── reorderSetlistSongsInputSchema ───────────────────────────────────────────
+// ─── saveSetlistWithSongsInputSchema ──────────────────────────────────────────
 
-describe("reorderSetlistSongsInputSchema", () => {
+describe("saveSetlistWithSongsInputSchema", () => {
   const validId = "550e8400-e29b-41d4-a716-446655440000";
 
-  it("succeeds with an empty songIds array", () => {
-    const result = reorderSetlistSongsInputSchema.parse({ setlistId: validId, songIds: [] });
+  it("succeeds with id, title, and empty songIds", () => {
+    const result = saveSetlistWithSongsInputSchema.parse({ id: validId, title: "Updated", songIds: [] });
+    expect(result.title).toBe("Updated");
     expect(result.songIds).toHaveLength(0);
   });
 
-  it("succeeds with a valid UUID array", () => {
-    const result = reorderSetlistSongsInputSchema.parse({
-      setlistId: validId,
+  it("succeeds with a valid UUID array for songIds", () => {
+    const result = saveSetlistWithSongsInputSchema.parse({
+      id: validId,
+      title: "Updated",
       songIds: [validId, validId],
     });
     expect(result.songIds).toHaveLength(2);
   });
 
+  it("throws when id is an invalid UUID", () => {
+    expect(() => saveSetlistWithSongsInputSchema.parse({ id: "bad-id", title: "Updated", songIds: [] })).toThrow();
+  });
+
+  it("throws when title is empty", () => {
+    expect(() => saveSetlistWithSongsInputSchema.parse({ id: validId, title: "", songIds: [] })).toThrow();
+  });
+
+  it("throws when description exceeds 1000 characters", () => {
+    expect(() =>
+      saveSetlistWithSongsInputSchema.parse({
+        id: validId,
+        title: "Updated",
+        description: "d".repeat(1001),
+        songIds: [],
+      }),
+    ).toThrow();
+  });
+
   it("throws for songIds array with 501 items", () => {
     const ids = Array.from({ length: 501 }, () => validId);
-    expect(() => reorderSetlistSongsInputSchema.parse({ setlistId: validId, songIds: ids })).toThrow();
+    expect(() => saveSetlistWithSongsInputSchema.parse({ id: validId, title: "Updated", songIds: ids })).toThrow();
   });
 
   it("succeeds for songIds array with 500 items", () => {
     const ids = Array.from({ length: 500 }, () => validId);
-    const result = reorderSetlistSongsInputSchema.parse({ setlistId: validId, songIds: ids });
+    const result = saveSetlistWithSongsInputSchema.parse({ id: validId, title: "Updated", songIds: ids });
     expect(result.songIds).toHaveLength(500);
   });
 
   it("throws when songIds contains an invalid UUID", () => {
-    expect(() => reorderSetlistSongsInputSchema.parse({ setlistId: validId, songIds: ["bad"] })).toThrow();
+    expect(() => saveSetlistWithSongsInputSchema.parse({ id: validId, title: "Updated", songIds: ["bad"] })).toThrow();
   });
 });

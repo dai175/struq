@@ -123,16 +123,12 @@ export const setlistBaseInputSchema = z.object({
 
 export const createSetlistInputSchema = setlistBaseInputSchema;
 
-export const updateSetlistInputSchema = setlistBaseInputSchema.extend({
+export const saveSetlistWithSongsInputSchema = setlistBaseInputSchema.extend({
   id: z.string().uuid(),
+  songIds: z.array(z.string().uuid()).max(500),
 });
 
 export const setlistSongPairInputSchema = z.object({
   setlistId: z.string().uuid(),
   songId: z.string().uuid(),
-});
-
-export const reorderSetlistSongsInputSchema = z.object({
-  setlistId: z.string().uuid(),
-  songIds: z.array(z.string().uuid()).max(500),
 });

@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
-import { reorderSetlistSongsInputSchema, updateSetlistInputSchema } from "@/lib/schemas";
+import { saveSetlistWithSongsInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import type { SetlistSongItem } from "@/setlists/server-fns";
@@ -25,8 +25,7 @@ import {
   getSetlist,
   listSongsForPicker,
   removeSongFromSetlist,
-  reorderSetlistSongs,
-  updateSetlist,
+  saveSetlistWithSongs,
 } from "@/setlists/server-fns";
 
 export const Route = createFileRoute("/setlists/$id")({
@@ -104,46 +103,31 @@ function SetlistEditor({
 
   async function handleSave() {
     const trimmed = title.trim();
-    const parsedSetlistInput = updateSetlistInputSchema.safeParse({
+    const parsed = saveSetlistWithSongsInputSchema.safeParse({
       id: setlistId,
       title: trimmed,
       description: description.trim() || undefined,
       sessionDate: sessionDate || undefined,
       venue: venue.trim() || undefined,
+      songIds: songs.map((s) => s.songId),
     });
-    if (!parsedSetlistInput.success) {
-      const hasTitleIssue = parsedSetlistInput.error.issues.some((issue) => issue.path[0] === "title");
+    if (!parsed.success) {
+      const hasTitleIssue = parsed.error.issues.some((issue) => issue.path[0] === "title");
       if (hasTitleIssue) setTitleError(true);
       else toast.error(t.common.errorSaveFailed);
       return;
     }
 
-    const parsedReorderInput = reorderSetlistSongsInputSchema.safeParse({
-      setlistId,
-      songIds: songs.map((s) => s.songId),
-    });
-    if (!parsedReorderInput.success) {
-      toast.error(t.common.errorSaveFailed);
-      return;
-    }
-
     setSaving(true);
     try {
-      await Promise.all([
-        updateSetlist({
-          data: parsedSetlistInput.data,
-        }),
-        reorderSetlistSongs({
-          data: parsedReorderInput.data,
-        }),
-      ]);
+      await saveSetlistWithSongs({ data: parsed.data });
       setSaved(true);
       if (savedTimerRef.current) {
         clearTimeout(savedTimerRef.current);
       }
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (error) {
-      clientLogger.error("updateSetlist", error);
+      clientLogger.error("saveSetlistWithSongs", error);
       toast.error(t.common.errorSaveFailed);
     } finally {
       setSaving(false);
