@@ -106,6 +106,7 @@ export interface Translations {
 
   auth: {
     loginWith: string;
+    tagline: string;
     accountDeleted: string;
     authFailed: string;
     loginCancelled: string;

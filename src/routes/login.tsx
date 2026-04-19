@@ -29,8 +29,11 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-surface">
       <div className="w-full max-w-sm px-6">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-sans font-bold text-text-primary">Struq</h1>
-          <p className="text-sm text-text-secondary mt-1">focuswave</p>
+          <div className="flex items-center justify-center gap-3">
+            <img src="/logo192.png" alt="" width={48} height={48} />
+            <h1 className="text-3xl font-sans font-bold text-text-primary">Struq</h1>
+          </div>
+          <p className="text-sm text-text-secondary mt-3">{t.auth.tagline}</p>
         </div>
 
         {error && (

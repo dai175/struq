@@ -104,6 +104,7 @@ export const ja: Translations = {
   },
   auth: {
     loginWith: "Googleでログイン",
+    tagline: "曲の構成を、すぐ手元に",
     accountDeleted: "このアカウントは削除されています。",
     authFailed: "認証に失敗しました。もう一度お試しください。",
     loginCancelled: "ログインがキャンセルされました。",

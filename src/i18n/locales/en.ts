@@ -104,6 +104,7 @@ export const en: Translations = {
   },
   auth: {
     loginWith: "Login with Google",
+    tagline: "Song structures, always at hand",
     accountDeleted: "This account has been deleted.",
     authFailed: "Authentication failed. Please try again.",
     loginCancelled: "Login was cancelled.",
