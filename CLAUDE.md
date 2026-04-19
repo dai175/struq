@@ -1,11 +1,10 @@
-# Struq — CLAUDE.md
+# Struq
 
 ## Overview
 
-Struq is a web app for musicians to quickly map out song structures and reference them during sessions. Built under the focuswave brand ("apps for being, not doing"), it helps musicians glance at a song's section flow (Intro → A → B → Chorus → Solo → Outro) without the complexity of full chord chart or setlist management apps.
+Struq is a web app for musicians to quickly map out song structures (Intro → A → B → Chorus → Solo → Outro) and reference them during practice or performance.
 
-**URL:** struq.focuswave.cc  
-**Brand:** focuswave (cc.focuswave bundle, zen/minimalist aesthetic)
+**URL:** struq.focuswave.cc
 
 ## Tech Stack
 
@@ -13,12 +12,10 @@ Struq is a web app for musicians to quickly map out song structures and referenc
 - **Database:** Cloudflare D1 (SQLite) + Drizzle ORM
 - **Deployment:** Cloudflare Workers
 - **Linter / Formatter:** Biome
-- **Testing:** Vitest
+- **Testing:** Vitest (unit) + Playwright (E2E)
 - **Auth:** Google OAuth
 - **AI:** Google Gemini Flash API (song structure generation)
 - **Styling:** Tailwind CSS v4
-- **Language:** TypeScript
-- **i18n:** Japanese / English (user-switchable)
 
 ## Source Structure
 
@@ -27,8 +24,8 @@ src/
 ├── routes/          # TanStack file-based routing (routeTree.gen.ts is auto-generated — do not edit)
 ├── auth/            # Session, OAuth, server functions
 ├── db/              # Drizzle schema + getDb() factory
-├── songs/           # Song CRUD server functions + components
-├── setlists/        # Setlist CRUD server functions
+├── songs/           # Song server-fns, performance hooks (use-section-timer, click-preference), constants, components
+├── setlists/        # Setlist server-fns
 ├── i18n/            # Translation keys + I18nProvider
 ├── server/          # Shared server helpers (requireUser, now)
 └── lib/             # Utilities (logger etc.)
@@ -52,15 +49,11 @@ src/
 
 ## UI/UX Guidelines
 
-- Minimal, calm aesthetic aligned with focuswave brand
-- Warm neutral background (#f8f7f5) for list/edit views
-- Pure black (#111) for performance view
-- Sections always color-coded consistently
+- Minimal, calm aesthetic; keep animations subtle
+- Sections color-coded consistently across views
 - Touch-first design (large tap targets)
-- Performance view optimized for iPad landscape
+- Performance view optimized for iPad landscape (fullscreen, dark)
 - Edit/list views optimized for mobile (iPhone)
-- No unnecessary animations, transitions should be subtle (150ms ease)
-- Font: system font stack or DM Sans for body, monospace for bar counts
 
 ## Development Commands
 
