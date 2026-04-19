@@ -12,6 +12,7 @@ import { ModeSelectOverlay } from "@/songs/components/mode-select-overlay";
 import { SECTION_COLORS } from "@/songs/constants";
 import { calculateSectionDurationMs, sectionBeats } from "@/songs/perform-utils";
 import { getSongWithSections, type SectionRow, type SongRow } from "@/songs/server-fns";
+import { useCurrentBar } from "@/songs/use-current-bar";
 import { useSectionTimer } from "@/songs/use-section-timer";
 
 // ─── Route ─────────────────────────────────────
@@ -117,6 +118,13 @@ function PerformView({
   useSectionTimer({
     durationMs: sectionDurationMs,
     onComplete: advanceSection,
+    isRunning: mode === "auto",
+    sectionId: currentIndex,
+  });
+
+  const currentBar = useCurrentBar({
+    bpm: song.bpm,
+    totalBars: current?.bars ?? 0,
     isRunning: mode === "auto",
     sectionId: currentIndex,
   });
@@ -405,12 +413,18 @@ function PerformView({
                     <p className="text-5xl font-bold lg:text-7xl" style={{ color: SECTION_COLORS[current.type] }}>
                       {sectionLabel(current, locale)}
                     </p>
-                    {current.chordProgression && (
-                      <p className="mt-4 font-mono text-xl opacity-80 lg:mt-6 lg:text-2xl">
-                        {current.chordProgression}
-                      </p>
+                    <p
+                      className="mt-4 font-mono text-3xl font-bold opacity-90 lg:mt-6 lg:text-4xl"
+                      style={{ color: SECTION_COLORS[current.type] }}
+                    >
+                      {formatBars(current, t)}
+                    </p>
+                    {(mode === "auto" || mode === "paused") && current.bars > 0 && (
+                      <BarDots total={current.bars} currentBar={currentBar} color={SECTION_COLORS[current.type]} />
                     )}
-                    <p className="mt-3 font-mono text-base opacity-40 lg:text-lg">{formatBars(current, t)}</p>
+                    {current.chordProgression && (
+                      <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl">{current.chordProgression}</p>
+                    )}
                     {current.memo && <p className="mt-2 text-sm opacity-30 lg:text-base">{current.memo}</p>}
                   </div>
 
@@ -464,6 +478,28 @@ function PerformView({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ─── Bar progress dots ─────────────────────────
+// Rendered only while the section is timing (auto/paused). Section-colored
+// and toned down so the bars text stays the dominant secondary focus.
+
+function BarDots({ total, currentBar, color }: { total: number; currentBar: number; color: string }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 lg:mt-4 lg:gap-2" aria-hidden="true">
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length, never reordered
+          key={i}
+          className="h-2 w-2 rounded-full transition-opacity duration-150 lg:h-2.5 lg:w-2.5"
+          style={{
+            backgroundColor: color,
+            opacity: i < currentBar ? 0.9 : 0.2,
+          }}
+        />
+      ))}
     </div>
   );
 }
