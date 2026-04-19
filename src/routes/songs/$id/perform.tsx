@@ -10,7 +10,7 @@ import { useClickPreference } from "@/songs/click-preference";
 import { CountInOverlay } from "@/songs/components/count-in-overlay";
 import { ModeSelectOverlay } from "@/songs/components/mode-select-overlay";
 import { SECTION_COLORS } from "@/songs/constants";
-import { calculateSectionDurationMs, sectionBeats } from "@/songs/perform-utils";
+import { calculateSectionDurationMs, msPerBeat, sectionBeats } from "@/songs/perform-utils";
 import { getSongWithSections, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { useCurrentBar } from "@/songs/use-current-bar";
 import { useCurrentBeat } from "@/songs/use-current-beat";
@@ -133,7 +133,7 @@ function PerformView({
 
   const currentBeat = useCurrentBeat({
     bpm: song.bpm,
-    section: current,
+    totalBeats: current ? sectionBeats(current) : 0,
     isRunning: mode === "auto",
     sectionId: currentIndex,
   });
@@ -514,35 +514,23 @@ function PerformView({
   );
 }
 
-// 4-LED strip that pulses in sync with the click during auto mode.
-// `currentBeat` is 0..3 within the current bar, or -1 before the first beat fires.
-// TODO(user): implement the LED rendering. Design decisions to make:
-//   1. Active LED: how bright? (opacity / brightness / glow)
-//   2. Passed beats in current bar: do they stay lit, fade, or go dark?
-//   3. Beat 1 accent: color swap, larger size, or no accent?
-//   4. Size & spacing: should match BarDots (h-2 w-2) or stand out more?
-// See BarDots above for a reference on Tailwind classes + inline color style.
-// Single LED that flashes on each beat and fades before the next one.
-// The `key={currentBeat}` remount restarts the CSS animation per beat so
-// the pulse is aligned with the click audio.
-const BEAT_LED_COLOR = "#ef4444";
-
+// `key={currentBeat}` remounts the span so the CSS animation restarts on each
+// beat, keeping the pulse aligned with the click audio.
 function BeatStrip({ currentBeat, bpm }: { currentBeat: number; bpm: number | null }) {
   const isActive = currentBeat >= 0 && bpm !== null;
-  const beatDurationMs = bpm ? 60_000 / bpm : 500;
+  const color = SECTION_COLORS.solo;
   return (
-    <div className="flex items-center justify-center" aria-hidden="true">
-      <span
-        key={isActive ? currentBeat : "idle"}
-        className="block h-3 w-3 rounded-full lg:h-3.5 lg:w-3.5"
-        style={{
-          backgroundColor: BEAT_LED_COLOR,
-          opacity: isActive ? undefined : 0.2,
-          animation: isActive ? `led-pulse ${beatDurationMs}ms ease-out forwards` : undefined,
-          boxShadow: `0 0 12px ${BEAT_LED_COLOR}`,
-        }}
-      />
-    </div>
+    <span
+      key={isActive ? currentBeat : "idle"}
+      aria-hidden="true"
+      className="block h-3 w-3 rounded-full lg:h-3.5 lg:w-3.5"
+      style={{
+        backgroundColor: color,
+        opacity: isActive ? undefined : 0.2,
+        animation: isActive ? `led-pulse ${msPerBeat(bpm)}ms ease-out forwards` : undefined,
+        boxShadow: `0 0 12px ${color}`,
+      }}
+    />
   );
 }
 

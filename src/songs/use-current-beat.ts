@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BEATS_PER_BAR, msPerBeat, sectionBeats } from "./perform-utils";
-import type { SectionRow } from "./server-fns";
+import { BEATS_PER_BAR, msPerBeat } from "./perform-utils";
 
 // Tracks the 0-indexed beat within the current bar (0..BEATS_PER_BAR-1).
 // Returns -1 before the first beat of the section has fired. Uses
@@ -9,15 +8,15 @@ import type { SectionRow } from "./server-fns";
 export interface UseCurrentBeatOptions {
   /** Null when the song has no BPM; hook stays at -1 in that case. */
   bpm: number | null;
-  /** Current section. Undefined when the song has ended. */
-  section: SectionRow | undefined;
+  /** Total beats in the section, including extra beats. Zero pauses the hook. */
+  totalBeats: number;
   /** True while counting; false pauses and preserves elapsed. */
   isRunning: boolean;
   /** Reset trigger — any change restarts from beat -1. */
   sectionId: string | number;
 }
 
-export function useCurrentBeat({ bpm, section, isRunning, sectionId }: UseCurrentBeatOptions): number {
+export function useCurrentBeat({ bpm, totalBeats, isRunning, sectionId }: UseCurrentBeatOptions): number {
   const [beatInBar, setBeatInBar] = useState(-1);
 
   const startedAtRef = useRef<number | null>(null);
@@ -32,7 +31,7 @@ export function useCurrentBeat({ bpm, section, isRunning, sectionId }: UseCurren
       setBeatInBar(-1);
     }
 
-    if (!isRunning || !bpm || !section) {
+    if (!isRunning || !bpm || totalBeats <= 0) {
       if (startedAtRef.current !== null) {
         elapsedMsRef.current += performance.now() - startedAtRef.current;
         startedAtRef.current = null;
@@ -41,16 +40,20 @@ export function useCurrentBeat({ bpm, section, isRunning, sectionId }: UseCurren
     }
 
     const beatMs = msPerBeat(bpm);
-    const totalBeats = sectionBeats(section);
     const startedAt = performance.now();
     startedAtRef.current = startedAt;
 
+    // Ref guard so the 60Hz rAF loop skips React's scheduler on unchanged frames.
+    let lastPosition = -1;
     let rafId: number | null = null;
     const tick = () => {
       const elapsed = elapsedMsRef.current + (performance.now() - startedAt);
       const absoluteBeat = Math.min(totalBeats - 1, Math.floor(elapsed / beatMs));
       const position = absoluteBeat % BEATS_PER_BAR;
-      setBeatInBar((prev) => (prev === position ? prev : position));
+      if (position !== lastPosition) {
+        lastPosition = position;
+        setBeatInBar(position);
+      }
       rafId = requestAnimationFrame(tick);
     };
     tick();
@@ -60,7 +63,7 @@ export function useCurrentBeat({ bpm, section, isRunning, sectionId }: UseCurren
       elapsedMsRef.current += performance.now() - startedAt;
       startedAtRef.current = null;
     };
-  }, [isRunning, bpm, section, sectionId]);
+  }, [isRunning, bpm, totalBeats, sectionId]);
 
   return beatInBar;
 }
