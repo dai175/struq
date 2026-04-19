@@ -39,6 +39,30 @@ describe("listInputSchema", () => {
   it("throws for offset=1.5 (decimal)", () => {
     expect(() => listInputSchema.parse({ offset: 1.5 })).toThrow();
   });
+
+  it("succeeds with query string", () => {
+    expect(listInputSchema.parse({ query: "hello" })).toEqual({ query: "hello" });
+  });
+
+  it("trims whitespace from query", () => {
+    expect(listInputSchema.parse({ query: "  hello  " })).toEqual({ query: "hello" });
+  });
+
+  it("throws when query exceeds 100 characters", () => {
+    expect(() => listInputSchema.parse({ query: "a".repeat(101) })).toThrow();
+  });
+
+  it("succeeds with both offset and query", () => {
+    expect(listInputSchema.parse({ offset: 30, query: "song" })).toEqual({ offset: 30, query: "song" });
+  });
+
+  it("converts empty query to undefined", () => {
+    expect(listInputSchema.parse({ query: "" })).toEqual({});
+  });
+
+  it("converts whitespace-only query to undefined", () => {
+    expect(listInputSchema.parse({ query: "   " })).toEqual({});
+  });
 });
 
 // ─── songIdInputSchema ─────────────────────────────────────────────────────────

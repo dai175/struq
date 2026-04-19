@@ -1,21 +1,30 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { Plus, Search, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { StructurePreview } from "@/songs/components/StructurePreview";
 import { deleteSong, listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 
+type SongsSearch = { q?: string };
+
 export const Route = createFileRoute("/songs/")({
   beforeLoad: requireAuth,
-  loader: () => listSongs({ data: {} }),
+  validateSearch: (search: Record<string, unknown>): SongsSearch => ({
+    q: typeof search.q === "string" && search.q.trim() ? search.q.trim() : undefined,
+  }),
+  loaderDeps: ({ search }) => ({ q: search.q }),
+  loader: ({ deps }) => listSongs({ data: { query: deps.q } }),
   component: SongsPage,
 });
 
 function SongsPage() {
   const initial = Route.useLoaderData();
+  const search = Route.useSearch();
+  const navigate = useNavigate();
   const { t } = useI18n();
   const { toast } = useToast();
   const router = useRouter();
@@ -23,6 +32,20 @@ function SongsPage() {
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [input, setInput] = useState(search.q ?? "");
+  const debouncedInput = useDebouncedValue(input, 300);
+
+  useEffect(() => {
+    setSongs(initial.items);
+    setHasMore(initial.hasMore);
+  }, [initial]);
+
+  // `replace` keeps incremental keystrokes out of the back/forward stack.
+  useEffect(() => {
+    const next = debouncedInput.trim() || undefined;
+    if (next === search.q) return;
+    navigate({ to: "/songs", search: next ? { q: next } : {}, replace: true });
+  }, [debouncedInput, search.q, navigate]);
 
   async function handleDelete(id: string) {
     if (!confirm(t.song.confirmDelete)) return;
@@ -42,7 +65,7 @@ function SongsPage() {
   async function handleLoadMore() {
     setLoadingMore(true);
     try {
-      const next = await listSongs({ data: { offset: songs.length } });
+      const next = await listSongs({ data: { offset: songs.length, query: search.q } });
       setSongs((prev) => [...prev, ...next.items]);
       setHasMore(next.hasMore);
     } catch (error) {
@@ -53,9 +76,16 @@ function SongsPage() {
     }
   }
 
+  function handleClearSearch() {
+    setInput("");
+    navigate({ to: "/songs", search: {}, replace: true });
+  }
+
+  const isSearching = !!search.q;
+
   return (
     <div className="mx-auto max-w-md px-4 pb-24 pt-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <h1 className="text-xl font-bold">{t.nav.songs}</h1>
         <Link
           to="/songs/new"
@@ -66,15 +96,45 @@ function SongsPage() {
         </Link>
       </div>
 
+      <div className="relative mb-4">
+        <Search
+          size={16}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
+        />
+        <input
+          type="search"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={t.song.searchPlaceholder}
+          className="w-full rounded-full bg-white py-2.5 pl-9 pr-9 text-sm shadow-sm outline-none placeholder:text-text-secondary focus:ring-2 focus:ring-text-primary/10 [&::-webkit-search-cancel-button]:appearance-none"
+        />
+        {input && (
+          <button
+            type="button"
+            onClick={handleClearSearch}
+            aria-label={t.song.searchClear}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-text-secondary transition-colors hover:text-text-primary"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
       {songs.length === 0 ? (
         <div className="py-20 text-center">
-          <p className="text-text-secondary">{t.song.noSongs}</p>
-          <Link
-            to="/songs/new"
-            className="mt-4 inline-block rounded-full bg-text-primary px-6 py-2.5 text-sm font-medium text-white"
-          >
-            {t.nav.newSong}
-          </Link>
+          {isSearching ? (
+            <p className="text-text-secondary">{t.song.searchNoResults}</p>
+          ) : (
+            <>
+              <p className="text-text-secondary">{t.song.noSongs}</p>
+              <Link
+                to="/songs/new"
+                className="mt-4 inline-block rounded-full bg-text-primary px-6 py-2.5 text-sm font-medium text-white"
+              >
+                {t.nav.newSong}
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <>

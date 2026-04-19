@@ -63,6 +63,9 @@ export const en: Translations = {
     aiConfirmReplace: "Replace existing sections with AI-generated structure?",
     invalidUrl: "Please enter a valid URL (http/https)",
     aiRateLimited: "Please wait a moment before generating again.",
+    searchPlaceholder: "Search by title or artist",
+    searchNoResults: "No matching songs",
+    searchClear: "Clear search",
   },
   setlist: {
     title: "Title",

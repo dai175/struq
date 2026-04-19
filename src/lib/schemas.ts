@@ -28,6 +28,12 @@ const optionalHttpUrl = z
 
 export const listInputSchema = z.object({
   offset: z.number().int().min(0).optional(),
+  query: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform((value) => value || undefined),
 });
 
 export const songIdInputSchema = z.object({

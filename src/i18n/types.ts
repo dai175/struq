@@ -61,6 +61,9 @@ export interface Translations {
     aiConfirmReplace: string;
     invalidUrl: string;
     aiRateLimited: string;
+    searchPlaceholder: string;
+    searchNoResults: string;
+    searchClear: string;
   };
 
   setlist: {

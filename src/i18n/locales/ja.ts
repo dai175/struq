@@ -63,6 +63,9 @@ export const ja: Translations = {
     aiConfirmReplace: "既存のセクションをAI生成で置き換えますか？",
     invalidUrl: "有効なURLを入力してください（http/https）",
     aiRateLimited: "連続で生成できません。少し待ってからお試しください。",
+    searchPlaceholder: "曲名・アーティストで検索",
+    searchNoResults: "該当する曲はありません",
+    searchClear: "検索をクリア",
   },
   setlist: {
     title: "タイトル",

@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { SECTION_TYPES, type SectionType } from "@/i18n/types";
 import { logger } from "@/lib/logger";
@@ -52,17 +52,36 @@ const sectionColumns = {
 
 const LIST_SONGS_LIMIT = 30;
 
+// Escape LIKE metacharacters so user input like "50%" matches literally
+// rather than acting as a wildcard. Paired with `ESCAPE '\\'` in the SQL.
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
 export const listSongs = createServerFn({ method: "GET" })
-  .inputValidator((input: { offset?: number } | undefined) => listInputSchema.parse(input ?? {}))
+  .inputValidator((input: { offset?: number; query?: string } | undefined) => listInputSchema.parse(input ?? {}))
   .handler(async ({ data }): Promise<{ items: { song: SongRow; sections: SectionRow[] }[]; hasMore: boolean }> => {
     const user = await requireUser();
     const db = getDb(env.DB);
     const offset = Math.max(0, data.offset ?? 0);
 
+    const ownerScope = and(eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt));
+    let whereClause = ownerScope;
+    if (data.query) {
+      const pattern = `%${escapeLikePattern(data.query)}%`;
+      whereClause = and(
+        ownerScope,
+        or(
+          sql`${schema.songs.title} LIKE ${pattern} ESCAPE '\\'`,
+          sql`${schema.songs.artist} LIKE ${pattern} ESCAPE '\\'`,
+        ),
+      );
+    }
+
     const rows = await db
       .select(songColumns)
       .from(schema.songs)
-      .where(and(eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)))
+      .where(whereClause)
       .orderBy(desc(schema.songs.updatedAt))
       .limit(LIST_SONGS_LIMIT + 1)
       .offset(offset);
