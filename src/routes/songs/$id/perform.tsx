@@ -374,7 +374,7 @@ function PerformView({
               {sections.map((sec, i) => (
                 <div
                   key={sec.id}
-                  className="h-2 min-w-1 rounded-full transition-opacity duration-150 lg:h-3"
+                  className="h-2.5 min-w-1 rounded-full transition-opacity duration-150 lg:h-3"
                   style={{
                     flex: sec.bars,
                     backgroundColor: SECTION_COLORS[sec.type],
@@ -438,17 +438,17 @@ function PerformView({
                   </div>
 
                   {/* Beat LED — reserved slot keeps layout stable across modes */}
-                  <div className="mb-4 flex h-3 items-center justify-center lg:mb-6 lg:h-3.5">
+                  <div className="mb-4 flex h-4 items-center justify-center lg:mb-6 lg:h-4">
                     {(mode === "auto" || mode === "paused") && <BeatStrip currentBeat={currentBeat} bpm={song.bpm} />}
                   </div>
 
                   <div className="flex w-full flex-col items-center text-center touch-landscape:grid touch-landscape:grid-cols-2 touch-landscape:items-center touch-landscape:gap-12">
                     <div className={`flex flex-col items-center${hasDetails ? "" : " touch-landscape:col-span-2"}`}>
-                      <p className="text-5xl font-bold lg:text-7xl" style={{ color: sectionColor }}>
+                      <p className="text-6xl font-bold lg:text-7xl" style={{ color: sectionColor }}>
                         {sectionLabel(current, locale)}
                       </p>
                       <p
-                        className="mt-4 font-mono text-3xl font-bold opacity-90 lg:mt-6 lg:text-4xl"
+                        className="mt-4 font-mono text-4xl font-bold opacity-90 lg:mt-6 lg:text-5xl"
                         style={{ color: sectionColor }}
                       >
                         {formatBars(current, t)}
@@ -521,7 +521,7 @@ function BeatStrip({ currentBeat, bpm }: { currentBeat: number; bpm: number | nu
     <span
       key={isActive ? currentBeat : "idle"}
       aria-hidden="true"
-      className="block h-3 w-3 rounded-full lg:h-3.5 lg:w-3.5"
+      className="block h-4 w-4 rounded-full lg:h-4 lg:w-4"
       style={{
         backgroundColor: color,
         opacity: isActive ? undefined : 0.2,
@@ -534,12 +534,12 @@ function BeatStrip({ currentBeat, bpm }: { currentBeat: number; bpm: number | nu
 
 function BarDots({ total, currentBar, color }: { total: number; currentBar: number; color: string }) {
   return (
-    <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 lg:mt-4 lg:gap-2" aria-hidden="true">
+    <div className="mt-3 flex flex-wrap items-center justify-center gap-2 lg:mt-4 lg:gap-2" aria-hidden="true">
       {Array.from({ length: total }, (_, i) => (
         <span
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length, never reordered
           key={i}
-          className="h-2 w-2 rounded-full transition-opacity duration-150 lg:h-2.5 lg:w-2.5"
+          className="h-2.5 w-2.5 rounded-full transition-opacity duration-150 lg:h-2.5 lg:w-2.5"
           style={{
             backgroundColor: color,
             opacity: i < currentBar ? 0.9 : 0.2,
