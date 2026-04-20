@@ -51,6 +51,13 @@ code {
 	}
 }
 
+/* Touch landscape — orientation:landscape on touch devices (phones + iPad, excludes desktop) */
+@custom-variant touch-landscape {
+  @media (orientation: landscape) and (pointer: coarse) {
+    @slot;
+  }
+}
+
 /* Beat LED pulse — bright on beat impact, fades to dim before the next beat. */
 @keyframes led-pulse {
 	0% {

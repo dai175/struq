@@ -433,16 +433,17 @@ function PerformView({
                 <p className="text-6xl font-bold opacity-50 lg:text-8xl">{t.common.end}</p>
               ) : current ? (
                 <>
-                  {/* Previous section — hidden in landscape when details column hosts it */}
-                  <div className={`mb-6 h-7 lg:mb-8 lg:h-8${hasDetails ? " landscape:hidden" : ""}`}>{prevLabel}</div>
+                  <div className={`mb-6 h-7 lg:mb-8 lg:h-8${hasDetails ? " touch-landscape:hidden" : ""}`}>
+                    {prevLabel}
+                  </div>
 
                   {/* Beat LED — reserved slot keeps layout stable across modes */}
                   <div className="mb-4 flex h-3 items-center justify-center lg:mb-6 lg:h-3.5">
                     {(mode === "auto" || mode === "paused") && <BeatStrip currentBeat={currentBeat} bpm={song.bpm} />}
                   </div>
 
-                  <div className="flex w-full flex-col items-center text-center landscape:grid landscape:grid-cols-2 landscape:items-center landscape:gap-12 landscape:lg:gap-16">
-                    <div className={`flex flex-col items-center${hasDetails ? "" : " landscape:col-span-2"}`}>
+                  <div className="flex w-full flex-col items-center text-center touch-landscape:grid touch-landscape:grid-cols-2 touch-landscape:items-center touch-landscape:gap-12">
+                    <div className={`flex flex-col items-center${hasDetails ? "" : " touch-landscape:col-span-2"}`}>
                       <p className="text-5xl font-bold lg:text-7xl" style={{ color: sectionColor }}>
                         {sectionLabel(current, locale)}
                       </p>
@@ -458,24 +459,21 @@ function PerformView({
                     </div>
                     {hasDetails && (
                       <div className="flex flex-col items-center">
-                        {/* Prev label — landscape only */}
-                        <div className="hidden h-7 landscape:block lg:h-8">{prevLabel}</div>
+                        <div className="hidden h-7 touch-landscape:block lg:h-8">{prevLabel}</div>
                         {current.chordProgression && (
-                          <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl landscape:mt-4 landscape:text-2xl landscape:lg:mt-6 landscape:lg:text-3xl">
+                          <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl touch-landscape:mt-4 touch-landscape:text-2xl">
                             {current.chordProgression}
                           </p>
                         )}
                         {current.memo && (
-                          <p className="mt-2 text-sm opacity-30 lg:text-base landscape:mt-3">{current.memo}</p>
+                          <p className="mt-2 text-sm opacity-30 lg:text-base touch-landscape:mt-3">{current.memo}</p>
                         )}
-                        {/* Next hint — landscape only */}
-                        <div className="hidden h-10 landscape:mt-4 landscape:block landscape:lg:mt-6">{nextHint}</div>
+                        <div className="hidden h-10 touch-landscape:mt-4 touch-landscape:block">{nextHint}</div>
                       </div>
                     )}
                   </div>
 
-                  {/* Next section hint or paused hint — hidden in landscape when details column hosts it */}
-                  <div className={`mt-6 h-10 text-center lg:mt-8${hasDetails ? " landscape:hidden" : ""}`}>
+                  <div className={`mt-6 h-10 text-center lg:mt-8${hasDetails ? " touch-landscape:hidden" : ""}`}>
                     {nextHint}
                   </div>
                 </>
