@@ -81,6 +81,7 @@ export const en: Translations = {
     titleRequired: "Title is required",
     noSongs: "No songs in this setlist",
     removeSong: "Remove song",
+    pickerAllAdded: "All your songs are already in this setlist",
   },
   settings: {
     language: "Language",

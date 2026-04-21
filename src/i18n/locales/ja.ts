@@ -81,6 +81,7 @@ export const ja: Translations = {
     titleRequired: "タイトルは必須です",
     noSongs: "曲がありません",
     removeSong: "曲を外す",
+    pickerAllAdded: "すべての曲がこのセットリストに追加されています",
   },
   settings: {
     language: "言語",

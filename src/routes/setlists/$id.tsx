@@ -225,16 +225,16 @@ function SetlistEditor({
   return (
     <div className="mx-auto max-w-md px-4 pb-36 pt-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-3">
           <Link
             to="/setlists"
             aria-label={t.common.back}
-            className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-muted"
+            className="flex shrink-0 items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-muted"
           >
             <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-xl font-bold">{t.nav.setlists}</h1>
+          <h1 className="truncate text-xl font-bold">{title.trim() || data.setlist.title}</h1>
         </div>
         <div className="flex items-center gap-1">
           {songs.length > 0 && (
@@ -395,6 +395,7 @@ function SetlistEditor({
         availableSongs={availableSongs}
         loading={pickerLoading}
         addingId={addingId}
+        setlistHasSongs={songs.length > 0}
         onAdd={handlePickerAdd}
         onClose={handlePickerClose}
       />
@@ -449,6 +450,7 @@ function SongPickerModal({
   availableSongs,
   loading,
   addingId,
+  setlistHasSongs,
   onAdd,
   onClose,
 }: {
@@ -458,6 +460,7 @@ function SongPickerModal({
   availableSongs: PickerSong[];
   loading: boolean;
   addingId: string | null;
+  setlistHasSongs: boolean;
   onAdd: (song: PickerSong) => void;
   onClose: () => void;
 }) {
@@ -473,6 +476,12 @@ function SongPickerModal({
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const emptyMessage = input.trim()
+    ? t.song.searchNoResults
+    : setlistHasSongs
+      ? t.setlist.pickerAllAdded
+      : t.song.noSongs;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
@@ -520,9 +529,7 @@ function SongPickerModal({
           {loading ? (
             <p className="py-8 text-center text-sm text-text-secondary">{t.common.loading}</p>
           ) : availableSongs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-secondary">
-              {input.trim() ? t.song.searchNoResults : t.song.noSongs}
-            </p>
+            <p className="py-8 text-center text-sm text-text-secondary">{emptyMessage}</p>
           ) : (
             <div className="space-y-2">
               {availableSongs.map((song) => (

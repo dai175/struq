@@ -80,6 +80,7 @@ export interface Translations {
     titleRequired: string;
     noSongs: string;
     removeSong: string;
+    pickerAllAdded: string;
   };
 
   settings: {
