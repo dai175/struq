@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { ConfirmModal } from "@/lib/confirm-modal";
 import { saveSetlistWithSongsInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
@@ -45,6 +46,8 @@ function SetlistDetailPage() {
   return <SetlistEditor key={id} setlistId={id} data={data} />;
 }
 
+type PickerSong = { id: string; title: string; artist: string | null };
+
 function SetlistEditor({
   setlistId,
   data,
@@ -71,7 +74,16 @@ function SetlistEditor({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Song picker state (hoisted so it survives open/close cycles)
+  const [pickerInput, setPickerInput] = useState("");
+  const debouncedPickerInput = useDebouncedValue(pickerInput, 300);
+  const [availableSongs, setAvailableSongs] = useState<{ id: string; title: string; artist: string | null }[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const latestPickerQueryRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     return () => {
@@ -80,6 +92,48 @@ function SetlistEditor({
       }
     };
   }, []);
+
+  // Fetch picker candidates only while picker is open
+  useEffect(() => {
+    if (!showPicker) return;
+    const query = debouncedPickerInput.trim() || undefined;
+    latestPickerQueryRef.current = query;
+    setPickerLoading(true);
+    listSongsForPicker({ data: { setlistId, query } })
+      .then((songs) => {
+        if (latestPickerQueryRef.current !== query) return;
+        setAvailableSongs(songs);
+      })
+      .catch((error) => {
+        if (latestPickerQueryRef.current !== query) return;
+        clientLogger.error("listSongsForPicker", error);
+        setAvailableSongs([]);
+        toast.error(t.common.errorLoadFailed);
+      })
+      .finally(() => {
+        if (latestPickerQueryRef.current !== query) return;
+        setPickerLoading(false);
+      });
+  }, [showPicker, setlistId, debouncedPickerInput, t.common.errorLoadFailed, toast.error]);
+
+  async function handlePickerAdd(song: PickerSong) {
+    setAddingId(song.id);
+    try {
+      await addSongToSetlist({ data: { setlistId, songId: song.id } });
+      handleSongAdded(song);
+      setAvailableSongs((prev) => prev.filter((s) => s.id !== song.id));
+    } catch (error) {
+      clientLogger.error("addSong", error);
+      toast.error(t.common.errorAddFailed);
+    } finally {
+      setAddingId(null);
+    }
+  }
+
+  function handlePickerClose() {
+    setShowPicker(false);
+    setPickerInput("");
+  }
 
   // Dnd sensors
   const sensors = useSensors(
@@ -134,8 +188,8 @@ function SetlistEditor({
     }
   }
 
-  async function handleDelete() {
-    if (!confirm(t.setlist.confirmDelete)) return;
+  async function executeDelete() {
+    setShowDeleteConfirm(false);
     try {
       await deleteSetlist({ data: { id: setlistId } });
       navigate({ to: "/setlists" });
@@ -156,7 +210,7 @@ function SetlistEditor({
     }
   }
 
-  const handleSongAdded = useCallback((song: { id: string; title: string; artist: string | null }) => {
+  const handleSongAdded = useCallback((song: PickerSong) => {
     setSongs((prev) => [
       ...prev,
       {
@@ -196,7 +250,7 @@ function SetlistEditor({
           )}
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setShowDeleteConfirm(true)}
             aria-label={t.common.delete}
             className="p-2 text-text-secondary transition-colors hover:text-red-500"
           >
@@ -324,10 +378,26 @@ function SetlistEditor({
         </div>
       </div>
 
+      <ConfirmModal
+        open={showDeleteConfirm}
+        message={t.setlist.confirmDelete}
+        confirmLabel={t.common.delete}
+        cancelLabel={t.common.cancel}
+        onConfirm={executeDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
       {/* Song picker modal */}
-      {showPicker && (
-        <SongPickerModal setlistId={setlistId} onAdd={handleSongAdded} onClose={() => setShowPicker(false)} />
-      )}
+      <SongPickerModal
+        open={showPicker}
+        input={pickerInput}
+        onInputChange={setPickerInput}
+        availableSongs={availableSongs}
+        loading={pickerLoading}
+        addingId={addingId}
+        onAdd={handlePickerAdd}
+        onClose={handlePickerClose}
+      />
     </div>
   );
 }
@@ -373,67 +443,36 @@ function SortableSongCard({ song, index, onRemove }: { song: SetlistSongItem; in
 // ─── SongPickerModal ───────────────────────────────────
 
 function SongPickerModal({
-  setlistId,
+  open,
+  input,
+  onInputChange,
+  availableSongs,
+  loading,
+  addingId,
   onAdd,
   onClose,
 }: {
-  setlistId: string;
-  onAdd: (song: { id: string; title: string; artist: string | null }) => void;
+  open: boolean;
+  input: string;
+  onInputChange: (value: string) => void;
+  availableSongs: PickerSong[];
+  loading: boolean;
+  addingId: string | null;
+  onAdd: (song: PickerSong) => void;
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  const { toast } = useToast();
-  const [availableSongs, setAvailableSongs] = useState<{ id: string; title: string; artist: string | null }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [addingId, setAddingId] = useState<string | null>(null);
-  const [input, setInput] = useState("");
-  const debouncedInput = useDebouncedValue(input, 300);
-  // Debounced typing can leave multiple in-flight requests; keep only the latest
-  // query's response so a late earlier response can't clobber newer results.
-  const latestQueryRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    const query = debouncedInput.trim() || undefined;
-    latestQueryRef.current = query;
-    setLoading(true);
-    listSongsForPicker({ data: { setlistId, query } })
-      .then((songs) => {
-        if (latestQueryRef.current !== query) return;
-        setAvailableSongs(songs);
-      })
-      .catch((error) => {
-        if (latestQueryRef.current !== query) return;
-        clientLogger.error("listSongsForPicker", error);
-        setAvailableSongs([]);
-        toast.error(t.common.errorLoadFailed);
-      })
-      .finally(() => {
-        if (latestQueryRef.current !== query) return;
-        setLoading(false);
-      });
-  }, [setlistId, debouncedInput, t.common.errorLoadFailed, toast.error]);
-
-  useEffect(() => {
+    if (!open) return;
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [open, onClose]);
 
-  async function handleAdd(song: { id: string; title: string; artist: string | null }) {
-    setAddingId(song.id);
-    try {
-      await addSongToSetlist({ data: { setlistId, songId: song.id } });
-      onAdd(song);
-      setAvailableSongs((prev) => prev.filter((s) => s.id !== song.id));
-    } catch (error) {
-      clientLogger.error("addSong", error);
-      toast.error(t.common.errorAddFailed);
-    } finally {
-      setAddingId(null);
-    }
-  }
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
@@ -461,14 +500,14 @@ function SongPickerModal({
             <input
               type="search"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => onInputChange(e.target.value)}
               placeholder={t.song.searchPlaceholder}
               className="w-full rounded-full bg-white py-2.5 pl-9 pr-9 text-sm shadow-sm outline-none placeholder:text-text-secondary focus:ring-2 focus:ring-text-primary/10 [&::-webkit-search-cancel-button]:appearance-none"
             />
             {input && (
               <button
                 type="button"
-                onClick={() => setInput("")}
+                onClick={() => onInputChange("")}
                 aria-label={t.song.searchClear}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-text-secondary transition-colors hover:text-text-primary"
               >
@@ -482,7 +521,7 @@ function SongPickerModal({
             <p className="py-8 text-center text-sm text-text-secondary">{t.common.loading}</p>
           ) : availableSongs.length === 0 ? (
             <p className="py-8 text-center text-sm text-text-secondary">
-              {debouncedInput.trim() ? t.song.searchNoResults : t.song.noSongs}
+              {input.trim() ? t.song.searchNoResults : t.song.noSongs}
             </p>
           ) : (
             <div className="space-y-2">
@@ -490,7 +529,7 @@ function SongPickerModal({
                 <button
                   key={song.id}
                   type="button"
-                  onClick={() => handleAdd(song)}
+                  onClick={() => onAdd(song)}
                   disabled={addingId === song.id}
                   className="flex w-full items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm transition-colors active:bg-gray-50 disabled:opacity-40"
                 >

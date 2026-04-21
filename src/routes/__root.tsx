@@ -12,7 +12,16 @@ export interface RouterContext {
   user: SessionUser | null;
 }
 
+function NotFound() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <p className="text-text-secondary">404 Not Found</p>
+    </div>
+  );
+}
+
 export const Route = createRootRouteWithContext<RouterContext>()({
+  notFoundComponent: NotFound,
   head: () => ({
     meta: [
       { charSet: "utf-8" },

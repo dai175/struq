@@ -108,6 +108,8 @@ function SongEditPage() {
   const [aiRateLimited, setAiRateLimited] = useState(false);
   const [showAiConfirm, setShowAiConfirm] = useState(false);
   const handleCancelAiConfirm = useCallback(() => setShowAiConfirm(false), []);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const handleCancelDeleteConfirm = useCallback(() => setShowDeleteConfirm(false), []);
 
   // Sync state when loader data changes (e.g., after router.invalidate)
   useEffect(() => {
@@ -257,8 +259,8 @@ function SongEditPage() {
     }
   }
 
-  async function handleDeleteSong() {
-    if (!confirm(t.song.confirmDelete)) return;
+  async function executeDeleteSong() {
+    setShowDeleteConfirm(false);
     try {
       await deleteSong({ data: { id } });
       navigate({ to: "/songs" });
@@ -289,7 +291,7 @@ function SongEditPage() {
         </Link>
         <button
           type="button"
-          onClick={handleDeleteSong}
+          onClick={() => setShowDeleteConfirm(true)}
           aria-label={t.song.deleteSong}
           className="rounded-full p-2 text-text-secondary transition-colors hover:text-red-500"
         >
@@ -426,6 +428,14 @@ function SongEditPage() {
           cancelLabel={t.common.cancel}
           onConfirm={executeAiGenerate}
           onCancel={handleCancelAiConfirm}
+        />
+        <ConfirmModal
+          open={showDeleteConfirm}
+          message={t.song.confirmDelete}
+          confirmLabel={t.common.delete}
+          cancelLabel={t.common.cancel}
+          onConfirm={executeDeleteSong}
+          onCancel={handleCancelDeleteConfirm}
         />
         {aiRateLimited && (
           <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{t.song.aiRateLimited}</div>

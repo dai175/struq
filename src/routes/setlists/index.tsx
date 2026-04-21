@@ -4,6 +4,7 @@ import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { ConfirmModal } from "@/lib/confirm-modal";
 import { useToast } from "@/lib/toast";
 import { deleteSetlist, listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
 
@@ -22,9 +23,12 @@ function SetlistsPage() {
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  async function handleDelete(id: string) {
-    if (!confirm(t.setlist.confirmDelete)) return;
+  async function executeDelete() {
+    const id = pendingDeleteId;
+    if (!id) return;
+    setPendingDeleteId(null);
     setDeletingId(id);
     try {
       await deleteSetlist({ data: { id } });
@@ -101,7 +105,7 @@ function SetlistsPage() {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => handleDelete(setlist.id)}
+                    onClick={() => setPendingDeleteId(setlist.id)}
                     disabled={deletingId === setlist.id}
                     aria-label={t.common.delete}
                     className="shrink-0 p-2 text-text-secondary transition-colors hover:text-red-500 disabled:opacity-40"
@@ -124,6 +128,14 @@ function SetlistsPage() {
           )}
         </>
       )}
+      <ConfirmModal
+        open={pendingDeleteId !== null}
+        message={t.setlist.confirmDelete}
+        confirmLabel={t.common.delete}
+        cancelLabel={t.common.cancel}
+        onConfirm={executeDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

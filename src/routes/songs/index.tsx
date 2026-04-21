@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { ConfirmModal } from "@/lib/confirm-modal";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { StructurePreview } from "@/songs/components/StructurePreview";
@@ -32,6 +33,7 @@ function SongsPage() {
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [input, setInput] = useState(search.q ?? "");
   const debouncedInput = useDebouncedValue(input, 300);
 
@@ -47,8 +49,10 @@ function SongsPage() {
     navigate({ to: "/songs", search: next ? { q: next } : {}, replace: true });
   }, [debouncedInput, search.q, navigate]);
 
-  async function handleDelete(id: string) {
-    if (!confirm(t.song.confirmDelete)) return;
+  async function executeDelete() {
+    const id = pendingDeleteId;
+    if (!id) return;
+    setPendingDeleteId(null);
     setDeletingId(id);
     try {
       await deleteSong({ data: { id } });
@@ -153,7 +157,7 @@ function SongsPage() {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => handleDelete(song.id)}
+                    onClick={() => setPendingDeleteId(song.id)}
                     disabled={deletingId === song.id}
                     aria-label={t.song.deleteSong}
                     className="shrink-0 p-2 text-text-secondary transition-colors hover:text-red-500 disabled:opacity-40"
@@ -176,6 +180,14 @@ function SongsPage() {
           )}
         </>
       )}
+      <ConfirmModal
+        open={pendingDeleteId !== null}
+        message={t.song.confirmDelete}
+        confirmLabel={t.common.delete}
+        cancelLabel={t.common.cancel}
+        onConfirm={executeDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }
