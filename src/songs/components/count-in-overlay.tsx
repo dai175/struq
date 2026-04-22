@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { msPerBeat } from "@/songs/perform-utils";
+import { MetaTag } from "@/ui/meta-tag";
 
 interface CountInOverlayProps {
   /** BPM to space the count ticks at. */
@@ -33,8 +34,23 @@ export function CountInOverlay({ bpm, onComplete }: CountInOverlayProps) {
   }, [bpm]);
 
   return (
-    <div className="flex flex-1 items-center justify-center">
-      <p className="font-mono text-[12rem] font-bold leading-none lg:text-[16rem]">{count}</p>
+    <div className="flex flex-1 flex-col items-center justify-center" style={{ background: "var(--color-ink)" }}>
+      <MetaTag color="var(--color-accent)" size={11}>
+        COUNT-IN · {bpm} BPM
+      </MetaTag>
+      <p
+        className="mt-6 leading-none"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "clamp(120px, 28vmin, 260px)",
+          fontWeight: 700,
+          color: "var(--color-accent)",
+          letterSpacing: "-0.02em",
+          textShadow: "0 0 40px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+        }}
+      >
+        {count}
+      </p>
     </div>
   );
 }
