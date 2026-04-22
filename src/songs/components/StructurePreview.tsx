@@ -1,25 +1,15 @@
-import type { SectionType } from "@/i18n/types";
-import { SECTION_COLORS } from "@/songs/constants";
+import { StructureBar, type StructureBarSection } from "@/ui/structure-bar";
 
 interface StructurePreviewProps {
-  sections: { id: string; type: SectionType; bars: number }[];
+  sections: StructureBarSection[];
 }
 
+/**
+ * Thin wrapper over <StructureBar /> kept for backwards compatibility with
+ * screens that imported StructurePreview before the shared primitive existed.
+ * New call sites should use <StructureBar /> directly with an explicit
+ * `height` / `tone` / `showAbbreviations` to match the broadcast spec.
+ */
 export function StructurePreview({ sections }: StructurePreviewProps) {
-  if (sections.length === 0) return null;
-
-  return (
-    <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
-      {sections.map((sec) => (
-        <div
-          key={sec.id}
-          className="min-w-1 rounded-full"
-          style={{
-            flex: sec.bars,
-            backgroundColor: SECTION_COLORS[sec.type],
-          }}
-        />
-      ))}
-    </div>
-  );
+  return <StructureBar sections={sections} height={8} gap={2} />;
 }
