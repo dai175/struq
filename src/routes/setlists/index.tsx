@@ -83,7 +83,24 @@ function SetlistsPage() {
         fontFamily: "var(--font-sans)",
       }}
     >
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-8 lg:px-10 lg:pt-10">
+      {/* PC (≥lg): the list lives in the layout sidebar. Render a hint pane here
+          pointing to the sidebar so the master/detail view isn't visually empty. */}
+      <div className="hidden min-h-screen lg:flex lg:items-center lg:justify-center">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <MetaTag>{setlists.length === 0 ? "NO SETLISTS" : "SELECT A SETLIST"}</MetaTag>
+          {setlists.length === 0 && (
+            <p style={{ color: "var(--color-dim)", fontSize: 14, maxWidth: 320 }}>{t.setlist.noSetlists}</p>
+          )}
+          <div className="mt-2">
+            <ConsoleBtn tone="accent" onClick={handleCreate} disabled={creating}>
+              <IconPlus size={10} />
+              NEW SETLIST
+            </ConsoleBtn>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-2xl px-5 pt-6 pb-8 lg:hidden">
         <header className="flex items-end justify-between gap-3 pb-5">
           <div>
             <h1
