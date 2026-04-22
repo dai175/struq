@@ -1,9 +1,8 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { getSectionLabel, useI18n } from "@/i18n";
-import type { Locale, Translations } from "@/i18n/types";
+import type { Locale } from "@/i18n/types";
 import { type ClickScheduleHandle, scheduleClicks, unlockAudio } from "@/lib/audio";
 import { getSetlist, type SetlistSongItem } from "@/setlists/server-fns";
 import { useClickPreference } from "@/songs/click-preference";
@@ -15,8 +14,8 @@ import { getSongWithSections, type SectionRow, type SongRow } from "@/songs/serv
 import { useCurrentBar } from "@/songs/use-current-bar";
 import { useCurrentBeat } from "@/songs/use-current-beat";
 import { useSectionTimer } from "@/songs/use-section-timer";
-
-// ─── Route ─────────────────────────────────────
+import { IconBack } from "@/ui/icons";
+import { MetaTag } from "@/ui/meta-tag";
 
 type PerformSearch = { setlistId?: string };
 
@@ -37,8 +36,6 @@ export const Route = createFileRoute("/songs/$id/perform")({
   component: PerformPage,
 });
 
-// ─── Wrapper (key={id} forces remount on song change) ──
-
 function PerformPage() {
   const { song, sections, setlistData } = Route.useLoaderData();
   const { id } = Route.useParams();
@@ -47,17 +44,6 @@ function PerformPage() {
   return (
     <PerformView key={id} song={song} sections={sections} setlistData={setlistData} songId={id} setlistId={setlistId} />
   );
-}
-
-// ─── Helpers ───────────────────────────────────
-
-function formatBars(section: SectionRow, t: Translations): string {
-  if (section.extraBeats > 0) {
-    return t.common.barsWithExtra
-      .replace("{bars}", String(section.bars))
-      .replace("{extra}", String(section.extraBeats));
-  }
-  return `${section.bars} ${t.common.bars}`;
 }
 
 function sectionLabel(section: SectionRow, locale: Locale): string {
@@ -70,8 +56,6 @@ const SAFE_AREA_STYLE = {
   paddingLeft: "env(safe-area-inset-left)",
   paddingRight: "env(safe-area-inset-right)",
 } as const;
-
-// ─── Main View ─────────────────────────────────
 
 type Mode = "selecting" | "manual" | "countin" | "auto" | "paused";
 
@@ -93,7 +77,6 @@ function PerformView({
 
   const [mode, setMode] = useState<Mode>("selecting");
   const [currentIndex, setCurrentIndex] = useState(0);
-
   const [clickEnabled] = useClickPreference();
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -108,13 +91,9 @@ function PerformView({
   const total = sections.length;
   const isEnded = currentIndex >= total;
   const current = !isEnded ? sections[currentIndex] : undefined;
-  const prev = currentIndex > 0 && currentIndex <= total ? sections[currentIndex - 1] : null;
   const next = currentIndex < total - 1 ? sections[currentIndex + 1] : null;
   const sectionColor = current ? SECTION_COLORS[current.type] : "";
 
-  // ── Auto-advance timer ────────────────────────
-  // Compute even when not in auto mode so useSectionTimer initializes its
-  // remaining-ms ref with the real value; isRunning still gates actual scheduling.
   const sectionDurationMs = current && song.bpm ? calculateSectionDurationMs(current, song.bpm) : 0;
 
   useSectionTimer({
@@ -138,7 +117,6 @@ function PerformView({
     sectionId: currentIndex,
   });
 
-  // ── Click stream during auto ──────────────────
   const clickHandleRef = useRef<ClickScheduleHandle | null>(null);
   useEffect(() => {
     clickHandleRef.current?.cancel();
@@ -152,14 +130,11 @@ function PerformView({
     };
   }, [mode, clickEnabled, current, song.bpm]);
 
-  // ── Count-in audio ────────────────────────────
   useEffect(() => {
     if (mode !== "countin" || !song.bpm) return;
     const handle = scheduleClicks(song.bpm, 4);
     return () => handle.cancel();
   }, [mode, song.bpm]);
-
-  // ── Handlers ──────────────────────────────────
 
   function navigateToSong(target: SetlistSongItem) {
     navigate({
@@ -185,8 +160,6 @@ function PerformView({
   function handleBack() {
     if (currentIndex <= 0) return;
     setCurrentIndex((i) => i - 1);
-    // In auto mode, rewinding a section drops us into paused so the user
-    // can take a breath before resuming.
     if (mode === "auto" || mode === "countin") {
       setMode("paused");
     }
@@ -220,7 +193,6 @@ function PerformView({
     setMode("auto");
   }
 
-  // Central dispatcher for tap / Space / ArrowRight based on current mode.
   function handlePrimaryAction() {
     if (swipedRef.current) {
       swipedRef.current = false;
@@ -233,8 +205,6 @@ function PerformView({
         advanceSection();
         return;
       case "countin":
-        setMode("paused");
-        return;
       case "auto":
         setMode("paused");
         return;
@@ -243,8 +213,6 @@ function PerformView({
         return;
     }
   }
-
-  // ── Touch / Swipe ─────────────────────────────
 
   function handleTouchStart(e: React.TouchEvent) {
     const touch = e.touches[0];
@@ -273,8 +241,6 @@ function PerformView({
     }
   }
 
-  // ── Keyboard ──────────────────────────────────
-
   const handlersRef = useRef({ handlePrimaryAction, handleBack, handleReset, goExit });
   handlersRef.current = { handlePrimaryAction, handleBack, handleReset, goExit };
 
@@ -299,253 +265,660 @@ function PerformView({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // ── Meta line ─────────────────────────────────
-
   const metaParts: string[] = [];
-  if (song.artist) metaParts.push(song.artist);
+  if (song.artist) metaParts.push(song.artist.toUpperCase());
   if (song.bpm) metaParts.push(`${song.bpm} BPM`);
-  if (song.key) metaParts.push(song.key);
-
-  const showPausedHint = mode === "paused";
-  const hasDetails = !!(current?.chordProgression || current?.memo);
-
-  // Shared prev/next JSX so we can render them in the outer slots (portrait)
-  // or inside the right-hand details column (landscape) without duplication.
-  const prevLabel = prev ? <p className="text-base opacity-25 lg:text-xl">{sectionLabel(prev, locale)}</p> : null;
-
-  const nextHint = showPausedHint ? (
-    <p className="text-sm opacity-50">{t.perform.paused.tapToResume}</p>
-  ) : next ? (
-    <div className="opacity-30">
-      <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
-      <p className="text-sm lg:text-base">{sectionLabel(next, locale)}</p>
-    </div>
-  ) : isSetlistMode && hasNextSong ? (
-    <div className="opacity-25">
-      <p className="text-[10px] uppercase tracking-widest">{t.common.next}</p>
-      <p className="text-sm lg:text-base">{setlistSongs[currentSongIdx + 1].title}</p>
-    </div>
-  ) : (
-    <p className="text-sm opacity-20">{t.common.end}</p>
-  );
-
-  // ── Render ────────────────────────────────────
+  if (song.key) metaParts.push(`KEY ${song.key}`);
 
   return (
     <div
-      className="fixed inset-0 flex select-none flex-col bg-surface-dark text-text-on-dark"
-      style={SAFE_AREA_STYLE}
+      className="fixed inset-0 flex select-none flex-col lg:flex-row"
+      style={{
+        ...SAFE_AREA_STYLE,
+        background: "var(--color-ink)",
+        color: "var(--color-text)",
+        fontFamily: "var(--font-sans)",
+      }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* ── Header ──────────────────────────────── */}
-      <header className="flex items-center gap-3 px-4 pb-2 pt-3 lg:px-8">
-        <button
-          type="button"
-          onClick={goExit}
-          className="shrink-0 rounded-full p-2 opacity-60 transition-opacity active:opacity-100"
-          aria-label={t.common.back}
+      {/* ─── Timeline rail (PC only) ─── */}
+      {total > 0 && mode !== "selecting" && (
+        <aside
+          className="hidden shrink-0 flex-col lg:flex"
+          style={{
+            width: 280,
+            borderRight: "1px solid var(--color-line)",
+            padding: "18px 16px",
+          }}
         >
-          <ArrowLeft size={22} />
-        </button>
-        <div className="min-w-0 flex-1 text-center">
-          <h1 className="truncate text-sm font-semibold opacity-70 lg:text-base">{song.title}</h1>
-          {metaParts.length > 0 && <p className="truncate text-xs opacity-40 lg:text-sm">{metaParts.join(" · ")}</p>}
-        </div>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="shrink-0 rounded-full p-2 opacity-60 transition-opacity active:opacity-100"
-          aria-label={t.common.reset}
-        >
-          <RotateCcw size={18} />
-        </button>
-      </header>
+          <div className="flex items-center justify-between">
+            <span
+              className="flex items-center gap-2"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.22em",
+                color: "#ef4444",
+                fontWeight: 600,
+                textTransform: "uppercase",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#ef4444",
+                  boxShadow: "0 0 8px #ef4444",
+                  animation: "live-pulse 1.2s ease-in-out infinite",
+                }}
+              />
+              LIVE
+            </span>
+            <MetaTag size={10}>ESC · EXIT</MetaTag>
+          </div>
 
-      {mode === "selecting" ? (
-        <ModeSelectOverlay bpm={song.bpm} onSelectManual={handleSelectManual} onSelectAuto={handleSelectAuto} />
-      ) : mode === "countin" && song.bpm ? (
-        <CountInOverlay bpm={song.bpm} onComplete={handleCountInComplete} />
-      ) : (
-        <>
-          {/* ── Progress bar ────────────────────────── */}
-          {total > 0 && (
-            <div className="flex gap-0.5 px-4 lg:px-8">
-              {sections.map((sec, i) => (
-                <div
+          <div style={{ marginTop: 22 }}>
+            <div className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>
+              {song.title}
+            </div>
+            {metaParts.length > 0 && (
+              <div style={{ marginTop: 4 }}>
+                <MetaTag size={10}>{metaParts.join(" · ")}</MetaTag>
+              </div>
+            )}
+          </div>
+
+          <ul className="mt-4 flex-1 overflow-y-auto" style={{ borderTop: "1px solid var(--color-line)" }}>
+            {sections.map((sec, i) => {
+              const active = i === currentIndex && !isEnded;
+              const past = i < currentIndex || isEnded;
+              return (
+                <li
                   key={sec.id}
-                  className="h-2.5 min-w-1 rounded-full transition-opacity duration-150 lg:h-3"
                   style={{
-                    flex: sec.bars,
-                    backgroundColor: SECTION_COLORS[sec.type],
-                    opacity: isEnded || i <= currentIndex ? 1 : 0.25,
+                    display: "grid",
+                    gridTemplateColumns: "28px 10px 1fr auto",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 2px 10px 6px",
+                    borderBottom: "1px solid var(--color-line)",
+                    borderLeft: active ? `3px solid ${SECTION_COLORS[sec.type]}` : "3px solid transparent",
+                    background: active ? "rgba(255,255,255,0.04)" : "transparent",
+                    color: active ? "#fff" : past ? "var(--color-dim)" : "var(--color-dim-2)",
                   }}
-                />
-              ))}
-            </div>
-          )}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "var(--color-dim-2)",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      background: past || active ? SECTION_COLORS[sec.type] : "transparent",
+                      border: `1px solid ${SECTION_COLORS[sec.type]}`,
+                    }}
+                  />
+                  <span className="truncate" style={{ fontSize: 13, fontWeight: active ? 700 : 500 }}>
+                    {sectionLabel(sec, locale)}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      letterSpacing: "0.08em",
+                      color: "var(--color-dim-2)",
+                    }}
+                  >
+                    {sec.bars}b
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
 
-          {/* ── Section counter ─────────────────────── */}
-          {total > 0 && !isEnded && (
-            <div className="mt-2 text-center">
-              <span className="font-mono text-xs opacity-40 lg:text-sm">
-                {currentIndex + 1}
-                {t.perform.of}
-                {total}
-              </span>
-              {isSetlistMode && (
-                <span className="ml-3 text-xs opacity-30">
-                  {t.perform.songOf
-                    .replace("{current}", String(currentSongIdx + 1))
-                    .replace("{total}", String(setlistSongs.length))}
-                </span>
-              )}
+          <div
+            className="flex items-center justify-between"
+            style={{
+              marginTop: 12,
+              paddingTop: 14,
+              borderTop: "1px solid var(--color-line)",
+            }}
+          >
+            <div>
+              <MetaTag size={9}>BPM</MetaTag>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 22,
+                  fontWeight: 600,
+                  color: "#fff",
+                  letterSpacing: "0.02em",
+                  marginTop: 2,
+                }}
+              >
+                {song.bpm ?? "—"}
+              </div>
             </div>
-          )}
+            <div style={{ textAlign: "right" }}>
+              <MetaTag size={9}>KEY</MetaTag>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 22,
+                  fontWeight: 600,
+                  color: "#fff",
+                  letterSpacing: "0.02em",
+                  marginTop: 2,
+                }}
+              >
+                {song.key ?? "—"}
+              </div>
+            </div>
+          </div>
+        </aside>
+      )}
 
-          {/* ── Main tap area ───────────────────────── */}
-          {total === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center px-6 lg:px-12">
-              <div className="text-center">
-                <p className="text-lg opacity-40">{t.song.noSections}</p>
+      {/* ─── Main stage ─── */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header
+          className="flex items-center gap-3"
+          style={{
+            padding: "14px 18px",
+            borderBottom: "1px solid var(--color-line)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={goExit}
+            aria-label={t.common.back}
+            style={{
+              width: 36,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <IconBack size={20} />
+          </button>
+          <div className="min-w-0 flex-1 text-center">
+            <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+              {song.title}
+            </div>
+            {metaParts.length > 0 && (
+              <div style={{ marginTop: 3 }}>
+                <MetaTag size={9}>{metaParts.join(" · ")}</MetaTag>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleReset}
+            aria-label={t.common.reset}
+            style={{
+              minWidth: 36,
+              height: 36,
+              padding: "0 10px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--color-dim)",
+              background: "transparent",
+              border: "1px solid var(--color-line-2)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+              cursor: "pointer",
+              borderRadius: 2,
+            }}
+          >
+            {t.common.reset}
+          </button>
+        </header>
+
+        {mode === "selecting" ? (
+          <ModeSelectOverlay bpm={song.bpm} onSelectManual={handleSelectManual} onSelectAuto={handleSelectAuto} />
+        ) : mode === "countin" && song.bpm ? (
+          <CountInOverlay bpm={song.bpm} onComplete={handleCountInComplete} />
+        ) : (
+          <>
+            {total > 0 && !isEnded && current && (
+              <div
+                style={{
+                  padding: "12px 20px 16px",
+                  borderBottom: "1px solid var(--color-line)",
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <MetaTag>
+                    SECTION {String(currentIndex + 1).padStart(2, "0")} OF {String(total).padStart(2, "0")}
+                  </MetaTag>
+                  {isSetlistMode && (
+                    <MetaTag size={9}>
+                      SONG {String(currentSongIdx + 1).padStart(2, "0")}/{String(setlistSongs.length).padStart(2, "0")}
+                    </MetaTag>
+                  )}
+                </div>
+                <div className="mt-3 flex gap-0.5">
+                  {sections.map((sec, i) => (
+                    <div
+                      key={sec.id}
+                      style={{
+                        flex: sec.bars,
+                        minWidth: 2,
+                        height: 6,
+                        background: SECTION_COLORS[sec.type],
+                        opacity: i <= currentIndex ? 1 : 0.25,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {total === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center px-6">
+                <MetaTag>NO SECTIONS</MetaTag>
+                <p
+                  style={{
+                    marginTop: 12,
+                    color: "var(--color-dim)",
+                    fontSize: 14,
+                  }}
+                >
+                  {t.song.noSections}
+                </p>
                 <Link
                   to="/songs/$id"
                   params={{ id: songId }}
-                  className="mt-4 inline-block text-sm opacity-50 underline"
+                  style={{
+                    marginTop: 16,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "0.22em",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                    color: "var(--color-accent)",
+                    textDecoration: "none",
+                    border: "1px solid var(--color-accent)",
+                    padding: "10px 16px",
+                  }}
                 >
-                  {t.common.back}
+                  BACK TO EDITOR
                 </Link>
               </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="flex flex-1 cursor-pointer flex-col items-center justify-center px-6 lg:px-12"
-              onClick={handlePrimaryAction}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handlePrimaryAction();
-                }
-              }}
-            >
-              {isEnded ? (
-                <p className="text-6xl font-bold opacity-50 lg:text-8xl">{t.common.end}</p>
-              ) : current ? (
-                <>
-                  <div className={`mb-6 h-7 lg:mb-8 lg:h-8${hasDetails ? " touch-landscape:hidden" : ""}`}>
-                    {prevLabel}
+            ) : (
+              <button
+                type="button"
+                className="flex flex-1 cursor-pointer flex-col"
+                onClick={handlePrimaryAction}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handlePrimaryAction();
+                  }
+                }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "inherit",
+                  textAlign: "left",
+                  padding: 0,
+                }}
+              >
+                {isEnded ? (
+                  <div className="flex flex-1 items-center justify-center">
+                    <p
+                      style={{
+                        fontSize: 96,
+                        fontWeight: 800,
+                        letterSpacing: "-0.04em",
+                        color: "var(--color-dim)",
+                      }}
+                    >
+                      {t.common.end}
+                    </p>
                   </div>
-
-                  {/* Beat LED — reserved slot keeps layout stable across modes */}
-                  <div className="mb-4 flex h-4 items-center justify-center lg:mb-6 lg:h-4">
-                    {(mode === "auto" || mode === "paused") && <BeatStrip currentBeat={currentBeat} bpm={song.bpm} />}
-                  </div>
-
-                  <div className="flex w-full flex-col items-center text-center touch-landscape:grid touch-landscape:grid-cols-2 touch-landscape:items-center touch-landscape:gap-12">
-                    <div className={`flex flex-col items-center${hasDetails ? "" : " touch-landscape:col-span-2"}`}>
-                      <p className="text-6xl font-bold lg:text-7xl" style={{ color: sectionColor }}>
-                        {sectionLabel(current, locale)}
-                      </p>
-                      <p
-                        className="mt-4 font-mono text-4xl font-bold opacity-90 lg:mt-6 lg:text-5xl"
-                        style={{ color: sectionColor }}
+                ) : current ? (
+                  <div
+                    className="flex flex-1 flex-col lg:grid"
+                    style={{
+                      padding: "28px 22px",
+                      gap: 24,
+                      gridTemplateColumns: "1.2fr 1fr",
+                    }}
+                  >
+                    <div className="flex flex-col items-start justify-center">
+                      <span
+                        className="flex items-center gap-2"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.22em",
+                          color: sectionColor,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                        }}
                       >
-                        {formatBars(current, t)}
-                      </p>
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: sectionColor,
+                          }}
+                        />
+                        NOW
+                      </span>
+                      <div
+                        style={{
+                          marginTop: 10,
+                          fontSize: "clamp(72px, 18vw, 160px)",
+                          fontWeight: 800,
+                          lineHeight: 0.92,
+                          letterSpacing: "-0.04em",
+                          color: sectionColor,
+                          textShadow: `0 0 30px color-mix(in srgb, ${sectionColor} 28%, transparent)`,
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {sectionLabel(current, locale)}
+                      </div>
                       {(mode === "auto" || mode === "paused") && (
-                        <BarDots total={current.bars} currentBar={currentBar} color={sectionColor} />
+                        <BarGrid total={current.bars} currentBar={currentBar} color={sectionColor} />
                       )}
+                      <div
+                        className="mt-4 flex gap-4"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.22em",
+                          color: "var(--color-dim-2)",
+                          textTransform: "uppercase",
+                          fontWeight: 500,
+                        }}
+                      >
+                        <span>
+                          BAR {String(Math.max(currentBar, 0) + 1).padStart(2, "0")}
+                          {" OF "}
+                          {String(current.bars).padStart(2, "0")}
+                        </span>
+                        <span>{sectionBeats(current)} BEATS</span>
+                      </div>
                     </div>
-                    {hasDetails && (
-                      <div className="flex flex-col items-center">
-                        <div className="hidden h-7 touch-landscape:block lg:h-8">{prevLabel}</div>
-                        {current.chordProgression && (
-                          <p className="mt-5 font-mono text-lg opacity-60 lg:mt-7 lg:text-xl touch-landscape:mt-4 touch-landscape:text-2xl">
+
+                    <div className="flex flex-col gap-3">
+                      {current.chordProgression && (
+                        <StageCard label="CHORD PROGRESSION">
+                          <p
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 24,
+                              fontWeight: 600,
+                              letterSpacing: "0.22em",
+                              color: "#fff",
+                              wordBreak: "break-word",
+                            }}
+                          >
                             {current.chordProgression}
                           </p>
-                        )}
-                        {current.memo && (
-                          <p className="mt-2 text-sm opacity-30 lg:text-base touch-landscape:mt-3">{current.memo}</p>
-                        )}
-                        <div className="hidden h-10 touch-landscape:mt-4 touch-landscape:block">{nextHint}</div>
-                      </div>
-                    )}
+                        </StageCard>
+                      )}
+                      {(mode === "auto" || mode === "paused") && (
+                        <StageCard label="BEAT" right={song.bpm ? `${song.bpm} BPM` : undefined}>
+                          <BeatRow currentBeat={currentBeat} bpm={song.bpm} color={sectionColor} />
+                        </StageCard>
+                      )}
+                      {next ? (
+                        <StageCard label="UP NEXT" tone="dim">
+                          <div className="flex items-center gap-3">
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                width: 10,
+                                height: 10,
+                                background: SECTION_COLORS[next.type],
+                              }}
+                            />
+                            <span
+                              style={{
+                                fontSize: 22,
+                                fontWeight: 700,
+                                color: "rgba(255,255,255,0.85)",
+                              }}
+                            >
+                              {sectionLabel(next, locale)}
+                            </span>
+                            <span
+                              style={{
+                                marginLeft: "auto",
+                                fontFamily: "var(--font-mono)",
+                                fontSize: 10,
+                                letterSpacing: "0.22em",
+                                color: "var(--color-dim-2)",
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              {next.bars} BARS
+                            </span>
+                          </div>
+                        </StageCard>
+                      ) : isSetlistMode && hasNextSong ? (
+                        <StageCard label="UP NEXT · SONG" tone="dim">
+                          <div className="flex items-center gap-3">
+                            <span
+                              style={{
+                                fontSize: 18,
+                                fontWeight: 700,
+                                color: "rgba(255,255,255,0.85)",
+                              }}
+                              className="truncate"
+                            >
+                              {setlistSongs[currentSongIdx + 1].title}
+                            </span>
+                          </div>
+                        </StageCard>
+                      ) : (
+                        <StageCard label="UP NEXT" tone="dim">
+                          <span
+                            style={{
+                              fontSize: 18,
+                              fontWeight: 700,
+                              color: "var(--color-dim-2)",
+                              letterSpacing: "0.02em",
+                            }}
+                          >
+                            {t.common.end}
+                          </span>
+                        </StageCard>
+                      )}
+                      {mode === "paused" && (
+                        <div
+                          style={{
+                            padding: "10px 12px",
+                            border: "1px dashed var(--color-accent)",
+                            color: "var(--color-accent)",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            letterSpacing: "0.22em",
+                            textTransform: "uppercase",
+                            fontWeight: 600,
+                            textAlign: "center",
+                          }}
+                        >
+                          {t.perform.paused.tapToResume}
+                        </div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className={`mt-6 h-10 text-center lg:mt-8${hasDetails ? " touch-landscape:hidden" : ""}`}>
-                    {nextHint}
-                  </div>
-                </>
-              ) : null}
-            </button>
-          )}
-
-          {/* ── Bottom controls ─────────────────────── */}
-          {total > 0 && (
-            <div className="flex items-center justify-between px-4 pb-4 pt-2 lg:px-8">
-              <button
-                type="button"
-                onClick={handleBack}
-                aria-disabled={currentIndex === 0}
-                className={`min-w-[72px] rounded-full px-4 py-2 text-sm transition-opacity active:opacity-80 ${
-                  currentIndex === 0 ? "opacity-20" : "opacity-50"
-                }`}
-              >
-                {t.common.back}
+                ) : null}
               </button>
-              <span className="font-mono text-xs opacity-30">
-                {isEnded ? t.common.end : `${currentIndex + 1}${t.perform.of}${total}`}
-              </span>
-              <button
-                type="button"
-                onClick={handleReset}
-                className="min-w-[72px] rounded-full px-4 py-2 text-sm opacity-50 transition-opacity active:opacity-80"
+            )}
+
+            {total > 0 && (
+              <footer
+                className="flex items-center justify-between"
+                style={{
+                  padding: "12px 18px",
+                  borderTop: "1px solid var(--color-line)",
+                }}
               >
-                {t.common.reset}
-              </button>
-            </div>
-          )}
-        </>
-      )}
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={currentIndex === 0}
+                  style={{
+                    minWidth: 80,
+                    padding: "10px 14px",
+                    background: "transparent",
+                    border: "1px solid var(--color-line-2)",
+                    color: currentIndex === 0 ? "var(--color-dim-2)" : "var(--color-text)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "0.22em",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                    cursor: currentIndex === 0 ? "not-allowed" : "pointer",
+                    opacity: currentIndex === 0 ? 0.4 : 1,
+                    borderRadius: 2,
+                  }}
+                >
+                  ◁ {t.common.back}
+                </button>
+                <MetaTag size={9}>SPACE · TAP TO ADVANCE</MetaTag>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  style={{
+                    minWidth: 80,
+                    padding: "10px 14px",
+                    background: "transparent",
+                    border: "1px solid var(--color-line-2)",
+                    color: "var(--color-text)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "0.22em",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    borderRadius: 2,
+                  }}
+                >
+                  {t.common.reset}
+                </button>
+              </footer>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-// `key={currentBeat}` remounts the span so the CSS animation restarts on each
-// beat, keeping the pulse aligned with the click audio.
-function BeatStrip({ currentBeat, bpm }: { currentBeat: number; bpm: number | null }) {
-  const isActive = currentBeat >= 0 && bpm !== null;
-  const color = SECTION_COLORS.solo;
+function StageCard({
+  label,
+  right,
+  tone = "default",
+  children,
+}: {
+  label: string;
+  right?: string;
+  tone?: "default" | "dim";
+  children: React.ReactNode;
+}) {
   return (
-    <span
-      key={isActive ? currentBeat : "idle"}
-      aria-hidden="true"
-      className="block h-4 w-4 rounded-full lg:h-4 lg:w-4"
+    <div
       style={{
-        backgroundColor: color,
-        opacity: isActive ? undefined : 0.2,
-        animation: isActive ? `led-pulse ${msPerBeat(bpm)}ms ease-out forwards` : undefined,
-        boxShadow: `0 0 12px ${color}`,
+        border: "1px solid var(--color-line)",
+        background: tone === "dim" ? "transparent" : "rgba(255,255,255,0.02)",
+        padding: "12px 14px",
       }}
-    />
+    >
+      <div className="flex items-center justify-between">
+        <MetaTag size={10}>{label}</MetaTag>
+        {right && <MetaTag size={9}>{right}</MetaTag>}
+      </div>
+      <div style={{ marginTop: 10 }}>{children}</div>
+    </div>
   );
 }
 
-function BarDots({ total, currentBar, color }: { total: number; currentBar: number; color: string }) {
+function BarGrid({ total, currentBar, color }: { total: number; currentBar: number; color: string }) {
   return (
-    <div className="mt-3 flex flex-wrap items-center justify-center gap-2 lg:mt-4 lg:gap-2" aria-hidden="true">
-      {Array.from({ length: total }, (_, i) => (
-        <span
-          // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length, never reordered
-          key={i}
-          className="h-2.5 w-2.5 rounded-full transition-opacity duration-150 lg:h-2.5 lg:w-2.5"
-          style={{
-            backgroundColor: color,
-            opacity: i < currentBar ? 0.9 : 0.2,
-          }}
-        />
-      ))}
+    <div
+      className="mt-4 grid"
+      style={{
+        gridTemplateColumns: `repeat(${Math.min(total, 16)}, minmax(0, 1fr))`,
+        gap: 4,
+        width: "100%",
+        maxWidth: 420,
+      }}
+      aria-hidden="true"
+    >
+      {Array.from({ length: total }, (_, i) => {
+        const active = i === currentBar;
+        const past = i < currentBar;
+        return (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length, never reordered
+            key={i}
+            style={{
+              height: 18,
+              background: active || past ? color : "transparent",
+              border: `1px solid ${color}`,
+              opacity: active ? 1 : past ? 0.7 : 0.25,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function BeatRow({ currentBeat, bpm, color }: { currentBeat: number; bpm: number | null; color: string }) {
+  const beats = 4;
+  const beatInBar = bpm && currentBeat >= 0 ? currentBeat % beats : -1;
+  return (
+    <div className="flex gap-2">
+      {Array.from({ length: beats }, (_, i) => {
+        const active = i === beatInBar;
+        const past = i < beatInBar;
+        return (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length, never reordered
+            key={i}
+            style={{
+              width: 38,
+              height: 38,
+              background: active ? color : "transparent",
+              border: `1px solid ${color}`,
+              opacity: active ? 1 : past ? 0.45 : 0.2,
+              boxShadow: active ? `0 0 14px color-mix(in srgb, ${color} 55%, transparent)` : undefined,
+              animation: active && bpm ? `beat-pop 80ms ease-out` : undefined,
+              animationDuration: active && bpm ? `${Math.min(msPerBeat(bpm) * 0.6, 180)}ms` : undefined,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
