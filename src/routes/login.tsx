@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
+import { Logomark } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 
@@ -36,18 +37,6 @@ const DEMO_SECTIONS: { id: string; type: SectionType; bars: number; label: strin
   { id: "9", type: "chorus", bars: 8, label: "Chorus" },
   { id: "10", type: "outro", bars: 4, label: "Outro" },
 ];
-
-function LogomarkLarge({ size = 32 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="2" y="4" width="6" height="3" fill="var(--color-section-intro)" />
-      <rect x="10" y="4" width="8" height="3" fill="var(--color-section-a)" />
-      <rect x="2" y="10" width="12" height="3" fill="var(--color-section-chorus)" />
-      <rect x="2" y="16" width="5" height="3" fill="var(--color-section-bridge)" />
-      <rect x="9" y="16" width="11" height="3" fill="var(--color-section-solo)" />
-    </svg>
-  );
-}
 
 function GoogleGlyph({ size = 18 }: { size?: number }) {
   return (
@@ -164,7 +153,7 @@ function LoginLeftPane() {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <LogomarkLarge size={32} />
+          <Logomark size={32} />
           <div
             style={{
               fontSize: 22,
@@ -295,7 +284,7 @@ function LoginMobileHeader() {
       }}
     >
       <div className="flex items-center gap-2.5">
-        <LogomarkLarge size={22} />
+        <Logomark size={22} />
         <div style={{ fontSize: 16, fontWeight: 700 }}>Struq</div>
       </div>
       <MetaTag size={9}>V 2.0</MetaTag>

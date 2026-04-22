@@ -163,38 +163,22 @@ export function IconSettings(props: IconProps) {
 
 interface LogomarkProps {
   size?: number;
-  /** Keep the 5-colored-rect band (default) vs render as solid accent. */
-  color?: "sections" | "accent";
 }
 
-const LOGOMARK_RECTS: { id: string; color: string }[] = [
-  { id: "intro", color: "var(--color-section-intro)" },
-  { id: "a", color: "var(--color-section-a)" },
-  { id: "chorus", color: "var(--color-section-chorus)" },
-  { id: "bridge", color: "var(--color-section-bridge)" },
-  { id: "solo", color: "var(--color-section-solo)" },
-];
-
 /**
- * Logomark — 5 colored rects, one per major section color. Uses the section
- * palette variables so it stays in sync with any later palette retune.
+ * Logomark — 5 colored rects in a 3-row structure chart, echoing a song's
+ * section layout. Geometry matches the handoff reference verbatim
+ * (design_handoff_struq/designs/console-pc.jsx L24-30). The fills reference
+ * the section palette so any later palette retune keeps the logo in sync.
  */
-export function Logomark({ size = 26, color = "sections" }: LogomarkProps) {
-  const w = size;
-  const h = Math.round(size * (10 / 26));
-  const cell = Math.floor(w / 5);
+export function Logomark({ size = 26 }: LogomarkProps) {
   return (
-    <svg aria-hidden="true" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-      {LOGOMARK_RECTS.map((r, i) => (
-        <rect
-          key={r.id}
-          x={i * cell}
-          y={0}
-          width={cell - 1}
-          height={h}
-          fill={color === "sections" ? r.color : "var(--color-accent)"}
-        />
-      ))}
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24">
+      <rect x="2" y="4" width="6" height="3" fill="var(--color-section-intro)" />
+      <rect x="10" y="4" width="8" height="3" fill="var(--color-section-a)" />
+      <rect x="2" y="10" width="12" height="3" fill="var(--color-section-chorus)" />
+      <rect x="2" y="16" width="5" height="3" fill="var(--color-section-bridge)" />
+      <rect x="9" y="16" width="11" height="3" fill="var(--color-section-solo)" />
     </svg>
   );
 }
