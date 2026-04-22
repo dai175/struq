@@ -10,7 +10,6 @@ import {
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, ExternalLink, Play, Sparkles, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
@@ -23,7 +22,6 @@ import { useToast } from "@/lib/toast";
 import { isValidUrl } from "@/lib/validation";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { SectionPalette } from "@/songs/components/SectionPalette";
-import { StructurePreview } from "@/songs/components/StructurePreview";
 import { DEFAULT_BARS } from "@/songs/constants";
 import {
   deleteSong,
@@ -32,6 +30,10 @@ import {
   type SectionRow,
   saveSongWithSections,
 } from "@/songs/server-fns";
+import { ConsoleField } from "@/ui/console-field";
+import { IconBack, IconExt, IconPlay, IconSparkles, IconTrash } from "@/ui/icons";
+import { MetaTag } from "@/ui/meta-tag";
+import { StructureBar } from "@/ui/structure-bar";
 
 function toSectionData(s: SectionRow): SectionData {
   return {
@@ -65,13 +67,11 @@ function SortableSection({
   onDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
-
   return (
     <div ref={setNodeRef} style={style}>
       <SectionCard
@@ -111,7 +111,6 @@ function SongEditPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const handleCancelDeleteConfirm = useCallback(() => setShowDeleteConfirm(false), []);
 
-  // Sync state when loader data changes (e.g., after router.invalidate)
   useEffect(() => {
     setTitle(loaderData.song.title);
     setArtist(loaderData.song.artist ?? "");
@@ -121,7 +120,6 @@ function SongEditPage() {
     setSectionsList(loaderData.sections.map(toSectionData));
   }, [loaderData]);
 
-  // Cleanup saved timer on unmount
   useEffect(() => {
     return () => clearTimeout(savedTimerRef.current);
   }, []);
@@ -150,12 +148,10 @@ function SongEditPage() {
       setTitleError(true);
       return;
     }
-
     if (sectionsList.length > 0) {
       setShowAiConfirm(true);
       return;
     }
-
     void executeAiGenerate();
   }
 
@@ -171,9 +167,7 @@ function SongEditPage() {
         artist: artist.trim(),
         key: key.trim() || undefined,
       });
-      const sections = await generateSections({
-        data: aiInput,
-      });
+      const sections = await generateSections({ data: aiInput });
       setSectionsList(sections);
     } catch (error) {
       clientLogger.error("generateSections", error);
@@ -211,8 +205,7 @@ function SongEditPage() {
   }
 
   async function handleSave() {
-    const parsedBpm = bpm ? parseInt(bpm, 10) : undefined;
-
+    const parsedBpm = bpm ? Number.parseInt(bpm, 10) : undefined;
     const parsed = saveSongWithSectionsInputSchema.safeParse({
       song: {
         id,
@@ -246,7 +239,6 @@ function SongEditPage() {
     setSaving(true);
     try {
       await saveSongWithSections({ data: parsed.data });
-
       setSaved(true);
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
@@ -270,157 +262,267 @@ function SongEditPage() {
     }
   }
 
+  const totalBars = sectionsList.reduce((sum, s) => sum + s.bars, 0);
+
   return (
-    <div className="mx-auto max-w-md px-4 pb-40 pt-6">
-      <div className="mb-6 flex items-center gap-2">
-        <Link
-          to="/songs"
-          aria-label={t.common.back}
-          className="flex items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-muted"
-        >
-          <ArrowLeft size={20} />
+    <div
+      className="min-h-screen"
+      style={{
+        background: "var(--color-ink)",
+        color: "var(--color-text)",
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      {/* TopRail */}
+      <div
+        className="grid items-center gap-3"
+        style={{
+          gridTemplateColumns: "auto 1fr auto",
+          padding: "14px 18px",
+          borderBottom: "1px solid var(--color-line)",
+        }}
+      >
+        <Link to="/songs" aria-label={t.common.back} style={{ color: "#fff", padding: 6 }}>
+          <IconBack size={20} />
         </Link>
-        <h1 className="min-w-0 flex-1 truncate text-xl font-bold">{title || t.song.title}</h1>
-        <Link
-          to="/songs/$id/perform"
-          params={{ id }}
-          aria-label="Perform"
-          className="rounded-full p-2 transition-colors hover:bg-surface-muted"
-        >
-          <Play size={20} />
-        </Link>
-        <button
-          type="button"
-          onClick={() => setShowDeleteConfirm(true)}
-          aria-label={t.song.deleteSong}
-          className="rounded-full p-2 text-text-secondary transition-colors hover:text-red-500"
-        >
-          <Trash2 size={20} />
-        </button>
+        <div style={{ minWidth: 0 }}>
+          <div className="truncate" style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>
+            {title || t.song.title}
+          </div>
+          <div style={{ marginTop: 3 }}>
+            <MetaTag size={9}>
+              EDITING · {String(sectionsList.length).padStart(2, "0")} SECTIONS · {totalBars} BARS
+            </MetaTag>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Link
+            to="/songs/$id/perform"
+            params={{ id }}
+            aria-label="Perform"
+            style={{
+              width: 36,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--color-accent)",
+              border: "1px solid var(--color-accent)",
+              borderRadius: 2,
+            }}
+          >
+            <IconPlay size={14} />
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            aria-label={t.song.deleteSong}
+            style={{
+              width: 36,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--color-section-solo)",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <IconTrash size={16} />
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="song-title" className="mb-1 block text-sm text-text-secondary">
-            {t.song.title} *
-          </label>
-          <input
-            id="song-title"
-            type="text"
+      <div className="mx-auto max-w-2xl px-5 pb-40 pt-6 lg:px-10">
+        <section className="grid gap-4">
+          <MetaTag>01 · TRACK META</MetaTag>
+          <ConsoleField
+            label={t.song.title}
             value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
+            onChange={(v) => {
+              setTitle(v);
               if (titleError) setTitleError(false);
             }}
-            aria-describedby={titleError ? "song-title-error" : undefined}
-            className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
-              titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
-            }`}
+            required
           />
           {titleError && (
-            <p id="song-title-error" className="mt-1 text-xs text-red-500">
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--color-section-solo)",
+                marginTop: -8,
+              }}
+            >
               {t.song.titleRequired}
             </p>
           )}
-        </div>
-
-        <div>
-          <label htmlFor="song-artist" className="mb-1 block text-sm text-text-secondary">
-            {t.song.artist}
-          </label>
-          <input
-            id="song-artist"
-            type="text"
-            value={artist}
-            onChange={(e) => setArtist(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm focus:border-gray-400 focus:outline-none"
-          />
-        </div>
-
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label htmlFor="song-bpm" className="mb-1 block text-sm text-text-secondary">
-              {t.song.bpm}
-            </label>
-            <input
-              id="song-bpm"
-              type="number"
-              value={bpm}
-              onChange={(e) => setBpm(e.target.value)}
-              placeholder="120"
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 font-mono text-sm focus:border-gray-400 focus:outline-none"
-            />
+          <ConsoleField label={t.song.artist} value={artist} onChange={setArtist} />
+          <div className="grid grid-cols-2 gap-3">
+            <ConsoleField label={t.song.bpm} value={bpm} onChange={setBpm} type="number" placeholder="120" mono />
+            <ConsoleField label={t.song.key} value={key} onChange={setKey} placeholder="Am" mono />
           </div>
-          <div className="flex-1">
-            <label htmlFor="song-key" className="mb-1 block text-sm text-text-secondary">
-              {t.song.key}
-            </label>
-            <input
-              id="song-key"
-              type="text"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              placeholder="Am"
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm focus:border-gray-400 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="song-reference-url" className="mb-1 block text-sm text-text-secondary">
-            {t.song.referenceUrl}
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="song-reference-url"
-              type="url"
+          <div>
+            <ConsoleField
+              label={t.song.referenceUrl}
               value={referenceUrl}
-              onChange={(e) => {
-                setReferenceUrl(e.target.value);
+              onChange={(v) => {
+                setReferenceUrl(v);
                 if (urlError) setUrlError(false);
               }}
+              type="url"
               placeholder="https://..."
-              aria-describedby={urlError ? "song-reference-url-error" : undefined}
-              className={`min-w-0 flex-1 rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
-                urlError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
-              }`}
+              mono
             />
+            {urlError && (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "var(--color-section-solo)",
+                  marginTop: 6,
+                }}
+              >
+                {t.song.invalidUrl}
+              </p>
+            )}
             {isValidUrl(referenceUrl.trim()) && (
               <a
                 href={referenceUrl.trim()}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={t.song.referenceUrl}
-                className="shrink-0 rounded-full p-2.5 text-text-secondary transition-colors hover:bg-surface-muted"
+                className="inline-flex items-center gap-2"
+                style={{
+                  marginTop: 8,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  color: "var(--color-dim)",
+                  textTransform: "uppercase",
+                }}
               >
-                <ExternalLink size={18} />
+                <IconExt size={12} /> OPEN LINK
               </a>
             )}
           </div>
-          {urlError && (
-            <p id="song-reference-url-error" className="mt-1 text-xs text-red-500">
-              {t.song.invalidUrl}
-            </p>
-          )}
-        </div>
-      </div>
+        </section>
 
-      {sectionsList.length > 0 && (
-        <div className="mt-6">
-          <StructurePreview sections={sectionsList} />
-        </div>
-      )}
+        {sectionsList.length > 0 && (
+          <section className="mt-8">
+            <MetaTag>02 · STRUCTURE PREVIEW</MetaTag>
+            <div style={{ marginTop: 10 }}>
+              <StructureBar sections={sectionsList} height={10} gap={2} showAbbreviations />
+            </div>
+          </section>
+        )}
 
-      <div className="mt-6">
-        <button
-          type="button"
-          onClick={handleAiGenerate}
-          disabled={aiGenerating}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-3 text-sm font-semibold transition-opacity active:opacity-70 disabled:opacity-40"
-        >
-          <Sparkles size={16} />
-          {aiGenerating ? t.common.loading : t.song.aiGenerate}
-        </button>
+        <section className="mt-8">
+          <MetaTag>AI · GENERATE STRUCTURE</MetaTag>
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={handleAiGenerate}
+              disabled={aiGenerating}
+              className="flex w-full items-center justify-center gap-2"
+              style={{
+                padding: "13px",
+                border: "1px solid var(--color-line-2)",
+                background: "transparent",
+                color: "var(--color-text)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+                cursor: aiGenerating ? "not-allowed" : "pointer",
+                opacity: aiGenerating ? 0.5 : 1,
+                borderRadius: 2,
+              }}
+            >
+              <IconSparkles size={14} />
+              {aiGenerating ? t.common.loading : t.song.aiGenerate}
+            </button>
+            {aiRateLimited && (
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: "10px 12px",
+                  border: "1px solid var(--color-section-chorus)",
+                  background: "color-mix(in srgb, var(--color-section-chorus) 10%, transparent)",
+                  color: "var(--color-section-chorus)",
+                  fontSize: 13,
+                }}
+              >
+                {t.song.aiRateLimited}
+              </div>
+            )}
+            {aiError && (
+              <div
+                className="flex items-center justify-between"
+                style={{
+                  marginTop: 8,
+                  padding: "10px 12px",
+                  border: "1px solid var(--color-section-solo)",
+                  background: "color-mix(in srgb, var(--color-section-solo) 10%, transparent)",
+                  color: "var(--color-section-solo)",
+                  fontSize: 13,
+                }}
+              >
+                <span>{t.song.aiError}</span>
+                <button
+                  type="button"
+                  onClick={executeAiGenerate}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--color-section-solo)",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "0.22em",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {t.common.retry}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <MetaTag>03 · ADD SECTION</MetaTag>
+          <div className="mt-2">
+            <SectionPalette onAdd={handleAddSection} />
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <MetaTag>04 · SECTIONS · {String(sectionsList.length).padStart(2, "0")} TOTAL</MetaTag>
+          <div className="mt-3 grid gap-3">
+            {sectionsList.length === 0 ? (
+              <p className="py-8 text-center" style={{ color: "var(--color-dim)", fontSize: 14 }}>
+                {t.song.noSections}
+              </p>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                  <div className="grid gap-3">
+                    {sectionsList.map((section) => (
+                      <SortableSection
+                        key={section.id}
+                        section={section}
+                        onChange={handleSectionChange}
+                        onDelete={() => handleSectionDelete(section.id)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+          </div>
+        </section>
+
         <ConfirmModal
           open={showAiConfirm}
           message={t.song.aiConfirmReplace}
@@ -437,52 +539,38 @@ function SongEditPage() {
           onConfirm={executeDeleteSong}
           onCancel={handleCancelDeleteConfirm}
         />
-        {aiRateLimited && (
-          <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{t.song.aiRateLimited}</div>
-        )}
-        {aiError && (
-          <div className="mt-2 flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-            <span>{t.song.aiError}</span>
-            <button type="button" onClick={executeAiGenerate} className="ml-2 shrink-0 font-medium underline">
-              {t.common.retry}
-            </button>
-          </div>
-        )}
       </div>
 
-      <div className="mt-4">
-        <SectionPalette onAdd={handleAddSection} />
-      </div>
-
-      <div className="mt-6 space-y-3">
-        {sectionsList.length === 0 ? (
-          <p className="py-8 text-center text-sm text-text-secondary">{t.song.noSections}</p>
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-3">
-                {sectionsList.map((section) => (
-                  <SortableSection
-                    key={section.id}
-                    section={section}
-                    onChange={handleSectionChange}
-                    onDelete={() => handleSectionDelete(section.id)}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        )}
-      </div>
-
-      {/* Sticky save — sits above bottom nav */}
-      <div className="fixed bottom-[72px] left-0 right-0 border-t border-gray-100 bg-surface px-4 py-3">
-        <div className="mx-auto max-w-md">
+      {/* Sticky save — above the BottomNav */}
+      <div
+        className="fixed right-0 left-0 z-40"
+        style={{
+          bottom: "calc(64px + env(safe-area-inset-bottom, 0px))",
+          background: "var(--color-ink)",
+          borderTop: "1px solid var(--color-line)",
+          padding: "12px 20px",
+        }}
+      >
+        <div className="mx-auto max-w-2xl">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full rounded-xl bg-text-primary py-3.5 text-sm font-semibold text-white transition-opacity active:opacity-70 disabled:opacity-40"
+            style={{
+              width: "100%",
+              padding: "14px",
+              background: "#fff",
+              color: "#111",
+              border: "none",
+              borderRadius: 2,
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+              cursor: saving ? "not-allowed" : "pointer",
+              opacity: saving ? 0.5 : 1,
+            }}
           >
             {saving ? t.common.loading : saved ? t.song.saved : t.common.save}
           </button>
