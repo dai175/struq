@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SongsRouteRouteImport } from './routes/songs/route'
 import { Route as SetlistsRouteRouteImport } from './routes/setlists/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SongsIndexRouteImport } from './routes/songs/index'
@@ -32,6 +33,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SongsRouteRoute = SongsRouteRouteImport.update({
+  id: '/songs',
+  path: '/songs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SetlistsRouteRoute = SetlistsRouteRouteImport.update({
   id: '/setlists',
   path: '/setlists',
@@ -43,9 +49,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const SongsIndexRoute = SongsIndexRouteImport.update({
-  id: '/songs/',
-  path: '/songs/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => SongsRouteRoute,
 } as any)
 const SetlistsIndexRoute = SetlistsIndexRouteImport.update({
   id: '/',
@@ -58,14 +64,14 @@ const SetlistsIdRoute = SetlistsIdRouteImport.update({
   getParentRoute: () => SetlistsRouteRoute,
 } as any)
 const SongsIdIndexRoute = SongsIdIndexRouteImport.update({
-  id: '/songs/$id/',
-  path: '/songs/$id/',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id/',
+  path: '/$id/',
+  getParentRoute: () => SongsRouteRoute,
 } as any)
 const SongsIdPerformRoute = SongsIdPerformRouteImport.update({
-  id: '/songs/$id/perform',
-  path: '/songs/$id/perform',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id/perform',
+  path: '/$id/perform',
+  getParentRoute: () => SongsRouteRoute,
 } as any)
 const ApiAuthTestLoginRoute = ApiAuthTestLoginRouteImport.update({
   id: '/api/auth/test-login',
@@ -86,6 +92,7 @@ const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/setlists': typeof SetlistsRouteRouteWithChildren
+  '/songs': typeof SongsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/setlists/$id': typeof SetlistsIdRoute
@@ -114,6 +121,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/setlists': typeof SetlistsRouteRouteWithChildren
+  '/songs': typeof SongsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/setlists/$id': typeof SetlistsIdRoute
@@ -130,6 +138,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/setlists'
+    | '/songs'
     | '/login'
     | '/settings'
     | '/setlists/$id'
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/setlists'
+    | '/songs'
     | '/login'
     | '/settings'
     | '/setlists/$id'
@@ -172,14 +182,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SetlistsRouteRoute: typeof SetlistsRouteRouteWithChildren
+  SongsRouteRoute: typeof SongsRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
-  SongsIndexRoute: typeof SongsIndexRoute
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
   ApiAuthTestLoginRoute: typeof ApiAuthTestLoginRoute
-  SongsIdPerformRoute: typeof SongsIdPerformRoute
-  SongsIdIndexRoute: typeof SongsIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -198,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/songs': {
+      id: '/songs'
+      path: '/songs'
+      fullPath: '/songs'
+      preLoaderRoute: typeof SongsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/setlists': {
       id: '/setlists'
       path: '/setlists'
@@ -214,10 +229,10 @@ declare module '@tanstack/react-router' {
     }
     '/songs/': {
       id: '/songs/'
-      path: '/songs'
+      path: '/'
       fullPath: '/songs/'
       preLoaderRoute: typeof SongsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SongsRouteRoute
     }
     '/setlists/': {
       id: '/setlists/'
@@ -235,17 +250,17 @@ declare module '@tanstack/react-router' {
     }
     '/songs/$id/': {
       id: '/songs/$id/'
-      path: '/songs/$id'
+      path: '/$id'
       fullPath: '/songs/$id/'
       preLoaderRoute: typeof SongsIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SongsRouteRoute
     }
     '/songs/$id/perform': {
       id: '/songs/$id/perform'
-      path: '/songs/$id/perform'
+      path: '/$id/perform'
       fullPath: '/songs/$id/perform'
       preLoaderRoute: typeof SongsIdPerformRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SongsRouteRoute
     }
     '/api/auth/test-login': {
       id: '/api/auth/test-login'
@@ -285,17 +300,31 @@ const SetlistsRouteRouteWithChildren = SetlistsRouteRoute._addFileChildren(
   SetlistsRouteRouteChildren,
 )
 
+interface SongsRouteRouteChildren {
+  SongsIndexRoute: typeof SongsIndexRoute
+  SongsIdPerformRoute: typeof SongsIdPerformRoute
+  SongsIdIndexRoute: typeof SongsIdIndexRoute
+}
+
+const SongsRouteRouteChildren: SongsRouteRouteChildren = {
+  SongsIndexRoute: SongsIndexRoute,
+  SongsIdPerformRoute: SongsIdPerformRoute,
+  SongsIdIndexRoute: SongsIdIndexRoute,
+}
+
+const SongsRouteRouteWithChildren = SongsRouteRoute._addFileChildren(
+  SongsRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SetlistsRouteRoute: SetlistsRouteRouteWithChildren,
+  SongsRouteRoute: SongsRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
-  SongsIndexRoute: SongsIndexRoute,
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRoute,
   ApiAuthTestLoginRoute: ApiAuthTestLoginRoute,
-  SongsIdPerformRoute: SongsIdPerformRoute,
-  SongsIdIndexRoute: SongsIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
