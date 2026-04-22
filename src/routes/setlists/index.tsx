@@ -1,12 +1,14 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { Calendar, MapPin, Plus, Trash2 } from "lucide-react";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
 import { useToast } from "@/lib/toast";
-import { deleteSetlist, listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
+import { createSetlist, deleteSetlist, listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
+import { ConsoleBtn } from "@/ui/console-btn";
+import { IconCal, IconPin, IconPlus, IconTrash } from "@/ui/icons";
+import { MetaTag } from "@/ui/meta-tag";
 
 export const Route = createFileRoute("/setlists/")({
   beforeLoad: requireAuth,
@@ -19,11 +21,27 @@ function SetlistsPage() {
   const { t } = useI18n();
   const { toast } = useToast();
   const router = useRouter();
+  const navigate = useNavigate();
+
   const [setlists, setSetlists] = useState(initial.items);
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  async function handleCreate() {
+    if (creating) return;
+    setCreating(true);
+    try {
+      const result = await createSetlist({ data: { title: t.setlist.newSetlist } });
+      navigate({ to: "/setlists/$id", params: { id: result.id } });
+    } catch (error) {
+      clientLogger.error("createSetlist", error);
+      toast.error(t.common.errorCreateFailed);
+      setCreating(false);
+    }
+  }
 
   async function executeDelete() {
     const id = pendingDeleteId;
@@ -57,77 +75,78 @@ function SetlistsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 pb-24 pt-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t.nav.setlists}</h1>
-        <Link
-          to="/setlists/new"
-          className="flex items-center gap-1 rounded-full bg-text-primary px-4 py-2 text-sm font-medium text-white transition-opacity active:opacity-70"
+    <div
+      className="min-h-screen"
+      style={{
+        background: "var(--color-ink)",
+        color: "var(--color-text)",
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      <div className="mx-auto max-w-2xl px-5 pt-6 pb-8 lg:px-10 lg:pt-10">
+        <header className="flex items-end justify-between gap-3 pb-5">
+          <div>
+            <h1
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: "-0.01em",
+                color: "#fff",
+              }}
+            >
+              {t.nav.setlists}
+            </h1>
+            <div className="mt-1.5">
+              <MetaTag>{String(setlists.length).padStart(2, "0")} ACTIVE</MetaTag>
+            </div>
+          </div>
+          <ConsoleBtn tone="white" onClick={handleCreate} disabled={creating}>
+            <IconPlus size={10} />
+            {creating ? t.common.loading : "NEW"}
+          </ConsoleBtn>
+        </header>
+
+        <div
+          style={{
+            borderTop: "1px solid var(--color-line)",
+          }}
         >
-          <Plus size={16} />
-          {t.setlist.newSetlist}
-        </Link>
+          {setlists.length === 0 ? (
+            <div className="flex flex-col items-center py-20 text-center" style={{ gap: 14 }}>
+              <MetaTag>NO SETLISTS</MetaTag>
+              <p style={{ color: "var(--color-dim)", fontSize: 14 }}>{t.setlist.noSetlists}</p>
+              <div className="mt-2">
+                <ConsoleBtn tone="accent" onClick={handleCreate} disabled={creating}>
+                  <IconPlus size={10} />
+                  NEW SETLIST
+                </ConsoleBtn>
+              </div>
+            </div>
+          ) : (
+            <>
+              <ul>
+                {setlists.map((setlist, index) => (
+                  <SetlistRow
+                    key={setlist.id}
+                    setlist={setlist}
+                    index={index}
+                    deleting={deletingId === setlist.id}
+                    onDelete={() => setPendingDeleteId(setlist.id)}
+                  />
+                ))}
+              </ul>
+              {hasMore && (
+                <div className="flex justify-center py-6">
+                  <ConsoleBtn onClick={handleLoadMore} disabled={loadingMore}>
+                    {loadingMore ? t.common.loading : t.common.loadMore}
+                  </ConsoleBtn>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {setlists.length === 0 ? (
-        <div className="py-20 text-center">
-          <p className="text-text-secondary">{t.setlist.noSetlists}</p>
-          <Link
-            to="/setlists/new"
-            className="mt-4 inline-block rounded-full bg-text-primary px-6 py-2.5 text-sm font-medium text-white"
-          >
-            {t.setlist.newSetlist}
-          </Link>
-        </div>
-      ) : (
-        <>
-          <div className="space-y-3">
-            {setlists.map((setlist: SetlistWithSongCount) => (
-              <div key={setlist.id} className="rounded-xl bg-white p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <Link to="/setlists/$id" params={{ id: setlist.id }} className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{setlist.title}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-secondary">
-                      <span>{t.setlist.songCount.replace("{count}", String(setlist.songCount))}</span>
-                      {setlist.venue && (
-                        <span className="flex items-center gap-0.5">
-                          <MapPin size={12} />
-                          {setlist.venue}
-                        </span>
-                      )}
-                      {setlist.sessionDate && (
-                        <span className="flex items-center gap-0.5">
-                          <Calendar size={12} />
-                          {setlist.sessionDate}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setPendingDeleteId(setlist.id)}
-                    disabled={deletingId === setlist.id}
-                    aria-label={t.common.delete}
-                    className="shrink-0 p-2 text-text-secondary transition-colors hover:text-red-500 disabled:opacity-40"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          {hasMore && (
-            <button
-              type="button"
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="mt-4 w-full py-3 text-sm text-text-secondary transition-colors hover:text-text-primary disabled:opacity-40"
-            >
-              {loadingMore ? t.common.loading : t.common.loadMore}
-            </button>
-          )}
-        </>
-      )}
       <ConfirmModal
         open={pendingDeleteId !== null}
         message={t.setlist.confirmDelete}
@@ -137,5 +156,93 @@ function SetlistsPage() {
         onCancel={() => setPendingDeleteId(null)}
       />
     </div>
+  );
+}
+
+function SetlistRow({
+  setlist,
+  index,
+  deleting,
+  onDelete,
+}: {
+  setlist: SetlistWithSongCount;
+  index: number;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <li
+      className="grid items-center gap-3"
+      style={{
+        gridTemplateColumns: "36px 1fr auto 32px",
+        padding: "16px 4px",
+        borderBottom: "1px solid var(--color-line)",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--color-dim-2)",
+          letterSpacing: "0.08em",
+        }}
+      >
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <Link to="/setlists/$id" params={{ id: setlist.id }} className="min-w-0 flex-1">
+        <p className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+          {setlist.title}
+        </p>
+        <div
+          className="mt-1.5 flex flex-wrap items-center"
+          style={{
+            gap: "4px 12px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.18em",
+            color: "var(--color-dim-2)",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          <span>{String(setlist.songCount).padStart(2, "0")} SONGS</span>
+          {setlist.sessionDate && (
+            <span className="flex items-center gap-1">
+              <IconCal size={11} />
+              {setlist.sessionDate}
+            </span>
+          )}
+          {setlist.venue && (
+            <span className="flex items-center gap-1 truncate">
+              <IconPin size={11} />
+              {setlist.venue}
+            </span>
+          )}
+        </div>
+      </Link>
+      <MetaTag size={9}>{String(setlist.songCount).padStart(2, "0")}</MetaTag>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={deleting}
+        aria-label={t.common.delete}
+        style={{
+          width: 32,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--color-dim-2)",
+          background: "transparent",
+          border: "none",
+          cursor: deleting ? "not-allowed" : "pointer",
+          opacity: deleting ? 0.4 : 1,
+        }}
+      >
+        <IconTrash size={16} />
+      </button>
+    </li>
   );
 }
