@@ -13,7 +13,8 @@
       "!playwright-report",
       "!test-results",
       "!e2e/.auth",
-      "!.junie"
+      "!.junie",
+      "!design_handoff_struq"
     ]
   },
   "formatter": {

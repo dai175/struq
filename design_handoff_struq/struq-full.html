@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Struq — Full App Redesign (Console)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#0a0a0a;color:#e5e5e5;font-family:Inter,system-ui,sans-serif;}
+  :root{
+    --sec-intro:  oklch(0.72 0.02 250);
+    --sec-a:      oklch(0.72 0.14 250);
+    --sec-b:      oklch(0.72 0.14 295);
+    --sec-chorus: oklch(0.74 0.16 65);
+    --sec-bridge: oklch(0.72 0.14 160);
+    --sec-solo:   oklch(0.70 0.18 25);
+    --sec-outro:  oklch(0.72 0.02 250);
+    --sec-interlude: oklch(0.72 0.12 195);
+    --sec-custom: oklch(0.72 0.14 340);
+  }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="designs/shared.jsx"></script>
+<script type="text/babel" src="designs/console-kit.jsx"></script>
+<script type="text/babel" src="designs/console-login.jsx"></script>
+<script type="text/babel" src="designs/console-setlists.jsx"></script>
+<script type="text/babel" src="designs/console-songs.jsx"></script>
+<script type="text/babel" src="designs/console-settings.jsx"></script>
+<script type="text/babel" src="designs/console-pc.jsx"></script>
+<script type="text/babel" src="designs/console.jsx"></script>
+<script type="text/babel" src="designs/tokens.jsx"></script>
+<script type="text/babel" src="app-full.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+</body>
+</html>
