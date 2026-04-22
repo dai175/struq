@@ -134,6 +134,33 @@ export function IconCal(props: IconProps) {
   );
 }
 
+export function IconSetlists(props: IconProps) {
+  return (
+    <Stroke size={18} strokeWidth={1.8} {...props}>
+      <path d="M3 6h18M3 12h12M3 18h8M19 15l4 3-4 3z" />
+    </Stroke>
+  );
+}
+
+export function IconSongs(props: IconProps) {
+  return (
+    <Stroke size={18} strokeWidth={1.8} {...props}>
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </Stroke>
+  );
+}
+
+export function IconSettings(props: IconProps) {
+  return (
+    <Stroke size={18} strokeWidth={1.8} {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8L6.3 17.7M17.7 6.3l2.1-2.1" />
+    </Stroke>
+  );
+}
+
 interface LogomarkProps {
   size?: number;
   /** Keep the 5-colored-rect band (default) vs render as solid accent. */

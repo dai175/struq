@@ -1,12 +1,12 @@
-import { createRootRouteWithContext, HeadContent, Link, Outlet, Scripts, useMatches } from "@tanstack/react-router";
-import { ListMusic, Music, Settings } from "lucide-react";
+import { createRootRouteWithContext, HeadContent, Outlet, Scripts, useMatches } from "@tanstack/react-router";
 import { getAuthUser } from "../auth/server-fns";
 import type { SessionUser } from "../auth/session";
-import { useI18n } from "../i18n";
 import { I18nProvider } from "../i18n/provider";
 import { DEFAULT_LOCALE } from "../i18n/types";
 import { ToastProvider } from "../lib/toast";
 import appCss from "../styles.css?url";
+import { BottomNav } from "../ui/bottom-nav";
+import { SideRail } from "../ui/side-rail";
 
 export interface RouterContext {
   user: SessionUser | null;
@@ -54,46 +54,16 @@ function RootLayout() {
   const matches = useMatches();
   const currentPath = matches[matches.length - 1]?.fullPath ?? "";
   const isPerformView = currentPath.endsWith("/perform");
+  const showNav = !!user && !isPerformView;
 
   return (
     <>
-      <Outlet />
-      {user && !isPerformView && <BottomNav />}
-    </>
-  );
-}
-
-function BottomNav() {
-  const { t } = useI18n();
-  const matches = useMatches();
-  const currentPath = matches[matches.length - 1]?.fullPath ?? "";
-
-  const tabs = [
-    { to: "/setlists" as const, label: t.nav.setlists, icon: ListMusic },
-    { to: "/songs" as const, label: t.nav.songs, icon: Music },
-    { to: "/settings" as const, label: t.nav.settings, icon: Settings },
-  ];
-
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-surface">
-      <div className="mx-auto flex max-w-md">
-        {tabs.map(({ to, label, icon: Icon }) => {
-          const isActive = currentPath.startsWith(to);
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors ${
-                isActive ? "text-text-primary" : "text-text-secondary"
-              }`}
-            >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
-              {label}
-            </Link>
-          );
-        })}
+      {showNav && <SideRail user={user} />}
+      <div className={showNav ? "pb-16 lg:pb-0 lg:pl-[76px]" : ""}>
+        <Outlet />
       </div>
-    </nav>
+      {showNav && <BottomNav />}
+    </>
   );
 }
 
