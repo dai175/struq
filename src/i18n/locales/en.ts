@@ -110,5 +110,16 @@ export const en: Translations = {
     authFailed: "Authentication failed. Please try again.",
     loginCancelled: "Login was cancelled.",
     invalidState: "Invalid authentication session. Please try again.",
+    heroPc: "Song structures,",
+    heroPcDim: "always at hand.",
+    heroMobile1: "Song",
+    heroMobile2: "structures,",
+    heroMobileDim: "at hand.",
+    bodyCopy:
+      "A rehearsal & stage console for musicians. Map sections, drive click, and keep every setlist in reach — from iPhone pocket to iPad monitor.",
+    signInTitle: "Sign in",
+    signInBody:
+      "Use your Google account. Struq syncs sections, setlists and preferences across every device you sign in on.",
+    continueWithGoogle: "Continue with Google",
   },
 };

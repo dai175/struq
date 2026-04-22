@@ -110,5 +110,16 @@ export const ja: Translations = {
     authFailed: "認証に失敗しました。もう一度お試しください。",
     loginCancelled: "ログインがキャンセルされました。",
     invalidState: "認証セッションが無効です。もう一度お試しください。",
+    heroPc: "曲の構成を、",
+    heroPcDim: "常に手元に。",
+    heroMobile1: "曲の",
+    heroMobile2: "構成を、",
+    heroMobileDim: "手元に。",
+    bodyCopy:
+      "練習と本番のためのミュージシャン向けコンソール。セクションをマップし、クリックを走らせ、セットリストを常に手元に — iPhoneからiPadモニターまで。",
+    signInTitle: "サインイン",
+    signInBody:
+      "Googleアカウントでご利用いただけます。セクション・セットリスト・設定は、サインインしたすべての端末で同期されます。",
+    continueWithGoogle: "Googleで続行",
   },
 };

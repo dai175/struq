@@ -112,5 +112,14 @@ export interface Translations {
     authFailed: string;
     loginCancelled: string;
     invalidState: string;
+    heroPc: string;
+    heroPcDim: string;
+    heroMobile1: string;
+    heroMobile2: string;
+    heroMobileDim: string;
+    bodyCopy: string;
+    signInTitle: string;
+    signInBody: string;
+    continueWithGoogle: string;
   };
 }
