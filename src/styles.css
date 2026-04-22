@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* ─── Brand Colors (focuswave) ─── */
+  /* ─── Legacy surface tokens (still referenced by non-redesigned screens; will be deprecated per-screen as each feature PR lands) ─── */
   --color-surface: #f8f7f5;
   --color-surface-dark: #111111;
   --color-surface-muted: #f0eeeb;
@@ -9,23 +9,37 @@
   --color-text-secondary: #6b7280;
   --color-text-on-dark: #e5e5e5;
 
-  /* ─── Section Type Colors ─── */
-  --color-section-intro: #6b7280;
-  --color-section-a: #3b82f6;
-  --color-section-b: #8b5cf6;
-  --color-section-chorus: #f59e0b;
-  --color-section-bridge: #10b981;
-  --color-section-solo: #ef4444;
-  --color-section-outro: #6b7280;
-  --color-section-interlude: #14b8a6;
-  --color-section-custom: #ec4899;
+  /* ─── Broadcast Console surfaces ─── */
+  --color-ink: #080808;
+  --color-ink-2: #0d0d0e;
+  --color-ink-3: #161618;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-2: rgba(255, 255, 255, 0.14);
+  --color-text: #e8e6e0;
+  --color-dim: rgba(255, 255, 255, 0.55);
+  --color-dim-2: rgba(255, 255, 255, 0.35);
+  --color-dim-3: rgba(255, 255, 255, 0.2);
+
+  /* ─── Section palette (OKLCH, L≈0.72, C≈0.14–0.18) ───
+     Variable names preserved so SECTION_COLORS (src/songs/constants.ts) keeps working. */
+  --color-section-intro: oklch(0.72 0.02 250);      /* neutral blue-gray */
+  --color-section-a: oklch(0.72 0.14 250);          /* blue */
+  --color-section-b: oklch(0.72 0.14 295);          /* violet */
+  --color-section-chorus: oklch(0.74 0.16 65);      /* amber — primary accent */
+  --color-section-bridge: oklch(0.72 0.14 160);     /* teal */
+  --color-section-solo: oklch(0.70 0.18 25);        /* coral */
+  --color-section-outro: oklch(0.72 0.02 250);      /* neutral (= intro) */
+  --color-section-interlude: oklch(0.72 0.12 195);  /* cyan */
+  --color-section-custom: oklch(0.72 0.14 340);     /* rose */
+
+  /* Primary accent = chorus amber */
+  --color-accent: var(--color-section-chorus);
 
   /* ─── Fonts ─── */
-  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-    "Helvetica Neue", sans-serif;
-  --font-mono: "SF Mono", "Fira Code", "Fira Mono", Menlo, Monaco, Consolas,
-    "Courier New", monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Fira Mono", Menlo,
+    Monaco, Consolas, "Courier New", monospace;
 }
 
 body {
@@ -65,5 +79,28 @@ code {
 	}
 	100% {
 		opacity: 0.2;
+	}
+}
+
+/* LIVE indicator — slow ease pulse on the red broadcast dot. */
+@keyframes live-pulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.55;
+	}
+}
+
+/* Beat pop — subtle scale impulse on each active beat in Perform mode. */
+@keyframes beat-pop {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+	100% {
+		transform: scale(1);
 	}
 }
