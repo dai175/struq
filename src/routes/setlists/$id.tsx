@@ -10,7 +10,6 @@ import {
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, GripVertical, Music, Play, Plus, Search, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
@@ -28,6 +27,10 @@ import {
   removeSongFromSetlist,
   saveSetlistWithSongs,
 } from "@/setlists/server-fns";
+import { ConsoleBtn } from "@/ui/console-btn";
+import { ConsoleField } from "@/ui/console-field";
+import { IconBack, IconDrag, IconPlay, IconPlus, IconSearch, IconTrash } from "@/ui/icons";
+import { MetaTag } from "@/ui/meta-tag";
 
 export const Route = createFileRoute("/setlists/$id")({
   beforeLoad: requireAuth,
@@ -42,7 +45,6 @@ export const Route = createFileRoute("/setlists/$id")({
 function SetlistDetailPage() {
   const data = Route.useLoaderData();
   const { id } = Route.useParams();
-
   return <SetlistEditor key={id} setlistId={id} data={data} />;
 }
 
@@ -60,49 +62,42 @@ function SetlistEditor({
   const navigate = useNavigate();
   const router = useRouter();
 
-  // Metadata state
   const [title, setTitle] = useState(data.setlist.title);
   const [description, setDescription] = useState(data.setlist.description ?? "");
   const [sessionDate, setSessionDate] = useState(data.setlist.sessionDate ?? "");
   const [venue, setVenue] = useState(data.setlist.venue ?? "");
   const [titleError, setTitleError] = useState(false);
 
-  // Song list state
   const [songs, setSongs] = useState<SetlistSongItem[]>(data.songs);
 
-  // UI state
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Song picker state (hoisted so it survives open/close cycles)
   const [pickerInput, setPickerInput] = useState("");
   const debouncedPickerInput = useDebouncedValue(pickerInput, 300);
-  const [availableSongs, setAvailableSongs] = useState<{ id: string; title: string; artist: string | null }[]>([]);
+  const [availableSongs, setAvailableSongs] = useState<PickerSong[]>([]);
   const [pickerLoading, setPickerLoading] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const latestPickerQueryRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     return () => {
-      if (savedTimerRef.current) {
-        clearTimeout(savedTimerRef.current);
-      }
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, []);
 
-  // Fetch picker candidates only while picker is open
   useEffect(() => {
     if (!showPicker) return;
     const query = debouncedPickerInput.trim() || undefined;
     latestPickerQueryRef.current = query;
     setPickerLoading(true);
     listSongsForPicker({ data: { setlistId, query } })
-      .then((songs) => {
+      .then((result) => {
         if (latestPickerQueryRef.current !== query) return;
-        setAvailableSongs(songs);
+        setAvailableSongs(result);
       })
       .catch((error) => {
         if (latestPickerQueryRef.current !== query) return;
@@ -115,6 +110,18 @@ function SetlistEditor({
         setPickerLoading(false);
       });
   }, [showPicker, setlistId, debouncedPickerInput, t.common.errorLoadFailed, toast.error]);
+
+  const handleSongAdded = useCallback((song: PickerSong) => {
+    setSongs((prev) => [
+      ...prev,
+      {
+        songId: song.id,
+        title: song.title,
+        artist: song.artist,
+        sortOrder: prev.length,
+      },
+    ]);
+  }, []);
 
   async function handlePickerAdd(song: PickerSong) {
     setAddingId(song.id);
@@ -135,20 +142,14 @@ function SetlistEditor({
     setPickerInput("");
   }
 
-  // Dnd sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 5 },
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-
     const oldIndex = songs.findIndex((s) => s.songId === active.id);
     const newIndex = songs.findIndex((s) => s.songId === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
@@ -176,9 +177,7 @@ function SetlistEditor({
     try {
       await saveSetlistWithSongs({ data: parsed.data });
       setSaved(true);
-      if (savedTimerRef.current) {
-        clearTimeout(savedTimerRef.current);
-      }
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (error) {
       clientLogger.error("saveSetlistWithSongs", error);
@@ -205,173 +204,242 @@ function SetlistEditor({
       await removeSongFromSetlist({ data: { setlistId, songId } });
     } catch (error) {
       clientLogger.error("removeSong", error);
-      // Revert on error
       router.invalidate();
     }
   }
 
-  const handleSongAdded = useCallback((song: PickerSong) => {
-    setSongs((prev) => [
-      ...prev,
-      {
-        songId: song.id,
-        title: song.title,
-        artist: song.artist,
-        sortOrder: prev.length,
-      },
-    ]);
-  }, []);
-
   return (
-    <div className="mx-auto max-w-md px-4 pb-36 pt-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link
-            to="/setlists"
-            aria-label={t.common.back}
-            className="flex shrink-0 items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-muted"
+    <div
+      className="min-h-screen"
+      style={{
+        background: "var(--color-ink)",
+        color: "var(--color-text)",
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      <div
+        className="grid items-center gap-3"
+        style={{
+          gridTemplateColumns: "auto 1fr auto",
+          padding: "14px 18px",
+          borderBottom: "1px solid var(--color-line)",
+        }}
+      >
+        <Link to="/setlists" aria-label={t.common.back} style={{ color: "#fff", padding: 6 }}>
+          <IconBack size={20} />
+        </Link>
+        <div style={{ minWidth: 0 }}>
+          <div
+            className="truncate"
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: "#fff",
+            }}
           >
-            <ArrowLeft size={20} />
-          </Link>
-          <h1 className="truncate text-xl font-bold">{title.trim() || data.setlist.title}</h1>
+            {title.trim() || data.setlist.title}
+          </div>
+          <div style={{ marginTop: 3 }}>
+            <MetaTag size={9}>{String(songs.length).padStart(2, "0")} SONGS</MetaTag>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {songs.length > 0 && (
             <Link
               to="/songs/$id/perform"
               params={{ id: songs[0].songId }}
               search={{ setlistId }}
-              className="rounded-full p-2 transition-colors hover:bg-surface-muted"
               aria-label="Perform"
+              style={{
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--color-accent)",
+                border: "1px solid var(--color-accent)",
+                borderRadius: 2,
+              }}
             >
-              <Play size={18} />
+              <IconPlay size={14} />
             </Link>
           )}
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
             aria-label={t.common.delete}
-            className="p-2 text-text-secondary transition-colors hover:text-red-500"
+            style={{
+              width: 36,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--color-section-solo)",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
           >
-            <Trash2 size={18} />
+            <IconTrash size={16} />
           </button>
         </div>
       </div>
 
-      {/* Metadata form */}
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="setlist-title" className="mb-1 block text-sm text-text-secondary">
-            {t.setlist.title} *
-          </label>
-          <input
-            id="setlist-title"
-            type="text"
+      <div className="mx-auto max-w-2xl px-5 pb-36 pt-6 lg:px-10">
+        <section className="grid gap-4">
+          <MetaTag>01 · SETLIST META</MetaTag>
+          <ConsoleField
+            label={t.setlist.title}
             value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
+            onChange={(v) => {
+              setTitle(v);
               if (titleError) setTitleError(false);
             }}
-            aria-describedby={titleError ? "setlist-title-error" : undefined}
-            className={`w-full rounded-lg border bg-white px-3 py-3 text-sm focus:outline-none ${
-              titleError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
-            }`}
+            required
           />
           {titleError && (
-            <p id="setlist-title-error" className="mt-1 text-xs text-red-500">
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--color-section-solo)",
+                marginTop: -8,
+              }}
+            >
               {t.setlist.titleRequired}
             </p>
           )}
-        </div>
 
-        <div>
-          <label htmlFor="setlist-desc" className="mb-1 block text-sm text-text-secondary">
-            {t.setlist.description}
+          <label style={{ display: "block" }}>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.25em",
+                color: "var(--color-dim-2)",
+                marginBottom: 8,
+                textTransform: "uppercase",
+                fontWeight: 500,
+              }}
+            >
+              {t.setlist.description}
+            </div>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              style={{
+                width: "100%",
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid var(--color-line)",
+                borderLeft: description ? "2px solid var(--color-accent)" : "1px solid var(--color-line)",
+                padding: "12px 14px",
+                fontFamily: "var(--font-sans)",
+                fontSize: 14,
+                color: description ? "#fff" : "rgba(255,255,255,0.3)",
+                outline: "none",
+                borderRadius: 0,
+                resize: "vertical",
+              }}
+            />
           </label>
-          <textarea
-            id="setlist-desc"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm focus:border-gray-400 focus:outline-none"
-          />
-        </div>
 
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label htmlFor="setlist-date" className="mb-1 block text-sm text-text-secondary">
-              {t.setlist.sessionDate}
-            </label>
-            <input
-              id="setlist-date"
-              type="date"
+          <div className="grid grid-cols-2 gap-3">
+            <ConsoleField
+              label={t.setlist.sessionDate}
               value={sessionDate}
-              onChange={(e) => setSessionDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm focus:border-gray-400 focus:outline-none"
+              onChange={setSessionDate}
+              type="date"
+              mono
             />
+            <ConsoleField label={t.setlist.venue} value={venue} onChange={setVenue} />
           </div>
-          <div className="flex-1">
-            <label htmlFor="setlist-venue" className="mb-1 block text-sm text-text-secondary">
-              {t.setlist.venue}
-            </label>
-            <input
-              id="setlist-venue"
-              type="text"
-              value={venue}
-              onChange={(e) => setVenue(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm focus:border-gray-400 focus:outline-none"
-            />
-          </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Song list */}
-      <div className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-text-secondary">
-            {t.setlist.songCount.replace("{count}", String(songs.length))}
-          </h2>
+        <section className="mt-10">
+          <div className="flex items-center justify-between pb-4">
+            <MetaTag>02 · SONGS · {String(songs.length).padStart(2, "0")} TOTAL</MetaTag>
+          </div>
+
+          {songs.length === 0 ? (
+            <div
+              className="py-12 text-center"
+              style={{
+                border: "1px dashed var(--color-line-2)",
+                color: "var(--color-dim)",
+                fontSize: 14,
+              }}
+            >
+              {t.setlist.noSongs}
+            </div>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={songs.map((s) => s.songId)} strategy={verticalListSortingStrategy}>
+                <ul style={{ borderTop: "1px solid var(--color-line)" }}>
+                  {songs.map((song, index) => (
+                    <SortableSongRow
+                      key={song.songId}
+                      song={song}
+                      index={index}
+                      onRemove={() => handleRemoveSong(song.songId)}
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
+          )}
+
           <button
             type="button"
             onClick={() => setShowPicker(true)}
-            className="flex items-center gap-1 rounded-full bg-text-primary px-3 py-1.5 text-xs font-medium text-white transition-opacity active:opacity-70"
+            className="mt-4 flex w-full items-center justify-center gap-2"
+            style={{
+              padding: "14px",
+              border: "1px dashed var(--color-line-2)",
+              background: "transparent",
+              color: "var(--color-dim)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
           >
-            <Plus size={14} />
-            {t.setlist.addSong}
+            <IconPlus size={10} />
+            ADD SONG FROM LIBRARY
           </button>
-        </div>
-
-        {songs.length === 0 ? (
-          <div className="rounded-xl bg-white py-12 text-center shadow-sm">
-            <p className="text-sm text-text-secondary">{t.setlist.noSongs}</p>
-          </div>
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={songs.map((s) => s.songId)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {songs.map((song, index) => (
-                  <SortableSongCard
-                    key={song.songId}
-                    song={song}
-                    index={index}
-                    onRemove={() => handleRemoveSong(song.songId)}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        )}
+        </section>
       </div>
 
-      {/* Sticky save bar */}
-      <div className="fixed bottom-[72px] left-0 right-0 border-t border-gray-100 bg-surface px-4 py-3">
-        <div className="mx-auto max-w-md">
+      <div
+        className="fixed right-0 left-0 z-40"
+        style={{
+          bottom: "calc(64px + env(safe-area-inset-bottom, 0px))",
+          background: "var(--color-ink)",
+          borderTop: "1px solid var(--color-line)",
+          padding: "12px 20px",
+        }}
+      >
+        <div className="mx-auto max-w-2xl">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full rounded-xl bg-text-primary py-3 text-sm font-semibold text-white transition-opacity active:opacity-70 disabled:opacity-40"
+            style={{
+              width: "100%",
+              padding: "14px",
+              background: "#fff",
+              color: "#111",
+              border: "none",
+              borderRadius: 2,
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+              cursor: saving ? "not-allowed" : "pointer",
+              opacity: saving ? 0.5 : 1,
+            }}
           >
             {saving ? t.common.loading : saved ? t.setlist.saved : t.common.save}
           </button>
@@ -387,7 +455,6 @@ function SetlistEditor({
         onCancel={() => setShowDeleteConfirm(false)}
       />
 
-      {/* Song picker modal */}
       <SongPickerModal
         open={showPicker}
         input={pickerInput}
@@ -403,9 +470,7 @@ function SetlistEditor({
   );
 }
 
-// ─── SortableSongCard ──────────────────────────────────
-
-function SortableSongCard({ song, index, onRemove }: { song: SetlistSongItem; index: number; onRemove: () => void }) {
+function SortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; index: number; onRemove: () => void }) {
   const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.songId });
 
@@ -416,32 +481,90 @@ function SortableSongCard({ song, index, onRemove }: { song: SetlistSongItem; in
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 rounded-xl bg-white p-3 shadow-sm">
+    <li ref={setNodeRef} style={style} className="grid items-center gap-3">
       <div
-        {...attributes}
-        {...listeners}
-        className="flex cursor-grab touch-none items-center text-text-secondary active:text-text-primary"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "24px 36px 1fr 32px",
+          alignItems: "center",
+          gap: 10,
+          padding: "14px 4px",
+          borderBottom: "1px solid var(--color-line)",
+        }}
       >
-        <GripVertical size={18} />
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label="Reorder"
+          style={{
+            width: 24,
+            height: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--color-dim-2)",
+            background: "transparent",
+            border: "none",
+            cursor: "grab",
+            touchAction: "none",
+          }}
+        >
+          <IconDrag size={14} />
+        </button>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--color-dim-2)",
+            letterSpacing: "0.08em",
+          }}
+        >
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <div className="min-w-0">
+          <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
+            {song.title}
+          </div>
+          {song.artist && (
+            <div
+              className="truncate"
+              style={{
+                marginTop: 3,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                color: "var(--color-dim-2)",
+                textTransform: "uppercase",
+              }}
+            >
+              {song.artist}
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={t.setlist.removeSong}
+          style={{
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--color-dim-2)",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <IconTrash size={14} />
+        </button>
       </div>
-      <span className="w-6 text-center text-xs font-mono text-text-secondary">{index + 1}</span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{song.title}</p>
-        {song.artist && <p className="truncate text-xs text-text-secondary">{song.artist}</p>}
-      </div>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={t.setlist.removeSong}
-        className="shrink-0 p-1.5 text-text-secondary transition-colors hover:text-red-500"
-      >
-        <X size={16} />
-      </button>
-    </div>
+    </li>
   );
 }
-
-// ─── SongPickerModal ───────────────────────────────────
 
 function SongPickerModal({
   open,
@@ -485,72 +608,139 @@ function SongPickerModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
-      {/* Backdrop */}
-      <button type="button" className="absolute inset-0 bg-black/40" aria-label={t.common.cancel} onClick={onClose} />
-      {/* Sheet */}
+      <button
+        type="button"
+        aria-label={t.common.cancel}
+        onClick={onClose}
+        className="absolute inset-0"
+        style={{ background: "rgba(0,0,0,0.6)" }}
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t.setlist.addSong}
-        className="relative z-10 w-full max-w-md rounded-t-2xl bg-surface pb-8"
+        className="relative z-10 w-full max-w-md"
+        style={{
+          background: "var(--color-ink-2)",
+          border: "1px solid var(--color-line)",
+          color: "var(--color-text)",
+          paddingBottom: 20,
+        }}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-          <h2 className="font-semibold">{t.setlist.addSong}</h2>
-          <button type="button" onClick={onClose} aria-label={t.common.cancel} className="p-1 text-text-secondary">
-            <X size={20} />
-          </button>
+        <div
+          className="flex items-center justify-between"
+          style={{
+            padding: "14px 18px",
+            borderBottom: "1px solid var(--color-line)",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>{t.setlist.addSong}</div>
+          </div>
+          <ConsoleBtn onClick={onClose}>CLOSE</ConsoleBtn>
         </div>
-        <div className="border-b border-gray-200 px-4 py-3">
-          <div className="relative">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
-            />
+        <div
+          style={{
+            padding: "14px 18px",
+            borderBottom: "1px solid var(--color-line)",
+          }}
+        >
+          <div
+            className="flex items-center gap-2"
+            style={{
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid var(--color-line)",
+              padding: "10px 12px",
+            }}
+          >
+            <IconSearch size={14} />
             <input
               type="search"
               value={input}
               onChange={(e) => onInputChange(e.target.value)}
               placeholder={t.song.searchPlaceholder}
-              className="w-full rounded-full bg-white py-2.5 pl-9 pr-9 text-sm shadow-sm outline-none placeholder:text-text-secondary focus:ring-2 focus:ring-text-primary/10 [&::-webkit-search-cancel-button]:appearance-none"
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "#fff",
+                fontSize: 14,
+                fontFamily: "var(--font-sans)",
+              }}
             />
             {input && (
               <button
                 type="button"
                 onClick={() => onInputChange("")}
                 aria-label={t.song.searchClear}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-text-secondary transition-colors hover:text-text-primary"
+                style={{
+                  color: "var(--color-dim-2)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 2,
+                }}
               >
-                <X size={16} />
+                ×
               </button>
             )}
           </div>
         </div>
-        <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
+        <div className="max-h-[60vh] overflow-y-auto" style={{ padding: "12px 18px" }}>
           {loading ? (
-            <p className="py-8 text-center text-sm text-text-secondary">{t.common.loading}</p>
+            <p className="py-8 text-center" style={{ color: "var(--color-dim)", fontSize: 14 }}>
+              {t.common.loading}
+            </p>
           ) : availableSongs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-secondary">{emptyMessage}</p>
+            <p className="py-8 text-center" style={{ color: "var(--color-dim)", fontSize: 14 }}>
+              {emptyMessage}
+            </p>
           ) : (
-            <div className="space-y-2">
+            <ul style={{ borderTop: "1px solid var(--color-line)" }}>
               {availableSongs.map((song) => (
-                <button
-                  key={song.id}
-                  type="button"
-                  onClick={() => onAdd(song)}
-                  disabled={addingId === song.id}
-                  className="flex w-full items-center gap-3 rounded-xl bg-white p-3 text-left shadow-sm transition-colors active:bg-gray-50 disabled:opacity-40"
-                >
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-muted">
-                    <Music size={14} className="text-text-secondary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{song.title}</p>
-                    {song.artist && <p className="truncate text-xs text-text-secondary">{song.artist}</p>}
-                  </div>
-                  <Plus size={18} className="shrink-0 text-text-secondary" />
-                </button>
+                <li key={song.id}>
+                  <button
+                    type="button"
+                    onClick={() => onAdd(song)}
+                    disabled={addingId === song.id}
+                    className="flex w-full items-center gap-3 text-left"
+                    style={{
+                      padding: "14px 4px",
+                      borderBottom: "1px solid var(--color-line)",
+                      background: "transparent",
+                      border: "none",
+                      borderBottomStyle: "solid",
+                      color: "var(--color-text)",
+                      cursor: addingId === song.id ? "not-allowed" : "pointer",
+                      opacity: addingId === song.id ? 0.5 : 1,
+                    }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
+                        {song.title}
+                      </div>
+                      {song.artist && (
+                        <div
+                          className="truncate"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            letterSpacing: "0.18em",
+                            color: "var(--color-dim-2)",
+                            textTransform: "uppercase",
+                            marginTop: 3,
+                          }}
+                        >
+                          {song.artist}
+                        </div>
+                      )}
+                    </div>
+                    <IconPlus size={12} />
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
       </div>

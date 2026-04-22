@@ -15,7 +15,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SongsIndexRouteImport } from './routes/songs/index'
 import { Route as SetlistsIndexRouteImport } from './routes/setlists/index'
 import { Route as SongsNewRouteImport } from './routes/songs/new'
-import { Route as SetlistsNewRouteImport } from './routes/setlists/new'
 import { Route as SetlistsIdRouteImport } from './routes/setlists/$id'
 import { Route as SongsIdIndexRouteImport } from './routes/songs/$id/index'
 import { Route as SongsIdPerformRouteImport } from './routes/songs/$id/perform'
@@ -51,11 +50,6 @@ const SetlistsIndexRoute = SetlistsIndexRouteImport.update({
 const SongsNewRoute = SongsNewRouteImport.update({
   id: '/songs/new',
   path: '/songs/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SetlistsNewRoute = SetlistsNewRouteImport.update({
-  id: '/setlists/new',
-  path: '/setlists/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetlistsIdRoute = SetlistsIdRouteImport.update({
@@ -94,7 +88,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/setlists/$id': typeof SetlistsIdRoute
-  '/setlists/new': typeof SetlistsNewRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists/': typeof SetlistsIndexRoute
   '/songs/': typeof SongsIndexRoute
@@ -109,7 +102,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/setlists/$id': typeof SetlistsIdRoute
-  '/setlists/new': typeof SetlistsNewRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists': typeof SetlistsIndexRoute
   '/songs': typeof SongsIndexRoute
@@ -125,7 +117,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/setlists/$id': typeof SetlistsIdRoute
-  '/setlists/new': typeof SetlistsNewRoute
   '/songs/new': typeof SongsNewRoute
   '/setlists/': typeof SetlistsIndexRoute
   '/songs/': typeof SongsIndexRoute
@@ -142,7 +133,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/setlists/$id'
-    | '/setlists/new'
     | '/songs/new'
     | '/setlists/'
     | '/songs/'
@@ -157,7 +147,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/setlists/$id'
-    | '/setlists/new'
     | '/songs/new'
     | '/setlists'
     | '/songs'
@@ -172,7 +161,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/setlists/$id'
-    | '/setlists/new'
     | '/songs/new'
     | '/setlists/'
     | '/songs/'
@@ -188,7 +176,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   SetlistsIdRoute: typeof SetlistsIdRoute
-  SetlistsNewRoute: typeof SetlistsNewRoute
   SongsNewRoute: typeof SongsNewRoute
   SetlistsIndexRoute: typeof SetlistsIndexRoute
   SongsIndexRoute: typeof SongsIndexRoute
@@ -243,13 +230,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SongsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/setlists/new': {
-      id: '/setlists/new'
-      path: '/setlists/new'
-      fullPath: '/setlists/new'
-      preLoaderRoute: typeof SetlistsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/setlists/$id': {
       id: '/setlists/$id'
       path: '/setlists/$id'
@@ -300,7 +280,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   SetlistsIdRoute: SetlistsIdRoute,
-  SetlistsNewRoute: SetlistsNewRoute,
   SongsNewRoute: SongsNewRoute,
   SetlistsIndexRoute: SetlistsIndexRoute,
   SongsIndexRoute: SongsIndexRoute,
