@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SetlistsRouteRouteImport } from './routes/setlists/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SongsIndexRouteImport } from './routes/songs/index'
 import { Route as SetlistsIndexRouteImport } from './routes/setlists/index'
@@ -31,6 +32,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SetlistsRouteRoute = SetlistsRouteRouteImport.update({
+  id: '/setlists',
+  path: '/setlists',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -42,14 +48,14 @@ const SongsIndexRoute = SongsIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetlistsIndexRoute = SetlistsIndexRouteImport.update({
-  id: '/setlists/',
-  path: '/setlists/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => SetlistsRouteRoute,
 } as any)
 const SetlistsIdRoute = SetlistsIdRouteImport.update({
-  id: '/setlists/$id',
-  path: '/setlists/$id',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => SetlistsRouteRoute,
 } as any)
 const SongsIdIndexRoute = SongsIdIndexRouteImport.update({
   id: '/songs/$id/',
@@ -79,6 +85,7 @@ const ApiAuthCallbackRoute = ApiAuthCallbackRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/setlists': typeof SetlistsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/setlists/$id': typeof SetlistsIdRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/setlists': typeof SetlistsRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/setlists/$id': typeof SetlistsIdRoute
@@ -121,6 +129,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/setlists'
     | '/login'
     | '/settings'
     | '/setlists/$id'
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/setlists'
     | '/login'
     | '/settings'
     | '/setlists/$id'
@@ -161,10 +171,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SetlistsRouteRoute: typeof SetlistsRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
-  SetlistsIdRoute: typeof SetlistsIdRoute
-  SetlistsIndexRoute: typeof SetlistsIndexRoute
   SongsIndexRoute: typeof SongsIndexRoute
   ApiAuthCallbackRoute: typeof ApiAuthCallbackRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRoute
@@ -189,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/setlists': {
+      id: '/setlists'
+      path: '/setlists'
+      fullPath: '/setlists'
+      preLoaderRoute: typeof SetlistsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -205,17 +221,17 @@ declare module '@tanstack/react-router' {
     }
     '/setlists/': {
       id: '/setlists/'
-      path: '/setlists'
+      path: '/'
       fullPath: '/setlists/'
       preLoaderRoute: typeof SetlistsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SetlistsRouteRoute
     }
     '/setlists/$id': {
       id: '/setlists/$id'
-      path: '/setlists/$id'
+      path: '/$id'
       fullPath: '/setlists/$id'
       preLoaderRoute: typeof SetlistsIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SetlistsRouteRoute
     }
     '/songs/$id/': {
       id: '/songs/$id/'
@@ -255,12 +271,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  LoginRoute: LoginRoute,
-  SettingsRoute: SettingsRoute,
+interface SetlistsRouteRouteChildren {
+  SetlistsIdRoute: typeof SetlistsIdRoute
+  SetlistsIndexRoute: typeof SetlistsIndexRoute
+}
+
+const SetlistsRouteRouteChildren: SetlistsRouteRouteChildren = {
   SetlistsIdRoute: SetlistsIdRoute,
   SetlistsIndexRoute: SetlistsIndexRoute,
+}
+
+const SetlistsRouteRouteWithChildren = SetlistsRouteRoute._addFileChildren(
+  SetlistsRouteRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  SetlistsRouteRoute: SetlistsRouteRouteWithChildren,
+  LoginRoute: LoginRoute,
+  SettingsRoute: SettingsRoute,
   SongsIndexRoute: SongsIndexRoute,
   ApiAuthCallbackRoute: ApiAuthCallbackRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRoute,

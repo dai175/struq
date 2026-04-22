@@ -10,7 +10,7 @@ import {
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
@@ -18,6 +18,7 @@ import { ConfirmModal } from "@/lib/confirm-modal";
 import { saveSetlistWithSongsInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { type DummySongMeta, dummySetlistStats, dummySongMeta } from "@/setlists/dummy-stats";
 import type { SetlistSongItem } from "@/setlists/server-fns";
 import {
   addSongToSetlist,
@@ -31,6 +32,7 @@ import { ConsoleBtn } from "@/ui/console-btn";
 import { ConsoleField } from "@/ui/console-field";
 import { IconBack, IconDrag, IconPlay, IconPlus, IconSearch, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
+import { StructureBar } from "@/ui/structure-bar";
 
 export const Route = createFileRoute("/setlists/$id")({
   beforeLoad: requireAuth,
@@ -82,6 +84,12 @@ function SetlistEditor({
   const [pickerLoading, setPickerLoading] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const latestPickerQueryRef = useRef<string | undefined>(undefined);
+
+  // Per-song BPM/Key/sections are not yet joined into getSetlist — the PC
+  // overview/structure/rows render against deterministic dummy values keyed
+  // off songId so output stays stable across renders.
+  const songMetas = useMemo(() => songs.map((s) => dummySongMeta(s.songId)), [songs]);
+  const overviewStats = useMemo(() => dummySetlistStats(songMetas), [songMetas]);
 
   useEffect(() => {
     return () => {
@@ -217,8 +225,35 @@ function SetlistEditor({
         fontFamily: "var(--font-sans)",
       }}
     >
+      <PcDetailPane
+        title={title}
+        fallbackTitle={data.setlist.title}
+        description={description}
+        sessionDate={sessionDate}
+        venue={venue}
+        titleError={titleError}
+        songs={songs}
+        songMetas={songMetas}
+        overviewStats={overviewStats}
+        saving={saving}
+        saved={saved}
+        setlistId={setlistId}
+        onTitleChange={(v) => {
+          setTitle(v);
+          if (titleError) setTitleError(false);
+        }}
+        onDescriptionChange={setDescription}
+        onSessionDateChange={setSessionDate}
+        onVenueChange={setVenue}
+        onSave={handleSave}
+        onDelete={() => setShowDeleteConfirm(true)}
+        onDragEnd={handleDragEnd}
+        onRemoveSong={handleRemoveSong}
+        onOpenPicker={() => setShowPicker(true)}
+      />
+
       <div
-        className="grid items-center gap-3"
+        className="grid items-center gap-3 lg:hidden"
         style={{
           gridTemplateColumns: "auto 1fr auto",
           padding: "14px 18px",
@@ -285,7 +320,7 @@ function SetlistEditor({
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl px-5 pb-36 pt-6 lg:px-10">
+      <div className="mx-auto max-w-2xl px-5 pb-36 pt-6 lg:hidden">
         <section className="grid gap-4">
           <MetaTag>01 · SETLIST META</MetaTag>
           <ConsoleField
@@ -412,7 +447,7 @@ function SetlistEditor({
       </div>
 
       <div
-        className="fixed right-0 left-0 z-40"
+        className="fixed right-0 left-0 z-40 lg:hidden"
         style={{
           bottom: "calc(64px + env(safe-area-inset-bottom, 0px))",
           background: "var(--color-ink)",
@@ -743,6 +778,513 @@ function SongPickerModal({
             </ul>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ───── PC detail pane ─────────────────────────────────────────────────
+
+function PcDetailPane({
+  title,
+  fallbackTitle,
+  description,
+  sessionDate,
+  venue,
+  titleError,
+  songs,
+  songMetas,
+  overviewStats,
+  saving,
+  saved,
+  setlistId,
+  onTitleChange,
+  onDescriptionChange,
+  onSessionDateChange,
+  onVenueChange,
+  onSave,
+  onDelete,
+  onDragEnd,
+  onRemoveSong,
+  onOpenPicker,
+}: {
+  title: string;
+  fallbackTitle: string;
+  description: string;
+  sessionDate: string;
+  venue: string;
+  titleError: boolean;
+  songs: SetlistSongItem[];
+  songMetas: DummySongMeta[];
+  overviewStats: ReturnType<typeof dummySetlistStats>;
+  saving: boolean;
+  saved: boolean;
+  setlistId: string;
+  onTitleChange: (v: string) => void;
+  onDescriptionChange: (v: string) => void;
+  onSessionDateChange: (v: string) => void;
+  onVenueChange: (v: string) => void;
+  onSave: () => void;
+  onDelete: () => void;
+  onDragEnd: (event: DragEndEvent) => void;
+  onRemoveSong: (songId: string) => void;
+  onOpenPicker: () => void;
+}) {
+  const { t } = useI18n();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+  const subtitle = [sessionDate, venue].filter(Boolean).join(" · ");
+
+  return (
+    <div
+      className="hidden min-h-screen lg:block"
+      style={{ background: "var(--color-ink)", color: "var(--color-text)" }}
+    >
+      {/* TopRail */}
+      <div
+        className="flex items-center gap-4"
+        style={{
+          padding: "14px 28px",
+          borderBottom: "1px solid var(--color-line)",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            className="truncate"
+            style={{
+              fontSize: 20,
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              color: "#fff",
+            }}
+          >
+            {title.trim() || fallbackTitle}
+          </div>
+          {subtitle && (
+            <div style={{ marginTop: 3 }}>
+              <MetaTag size={10}>{subtitle}</MetaTag>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <ConsoleBtn disabled title="Coming soon">
+            DUPLICATE
+          </ConsoleBtn>
+          <ConsoleBtn tone="coral" onClick={onDelete}>
+            <IconTrash size={14} />
+            DELETE
+          </ConsoleBtn>
+          <ConsoleBtn tone="white" onClick={onSave} disabled={saving}>
+            {saving ? t.common.loading : saved ? t.setlist.saved : "SAVE CHANGES"}
+          </ConsoleBtn>
+          {songs.length > 0 ? (
+            <Link
+              to="/songs/$id/perform"
+              params={{ id: songs[0].songId }}
+              search={{ setlistId }}
+              style={{
+                background: "var(--color-accent)",
+                color: "#111",
+                padding: "9px 14px",
+                borderRadius: 2,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                lineHeight: 1,
+                border: "1px solid var(--color-accent)",
+                textDecoration: "none",
+              }}
+            >
+              <IconPlay size={12} />
+              START PERFORM
+            </Link>
+          ) : (
+            <ConsoleBtn tone="accent" disabled>
+              <IconPlay size={12} />
+              START PERFORM
+            </ConsoleBtn>
+          )}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: "24px 28px 48px" }}>
+        {/* 01 SETLIST META */}
+        <section>
+          <MetaTag>01 · SETLIST META</MetaTag>
+          <div className="grid grid-cols-2 gap-3" style={{ marginTop: 14 }}>
+            <div className="col-span-2">
+              <ConsoleField label={t.setlist.title} value={title} onChange={onTitleChange} required />
+              {titleError && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--color-section-solo)",
+                    marginTop: 6,
+                  }}
+                >
+                  {t.setlist.titleRequired}
+                </p>
+              )}
+            </div>
+            <div className="col-span-2">
+              <label style={{ display: "block" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    letterSpacing: "0.25em",
+                    color: "var(--color-dim-2)",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                    fontWeight: 500,
+                  }}
+                >
+                  {t.setlist.description}
+                </div>
+                <textarea
+                  value={description}
+                  onChange={(e) => onDescriptionChange(e.target.value)}
+                  rows={2}
+                  style={{
+                    width: "100%",
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid var(--color-line)",
+                    borderLeft: description ? "2px solid var(--color-accent)" : "1px solid var(--color-line)",
+                    padding: "12px 14px",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 14,
+                    color: description ? "#fff" : "rgba(255,255,255,0.3)",
+                    outline: "none",
+                    borderRadius: 0,
+                    resize: "vertical",
+                  }}
+                />
+              </label>
+            </div>
+            <ConsoleField
+              label={t.setlist.sessionDate}
+              value={sessionDate}
+              onChange={onSessionDateChange}
+              type="date"
+              mono
+            />
+            <ConsoleField label={t.setlist.venue} value={venue} onChange={onVenueChange} />
+          </div>
+        </section>
+
+        {/* 02 OVERVIEW */}
+        <section style={{ marginTop: 32 }}>
+          <MetaTag>02 · OVERVIEW</MetaTag>
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 32,
+            }}
+          >
+            <OverviewStat label="SONGS" value={String(songs.length).padStart(2, "0")} />
+            <OverviewStat label="TOTAL SECTIONS" value={String(overviewStats.totalSections).padStart(2, "0")} />
+            <OverviewStat label="EST. DURATION" value={`${overviewStats.estDurationMin} MIN`} />
+            <OverviewStat label="AVG BPM" value={String(overviewStats.avgBpm)} />
+          </div>
+        </section>
+
+        {/* 03 TOTAL STRUCTURE */}
+        {songs.length > 0 && (
+          <section style={{ marginTop: 32 }}>
+            <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+              <MetaTag>03 · TOTAL STRUCTURE</MetaTag>
+              <MetaTag size={9}>HOVER SEGMENT TO PREVIEW</MetaTag>
+            </div>
+            <div style={{ display: "flex", gap: 1 }}>
+              {songs.map((song, si) => {
+                const bars = songMetas[si].sections.reduce((n, s) => n + s.bars, 0);
+                return (
+                  <div key={song.songId} style={{ flex: bars, minWidth: 0 }}>
+                    <StructureBar sections={songMetas[si].sections} height={10} gap={1} />
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 1, marginTop: 3 }}>
+              {songs.map((song, si) => {
+                const bars = songMetas[si].sections.reduce((n, s) => n + s.bars, 0);
+                return (
+                  <div
+                    key={song.songId}
+                    style={{
+                      flex: bars,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 8,
+                      letterSpacing: "0.15em",
+                      color: "var(--color-dim-2)",
+                      paddingTop: 4,
+                      borderTop: "1px solid var(--color-line)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {String(si + 1).padStart(2, "0")}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 04 SONGS */}
+        <section style={{ marginTop: 32 }}>
+          <div className="flex items-center" style={{ marginBottom: 14, gap: 10 }}>
+            <MetaTag>04 · SONGS · {String(songs.length).padStart(2, "0")} TOTAL</MetaTag>
+            <div style={{ flex: 1, height: 1, background: "var(--color-line)" }} />
+          </div>
+
+          {songs.length === 0 ? (
+            <div
+              style={{
+                padding: "40px 0",
+                border: "1px dashed var(--color-line-2)",
+                color: "var(--color-dim)",
+                fontSize: 14,
+                textAlign: "center",
+              }}
+            >
+              {t.setlist.noSongs}
+            </div>
+          ) : (
+            <>
+              <div
+                className="grid"
+                style={{
+                  gridTemplateColumns: "28px 42px 1fr 220px 100px 80px 100px",
+                  padding: "10px 4px",
+                  borderBottom: "1px solid var(--color-line)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  color: "var(--color-dim-2)",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <div />
+                <div>#</div>
+                <div>TITLE</div>
+                <div>STRUCTURE</div>
+                <div style={{ textAlign: "right" }}>BPM</div>
+                <div style={{ textAlign: "right" }}>KEY</div>
+                <div style={{ textAlign: "right" }}>SEC</div>
+              </div>
+
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                <SortableContext items={songs.map((s) => s.songId)} strategy={verticalListSortingStrategy}>
+                  {songs.map((song, i) => (
+                    <PcSortableSongRow
+                      key={song.songId}
+                      song={song}
+                      index={i}
+                      meta={songMetas[i]}
+                      onRemove={() => onRemoveSong(song.songId)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={onOpenPicker}
+            className="flex w-full items-center justify-center gap-2"
+            style={{
+              marginTop: 16,
+              padding: "14px",
+              border: "1px dashed var(--color-line-2)",
+              background: "transparent",
+              color: "var(--color-dim)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              cursor: "pointer",
+              borderRadius: 1,
+            }}
+          >
+            <IconPlus size={10} />
+            ADD SONG FROM LIBRARY
+          </button>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function OverviewStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <MetaTag>{label}</MetaTag>
+      <div
+        style={{
+          fontSize: 28,
+          fontWeight: 700,
+          marginTop: 6,
+          letterSpacing: "-0.02em",
+          color: "#fff",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function PcSortableSongRow({
+  song,
+  index,
+  meta,
+  onRemove,
+}: {
+  song: SetlistSongItem;
+  index: number;
+  meta: DummySongMeta;
+  onRemove: () => void;
+}) {
+  const { t } = useI18n();
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: song.songId,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        display: "grid",
+        gridTemplateColumns: "28px 42px 1fr 220px 100px 80px 100px",
+        padding: "14px 4px",
+        borderBottom: "1px solid var(--color-line)",
+        alignItems: "center",
+        gap: 10,
+      }}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label="Reorder"
+        style={{
+          width: 24,
+          height: 24,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--color-dim-2)",
+          background: "transparent",
+          border: "none",
+          cursor: "grab",
+          touchAction: "none",
+        }}
+      >
+        <IconDrag size={14} />
+      </button>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 16,
+          fontWeight: 600,
+          color: "#fff",
+          letterSpacing: "0.05em",
+        }}
+      >
+        {String(index + 1).padStart(2, "0")}
+      </div>
+      <div className="min-w-0">
+        <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
+          {song.title}
+        </div>
+        {song.artist && (
+          <div
+            className="truncate"
+            style={{
+              marginTop: 3,
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.18em",
+              color: "var(--color-dim)",
+              textTransform: "uppercase",
+            }}
+          >
+            {song.artist}
+          </div>
+        )}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <StructureBar sections={meta.sections} height={5} gap={1} />
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "#fff",
+          textAlign: "right",
+          letterSpacing: "0.05em",
+        }}
+      >
+        {meta.bpm}
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "#fff",
+          textAlign: "right",
+        }}
+      >
+        {meta.key}
+      </div>
+      <div
+        className="flex items-center justify-end"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          color: "var(--color-dim)",
+          gap: 8,
+        }}
+      >
+        <span>{String(meta.sections.length).padStart(2, "0")}</span>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={t.setlist.removeSong}
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--color-dim-2)",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <IconTrash size={14} />
+        </button>
       </div>
     </div>
   );
