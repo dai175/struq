@@ -16,9 +16,9 @@ function initials(name: string): string {
 
 /**
  * SideRail — 76px-wide fixed PC navigation (≥ lg breakpoint).
- * Logomark on top, 3 icon-over-label tabs in the middle (SETLISTS / SONGS /
- * SETTINGS), 32×32 accent avatar on the bottom showing the user's initials.
- * Active tab has a 2px accent left border and full-white label.
+ * Layout follows `design_handoff_struq/designs/console-pc.jsx` L5-57:
+ * logo section + border → flex-1 nav with tabs at flex-start → avatar
+ * section + border. Active tab has a 2px accent left border and `color: #fff`.
  */
 export function SideRail({ user }: SideRailProps) {
   const { t } = useI18n();
@@ -33,27 +33,33 @@ export function SideRail({ user }: SideRailProps) {
 
   return (
     <aside
-      className="fixed top-0 bottom-0 left-0 z-50 hidden w-[76px] flex-col items-center justify-between border-r lg:flex"
+      className="fixed top-0 bottom-0 left-0 z-50 hidden w-[76px] flex-col border-r lg:flex"
       style={{
         background: "var(--color-ink)",
         borderColor: "var(--color-line)",
-        paddingTop: 22,
-        paddingBottom: 22,
       }}
     >
-      <div className="flex items-center justify-center" style={{ height: 32 }}>
-        <Logomark size={32} />
+      <div
+        className="flex items-center justify-center"
+        style={{
+          padding: "18px 0",
+          borderBottom: "1px solid var(--color-line)",
+        }}
+      >
+        <Logomark size={26} />
       </div>
 
-      <nav className="flex flex-1 flex-col items-stretch justify-center gap-2 self-stretch">
+      <nav className="flex flex-col" style={{ flex: 1, paddingTop: 6 }}>
         {tabs.map(({ to, label, Icon }) => {
           const isActive = currentPath.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
-              className="flex flex-col items-center gap-2 py-3"
+              className="flex flex-col items-center"
               style={{
+                padding: "18px 0 16px",
+                gap: 6,
                 color: isActive ? "#fff" : "var(--color-dim-2)",
                 borderLeft: isActive ? "2px solid var(--color-accent)" : "2px solid transparent",
               }}
@@ -64,7 +70,7 @@ export function SideRail({ user }: SideRailProps) {
                   fontFamily: "var(--font-mono)",
                   fontSize: 8,
                   letterSpacing: "0.22em",
-                  fontWeight: isActive ? 600 : 500,
+                  fontWeight: isActive ? 600 : 400,
                   textTransform: "uppercase",
                 }}
               >
@@ -76,20 +82,27 @@ export function SideRail({ user }: SideRailProps) {
       </nav>
 
       <div
-        title={user.name}
-        className="flex items-center justify-center"
         style={{
-          width: 32,
-          height: 32,
-          background: "var(--color-accent)",
-          color: "#0b0b0b",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          fontWeight: 700,
+          padding: "14px 0",
+          borderTop: "1px solid var(--color-line)",
         }}
       >
-        {initials(user.name)}
+        <div
+          title={user.name}
+          className="mx-auto flex items-center justify-center"
+          style={{
+            width: 32,
+            height: 32,
+            background: "var(--color-accent)",
+            color: "#000",
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {initials(user.name)}
+        </div>
       </div>
     </aside>
   );

@@ -32,8 +32,10 @@
   --color-section-interlude: oklch(0.72 0.12 195);  /* cyan */
   --color-section-custom: oklch(0.72 0.14 340);     /* rose */
 
-  /* Primary accent = chorus amber */
-  --color-accent: var(--color-section-chorus);
+  /* Primary accent — per handoff (design_handoff_struq/designs/console-kit.jsx)
+     `C.accent: "var(--sec-a)"`: section A (blue) is the app-wide accent.
+     The amber chorus color is reserved for the chorus section only. */
+  --color-accent: var(--color-section-a);
 
   /* ─── Fonts ─── */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
