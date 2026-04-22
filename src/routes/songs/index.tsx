@@ -1,6 +1,5 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useLoaderData, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
@@ -12,21 +11,13 @@ import { IconPlus, IconSearch, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 
-type SongsSearch = { q?: string };
-
 export const Route = createFileRoute("/songs/")({
-  beforeLoad: requireAuth,
-  validateSearch: (search: Record<string, unknown>): SongsSearch => ({
-    q: typeof search.q === "string" && search.q.trim() ? search.q.trim() : undefined,
-  }),
-  loaderDeps: ({ search }) => ({ q: search.q }),
-  loader: ({ deps }) => listSongs({ data: { query: deps.q } }),
   component: SongsPage,
 });
 
 function SongsPage() {
-  const initial = Route.useLoaderData();
-  const search = Route.useSearch();
+  const initial = useLoaderData({ from: "/songs" });
+  const search = useSearch({ from: "/songs" });
   const navigate = useNavigate();
   const { t } = useI18n();
   const { toast } = useToast();
@@ -57,7 +48,7 @@ function SongsPage() {
     setCreating(true);
     try {
       const result = await createSong({ data: { title: t.nav.newSong } });
-      navigate({ to: "/songs/$id", params: { id: result.id } });
+      navigate({ to: "/songs/$id", params: { id: result.id }, search: {} });
     } catch (error) {
       clientLogger.error("createSong", error);
       toast.error(t.common.errorCreateFailed);
@@ -104,15 +95,36 @@ function SongsPage() {
   const isSearching = !!search.q;
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        background: "var(--color-ink)",
-        color: "var(--color-text)",
-        fontFamily: "var(--font-sans)",
-      }}
-    >
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-8 lg:px-10 lg:pt-10">
+    <>
+      {/* PC empty state — the library column lives in the layout (route.tsx);
+          this pane fills the detail slot when no song is selected. */}
+      <div className="hidden min-h-screen lg:flex lg:items-center lg:justify-center">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <MetaTag>{songs.length === 0 ? (isSearching ? "NO MATCHES" : "NO SONGS") : "SELECT A SONG"}</MetaTag>
+          {songs.length === 0 && (
+            <p style={{ color: "var(--color-dim)", fontSize: 14, maxWidth: 320 }}>
+              {isSearching ? t.song.searchNoResults : t.song.noSongs}
+            </p>
+          )}
+          {!isSearching && (
+            <div className="mt-2">
+              <ConsoleBtn tone="accent" onClick={handleCreate} disabled={creating}>
+                <IconPlus size={10} />
+                NEW SONG
+              </ConsoleBtn>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        className="mx-auto min-h-screen max-w-2xl px-5 pt-6 pb-8 lg:hidden"
+        style={{
+          background: "var(--color-ink)",
+          color: "var(--color-text)",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
         <header className="flex items-end justify-between gap-3 pb-5">
           <div>
             <h1
@@ -229,7 +241,7 @@ function SongsPage() {
         onConfirm={executeDelete}
         onCancel={() => setPendingDeleteId(null)}
       />
-    </div>
+    </>
   );
 }
 

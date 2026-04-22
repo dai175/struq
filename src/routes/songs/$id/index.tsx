@@ -20,9 +20,10 @@ import { RATE_LIMIT_ERROR } from "@/lib/rate-limit";
 import { generateSectionsInputSchema, saveSongWithSectionsInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { isValidUrl } from "@/lib/validation";
+import { PcSectionRow } from "@/songs/components/PcSectionRow";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { SectionPalette } from "@/songs/components/SectionPalette";
-import { DEFAULT_BARS } from "@/songs/constants";
+import { DEFAULT_BARS, SECTION_COLORS } from "@/songs/constants";
 import {
   deleteSong,
   generateSections,
@@ -30,6 +31,7 @@ import {
   type SectionRow,
   saveSongWithSections,
 } from "@/songs/server-fns";
+import { ConsoleBtn } from "@/ui/console-btn";
 import { ConsoleField } from "@/ui/console-field";
 import { IconBack, IconExt, IconPlay, IconSparkles, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
@@ -76,6 +78,36 @@ function SortableSection({
     <div ref={setNodeRef} style={style}>
       <SectionCard
         section={section}
+        onChange={onChange}
+        onDelete={onDelete}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
+function PcSortableSectionRow({
+  section,
+  index,
+  onChange,
+  onDelete,
+}: {
+  section: SectionData;
+  index: number;
+  onChange: (updated: SectionData) => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <PcSectionRow
+        section={section}
+        index={index}
         onChange={onChange}
         onDelete={onDelete}
         dragHandleProps={{ ...attributes, ...listeners }}
@@ -273,9 +305,46 @@ function SongEditPage() {
         fontFamily: "var(--font-sans)",
       }}
     >
+      <PcEditorPane
+        id={id}
+        title={title}
+        fallbackTitle={loaderData.song.title}
+        artist={artist}
+        bpm={bpm}
+        songKey={key}
+        referenceUrl={referenceUrl}
+        titleError={titleError}
+        urlError={urlError}
+        sectionsList={sectionsList}
+        saving={saving}
+        saved={saved}
+        aiGenerating={aiGenerating}
+        aiError={aiError}
+        aiRateLimited={aiRateLimited}
+        onTitleChange={(v) => {
+          setTitle(v);
+          if (titleError) setTitleError(false);
+        }}
+        onArtistChange={setArtist}
+        onBpmChange={setBpm}
+        onKeyChange={setKey}
+        onReferenceUrlChange={(v) => {
+          setReferenceUrl(v);
+          if (urlError) setUrlError(false);
+        }}
+        onSave={handleSave}
+        onDelete={() => setShowDeleteConfirm(true)}
+        onAiGenerate={handleAiGenerate}
+        onAiRetry={executeAiGenerate}
+        onAddSection={handleAddSection}
+        onSectionChange={handleSectionChange}
+        onSectionDelete={handleSectionDelete}
+        onDragEnd={handleDragEnd}
+      />
+
       {/* TopRail */}
       <div
-        className="grid items-center gap-3"
+        className="grid items-center gap-3 lg:hidden"
         style={{
           gridTemplateColumns: "auto 1fr auto",
           padding: "14px 18px",
@@ -334,7 +403,7 @@ function SongEditPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl px-5 pb-40 pt-6 lg:px-10">
+      <div className="mx-auto max-w-2xl px-5 pb-40 pt-6 lg:hidden">
         <section className="grid gap-4">
           <MetaTag>01 · TRACK META</MetaTag>
           <ConsoleField
@@ -543,7 +612,7 @@ function SongEditPage() {
 
       {/* Sticky save — above the BottomNav */}
       <div
-        className="fixed right-0 left-0 z-40"
+        className="fixed right-0 left-0 z-40 lg:hidden"
         style={{
           bottom: "calc(64px + env(safe-area-inset-bottom, 0px))",
           background: "var(--color-ink)",
@@ -574,6 +643,388 @@ function SongEditPage() {
           >
             {saving ? t.common.loading : saved ? t.song.saved : t.common.save}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ───── PC editor pane ─────────────────────────────────────────────────
+
+const PC_PALETTE_TYPES: SectionType[] = ["intro", "a", "b", "chorus", "bridge", "solo", "interlude", "outro"];
+
+interface PcEditorPaneProps {
+  id: string;
+  title: string;
+  fallbackTitle: string;
+  artist: string;
+  bpm: string;
+  songKey: string;
+  referenceUrl: string;
+  titleError: boolean;
+  urlError: boolean;
+  sectionsList: SectionData[];
+  saving: boolean;
+  saved: boolean;
+  aiGenerating: boolean;
+  aiError: boolean;
+  aiRateLimited: boolean;
+  onTitleChange: (v: string) => void;
+  onArtistChange: (v: string) => void;
+  onBpmChange: (v: string) => void;
+  onKeyChange: (v: string) => void;
+  onReferenceUrlChange: (v: string) => void;
+  onSave: () => void;
+  onDelete: () => void;
+  onAiGenerate: () => void;
+  onAiRetry: () => void;
+  onAddSection: (type: SectionType) => void;
+  onSectionChange: (updated: SectionData) => void;
+  onSectionDelete: (id: string) => void;
+  onDragEnd: (event: DragEndEvent) => void;
+}
+
+function PcEditorPane({
+  id,
+  title,
+  fallbackTitle,
+  artist,
+  bpm,
+  songKey,
+  referenceUrl,
+  titleError,
+  urlError,
+  sectionsList,
+  saving,
+  saved,
+  aiGenerating,
+  aiError,
+  aiRateLimited,
+  onTitleChange,
+  onArtistChange,
+  onBpmChange,
+  onKeyChange,
+  onReferenceUrlChange,
+  onSave,
+  onDelete,
+  onAiGenerate,
+  onAiRetry,
+  onAddSection,
+  onSectionChange,
+  onSectionDelete,
+  onDragEnd,
+}: PcEditorPaneProps) {
+  const { t } = useI18n();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+  const totalBars = sectionsList.reduce((sum, s) => sum + s.bars, 0);
+
+  return (
+    <div className="hidden min-h-screen lg:block" style={{ background: "var(--color-ink)" }}>
+      {/* TopRail */}
+      <div
+        className="flex items-center gap-4"
+        style={{
+          padding: "14px 28px",
+          borderBottom: "1px solid var(--color-line)",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            className="truncate"
+            style={{
+              fontSize: 20,
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              color: "#fff",
+            }}
+          >
+            {title.trim() || fallbackTitle}
+          </div>
+          <div style={{ marginTop: 3 }}>
+            <MetaTag size={10}>
+              EDITING · {String(sectionsList.length).padStart(2, "0")} SECTIONS · {totalBars} BARS
+            </MetaTag>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <ConsoleBtn tone="coral" onClick={onDelete}>
+            <IconTrash size={14} />
+            {t.common.delete.toUpperCase()}
+          </ConsoleBtn>
+          <ConsoleBtn tone="white" onClick={onSave} disabled={saving}>
+            {saving ? t.common.loading : saved ? t.song.saved : "SAVE CHANGES"}
+          </ConsoleBtn>
+          <Link
+            to="/songs/$id/perform"
+            params={{ id }}
+            style={{
+              background: "var(--color-accent)",
+              color: "#111",
+              padding: "9px 14px",
+              borderRadius: 2,
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              lineHeight: 1,
+              border: "1px solid var(--color-accent)",
+              textDecoration: "none",
+            }}
+          >
+            <IconPlay size={12} />
+            PERFORM
+          </Link>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="grid xl:grid-cols-[380px_1fr] xl:gap-0">
+        {/* META column */}
+        <div
+          className="xl:border-r"
+          style={{
+            padding: "22px 28px",
+            borderColor: "var(--color-line)",
+          }}
+        >
+          <MetaTag>01 · TRACK META</MetaTag>
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 10,
+            }}
+          >
+            <div style={{ gridColumn: "span 2" }}>
+              <ConsoleField label={t.song.title} value={title} onChange={onTitleChange} required />
+              {titleError && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--color-section-solo)",
+                    marginTop: 6,
+                  }}
+                >
+                  {t.song.titleRequired}
+                </p>
+              )}
+            </div>
+            <div style={{ gridColumn: "span 2" }}>
+              <ConsoleField label={t.song.artist} value={artist} onChange={onArtistChange} />
+            </div>
+            <ConsoleField label={t.song.bpm} value={bpm} onChange={onBpmChange} type="number" placeholder="120" mono />
+            <ConsoleField label={t.song.key} value={songKey} onChange={onKeyChange} placeholder="Am" mono />
+            <div style={{ gridColumn: "span 2" }}>
+              <ConsoleField
+                label={t.song.referenceUrl}
+                value={referenceUrl}
+                onChange={onReferenceUrlChange}
+                type="url"
+                placeholder="https://..."
+                mono
+              />
+              {urlError && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--color-section-solo)",
+                    marginTop: 6,
+                  }}
+                >
+                  {t.song.invalidUrl}
+                </p>
+              )}
+              {isValidUrl(referenceUrl.trim()) && (
+                <a
+                  href={referenceUrl.trim()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2"
+                  style={{
+                    marginTop: 8,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "0.22em",
+                    color: "var(--color-dim)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  <IconExt size={12} /> OPEN LINK
+                </a>
+              )}
+            </div>
+          </div>
+
+          {sectionsList.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <div className="flex items-center" style={{ gap: 10, marginBottom: 10 }}>
+                <MetaTag>02 · STRUCTURE PREVIEW</MetaTag>
+                <div style={{ flex: 1, height: 1, background: "var(--color-line)" }} />
+              </div>
+              <StructureBar sections={sectionsList} height={14} gap={2} showAbbreviations />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onAiGenerate}
+            disabled={aiGenerating}
+            className="flex w-full items-center justify-center gap-2"
+            style={{
+              marginTop: 20,
+              padding: "12px",
+              border: "1px solid var(--color-line-2)",
+              background: "transparent",
+              color: "#fff",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              cursor: aiGenerating ? "not-allowed" : "pointer",
+              opacity: aiGenerating ? 0.5 : 1,
+              borderRadius: 1,
+            }}
+          >
+            <IconSparkles size={14} />
+            {aiGenerating ? t.common.loading : t.song.aiGenerate}
+          </button>
+          {aiRateLimited && (
+            <div
+              style={{
+                marginTop: 8,
+                padding: "10px 12px",
+                border: "1px solid var(--color-section-chorus)",
+                background: "color-mix(in srgb, var(--color-section-chorus) 10%, transparent)",
+                color: "var(--color-section-chorus)",
+                fontSize: 13,
+              }}
+            >
+              {t.song.aiRateLimited}
+            </div>
+          )}
+          {aiError && (
+            <div
+              className="flex items-center justify-between"
+              style={{
+                marginTop: 8,
+                padding: "10px 12px",
+                border: "1px solid var(--color-section-solo)",
+                background: "color-mix(in srgb, var(--color-section-solo) 10%, transparent)",
+                color: "var(--color-section-solo)",
+                fontSize: 13,
+              }}
+            >
+              <span>{t.song.aiError}</span>
+              <button
+                type="button"
+                onClick={onAiRetry}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--color-section-solo)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {t.common.retry}
+              </button>
+            </div>
+          )}
+
+          <div style={{ marginTop: 22 }}>
+            <MetaTag>03 · ADD SECTION</MetaTag>
+            <div
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 6,
+              }}
+            >
+              {PC_PALETTE_TYPES.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => onAddSection(type)}
+                  style={{
+                    padding: "10px 4px",
+                    border: "1px solid var(--color-line)",
+                    borderRadius: 1,
+                    background: "rgba(255,255,255,0.02)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 6,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 18,
+                      height: 18,
+                      background: SECTION_COLORS[type],
+                      borderRadius: 1,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 8,
+                      letterSpacing: "0.18em",
+                      color: "var(--color-dim)",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {type}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* SECTIONS column */}
+        <div style={{ padding: "22px 28px 48px" }}>
+          <div className="flex items-center" style={{ gap: 10, marginBottom: 14 }}>
+            <MetaTag>04 · SECTIONS</MetaTag>
+            <div style={{ flex: 1, height: 1, background: "var(--color-line)" }} />
+            <MetaTag>{String(sectionsList.length).padStart(2, "0")} TOTAL</MetaTag>
+          </div>
+
+          {sectionsList.length === 0 ? (
+            <p className="py-12 text-center" style={{ color: "var(--color-dim)", fontSize: 14 }}>
+              {t.song.noSections}
+            </p>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                <div className="grid" style={{ gap: 8 }}>
+                  {sectionsList.map((section, i) => (
+                    <PcSortableSectionRow
+                      key={section.id}
+                      section={section}
+                      index={i}
+                      onChange={onSectionChange}
+                      onDelete={() => onSectionDelete(section.id)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
         </div>
       </div>
     </div>
