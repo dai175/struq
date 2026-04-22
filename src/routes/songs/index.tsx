@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { Plus, Search, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
@@ -7,8 +6,11 @@ import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-import { StructurePreview } from "@/songs/components/StructurePreview";
-import { deleteSong, listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
+import { createSong, deleteSong, listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
+import { ConsoleBtn } from "@/ui/console-btn";
+import { IconPlus, IconSearch, IconTrash } from "@/ui/icons";
+import { MetaTag } from "@/ui/meta-tag";
+import { StructureBar } from "@/ui/structure-bar";
 
 type SongsSearch = { q?: string };
 
@@ -29,12 +31,14 @@ function SongsPage() {
   const { t } = useI18n();
   const { toast } = useToast();
   const router = useRouter();
+
   const [songs, setSongs] = useState(initial.items);
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [input, setInput] = useState(search.q ?? "");
+  const [creating, setCreating] = useState(false);
   const debouncedInput = useDebouncedValue(input, 300);
 
   useEffect(() => {
@@ -42,12 +46,24 @@ function SongsPage() {
     setHasMore(initial.hasMore);
   }, [initial]);
 
-  // `replace` keeps incremental keystrokes out of the back/forward stack.
   useEffect(() => {
     const next = debouncedInput.trim() || undefined;
     if (next === search.q) return;
     navigate({ to: "/songs", search: next ? { q: next } : {}, replace: true });
   }, [debouncedInput, search.q, navigate]);
+
+  async function handleCreate() {
+    if (creating) return;
+    setCreating(true);
+    try {
+      const result = await createSong({ data: { title: t.nav.newSong } });
+      navigate({ to: "/songs/$id", params: { id: result.id } });
+    } catch (error) {
+      clientLogger.error("createSong", error);
+      toast.error(t.common.errorCreateFailed);
+      setCreating(false);
+    }
+  }
 
   async function executeDelete() {
     const id = pendingDeleteId;
@@ -88,98 +104,123 @@ function SongsPage() {
   const isSearching = !!search.q;
 
   return (
-    <div className="mx-auto max-w-md px-4 pb-24 pt-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t.nav.songs}</h1>
-        <Link
-          to="/songs/new"
-          className="flex items-center gap-1 rounded-full bg-text-primary px-4 py-2 text-sm font-medium text-white transition-opacity active:opacity-70"
-        >
-          <Plus size={16} />
-          {t.nav.newSong}
-        </Link>
-      </div>
+    <div
+      className="min-h-screen"
+      style={{
+        background: "var(--color-ink)",
+        color: "var(--color-text)",
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      <div className="mx-auto max-w-2xl px-5 pt-6 pb-8 lg:px-10 lg:pt-10">
+        <header className="flex items-end justify-between gap-3 pb-5">
+          <div>
+            <h1
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: "-0.01em",
+                color: "#fff",
+              }}
+            >
+              {t.nav.songs}
+            </h1>
+            <div className="mt-1.5">
+              <MetaTag>
+                {String(songs.length).padStart(2, "0")} {isSearching ? "SHOWN" : "TOTAL"}
+              </MetaTag>
+            </div>
+          </div>
+          <ConsoleBtn tone="white" onClick={handleCreate} disabled={creating}>
+            <IconPlus size={10} />
+            {creating ? t.common.loading : "NEW"}
+          </ConsoleBtn>
+        </header>
 
-      <div className="relative mb-4">
-        <Search
-          size={16}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
-        />
-        <input
-          type="search"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={t.song.searchPlaceholder}
-          className="w-full rounded-full bg-white py-2.5 pl-9 pr-9 text-sm shadow-sm outline-none placeholder:text-text-secondary focus:ring-2 focus:ring-text-primary/10 [&::-webkit-search-cancel-button]:appearance-none"
-        />
-        {input && (
-          <button
-            type="button"
-            onClick={handleClearSearch}
-            aria-label={t.song.searchClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-text-secondary transition-colors hover:text-text-primary"
-          >
-            <X size={16} />
-          </button>
+        <div
+          className="flex items-center gap-2"
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid var(--color-line)",
+            padding: "10px 12px",
+            marginBottom: 20,
+          }}
+        >
+          <IconSearch size={14} />
+          <input
+            type="search"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t.song.searchPlaceholder}
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              color: "#fff",
+              fontSize: 14,
+              fontFamily: "var(--font-sans)",
+            }}
+          />
+          {input && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              aria-label={t.song.searchClear}
+              style={{
+                color: "var(--color-dim-2)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: 2,
+                fontSize: 16,
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {songs.length === 0 ? (
+          <div className="flex flex-col items-center py-20 text-center gap-3">
+            <MetaTag>{isSearching ? "NO MATCHES" : "NO SONGS"}</MetaTag>
+            <p style={{ color: "var(--color-dim)", fontSize: 14 }}>
+              {isSearching ? t.song.searchNoResults : t.song.noSongs}
+            </p>
+            {!isSearching && (
+              <div className="mt-2">
+                <ConsoleBtn tone="accent" onClick={handleCreate} disabled={creating}>
+                  <IconPlus size={10} />
+                  NEW SONG
+                </ConsoleBtn>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <ul style={{ borderTop: "1px solid var(--color-line)" }}>
+              {songs.map(({ song, sections }: { song: SongRow; sections: SectionRow[] }, index: number) => (
+                <SongRowView
+                  key={song.id}
+                  song={song}
+                  sections={sections}
+                  index={index}
+                  deleting={deletingId === song.id}
+                  onDelete={() => setPendingDeleteId(song.id)}
+                />
+              ))}
+            </ul>
+            {hasMore && (
+              <div className="flex justify-center py-6">
+                <ConsoleBtn onClick={handleLoadMore} disabled={loadingMore}>
+                  {loadingMore ? t.common.loading : t.common.loadMore}
+                </ConsoleBtn>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {songs.length === 0 ? (
-        <div className="py-20 text-center">
-          {isSearching ? (
-            <p className="text-text-secondary">{t.song.searchNoResults}</p>
-          ) : (
-            <>
-              <p className="text-text-secondary">{t.song.noSongs}</p>
-              <Link
-                to="/songs/new"
-                className="mt-4 inline-block rounded-full bg-text-primary px-6 py-2.5 text-sm font-medium text-white"
-              >
-                {t.nav.newSong}
-              </Link>
-            </>
-          )}
-        </div>
-      ) : (
-        <>
-          <div className="space-y-3">
-            {songs.map(({ song, sections }: { song: SongRow; sections: SectionRow[] }) => (
-              <div key={song.id} className="rounded-xl bg-white p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <Link to="/songs/$id" params={{ id: song.id }} className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{song.title}</p>
-                    {song.artist && <p className="mt-0.5 truncate text-sm text-text-secondary">{song.artist}</p>}
-                    {sections.length > 0 && (
-                      <div className="mt-2">
-                        <StructurePreview sections={sections} />
-                      </div>
-                    )}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setPendingDeleteId(song.id)}
-                    disabled={deletingId === song.id}
-                    aria-label={t.song.deleteSong}
-                    className="shrink-0 p-2 text-text-secondary transition-colors hover:text-red-500 disabled:opacity-40"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          {hasMore && (
-            <button
-              type="button"
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="mt-4 w-full py-3 text-sm text-text-secondary transition-colors hover:text-text-primary disabled:opacity-40"
-            >
-              {loadingMore ? t.common.loading : t.common.loadMore}
-            </button>
-          )}
-        </>
-      )}
       <ConfirmModal
         open={pendingDeleteId !== null}
         message={t.song.confirmDelete}
@@ -189,5 +230,110 @@ function SongsPage() {
         onCancel={() => setPendingDeleteId(null)}
       />
     </div>
+  );
+}
+
+function SongRowView({
+  song,
+  sections,
+  index,
+  deleting,
+  onDelete,
+}: {
+  song: SongRow;
+  sections: SectionRow[];
+  index: number;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
+  const { t } = useI18n();
+  const totalBars = sections.reduce((sum, s) => sum + s.bars, 0);
+
+  return (
+    <li
+      style={{
+        display: "grid",
+        gridTemplateColumns: "36px 1fr 32px",
+        alignItems: "center",
+        gap: 12,
+        padding: "16px 4px",
+        borderBottom: "1px solid var(--color-line)",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--color-dim-2)",
+          letterSpacing: "0.08em",
+        }}
+      >
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <Link to="/songs/$id" params={{ id: song.id }} className="min-w-0">
+        <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
+          {song.title}
+        </p>
+        {song.artist && (
+          <div
+            className="truncate mt-1"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.18em",
+              color: "var(--color-dim-2)",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            {song.artist}
+          </div>
+        )}
+        {sections.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            <StructureBar sections={sections} height={3} gap={1} />
+          </div>
+        )}
+        <div
+          className="mt-2 flex"
+          style={{
+            gap: 14,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.18em",
+            color: "var(--color-dim-2)",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          {song.bpm != null && <span>{song.bpm} BPM</span>}
+          {song.key && <span>KEY {song.key}</span>}
+          <span>
+            {String(sections.length).padStart(2, "0")} SEC · {totalBars} BARS
+          </span>
+        </div>
+      </Link>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={deleting}
+        aria-label={t.song.deleteSong}
+        style={{
+          width: 32,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--color-dim-2)",
+          background: "transparent",
+          border: "none",
+          cursor: deleting ? "not-allowed" : "pointer",
+          opacity: deleting ? 0.4 : 1,
+        }}
+      >
+        <IconTrash size={16} />
+      </button>
+    </li>
   );
 }
