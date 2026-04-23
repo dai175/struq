@@ -89,7 +89,6 @@ export const en: Translations = {
     deleteAccount: "Delete Account",
     clickSound: "Click sound",
     clickSoundDescription: "Play a click on each beat during auto mode",
-    applied: "Settings applied",
   },
   perform: {
     section: "Section",

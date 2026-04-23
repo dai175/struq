@@ -6,7 +6,6 @@ import type { SessionUser } from "@/auth/session";
 import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
-import { useToast } from "@/lib/toast";
 import { useClickPreference } from "@/songs/click-preference";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { MetaTag } from "@/ui/meta-tag";
@@ -74,7 +73,6 @@ function SettingsPage() {
   const { t, locale, setLocale } = useI18n();
   const router = useRouter();
   const { user } = Route.useRouteContext();
-  const { toast } = useToast();
   const logoutFn = useServerFn(logout);
   const updateLocaleFn = useServerFn(updateLocale);
   const [localeUpdating, setLocaleUpdating] = useState(false);
@@ -115,10 +113,6 @@ function SettingsPage() {
     }
   };
 
-  const handleApplyChanges = () => {
-    toast.success(t.settings.applied);
-  };
-
   return (
     <div
       className="min-h-screen"
@@ -132,7 +126,7 @@ function SettingsPage() {
       <div className="hidden lg:flex lg:min-h-screen">
         <PcSubNav active={activeNav} onChange={setActiveNav} />
         <main className="flex min-w-0 flex-1 flex-col">
-          <PcTopRail title={activeMeta.title} subtitle={activeMeta.subtitle} onApply={handleApplyChanges} />
+          <PcTopRail title={activeMeta.title} subtitle={activeMeta.subtitle} />
           <div className="flex-1 overflow-auto" style={{ padding: "28px 36px" }}>
             {activeNav === "account" && (
               <PcAccountSection user={user} onLogout={handleLogout} signOutLabel={t.nav.logout} />
@@ -585,7 +579,7 @@ function PcSubNavItem({ item, active, onClick }: { item: PcNavItem; active: bool
   );
 }
 
-function PcTopRail({ title, subtitle, onApply }: { title: string; subtitle: string; onApply: () => void }) {
+function PcTopRail({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div
       className="flex items-center gap-4"
@@ -611,9 +605,6 @@ function PcTopRail({ title, subtitle, onApply }: { title: string; subtitle: stri
           <MetaTag size={10}>{subtitle}</MetaTag>
         </div>
       </div>
-      <ConsoleBtn tone="white" onClick={onApply}>
-        APPLY CHANGES
-      </ConsoleBtn>
     </div>
   );
 }
