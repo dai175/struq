@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useLoaderData, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
@@ -23,24 +23,44 @@ function SongsPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [songs, setSongs] = useState(initial.items);
-  const [hasMore, setHasMore] = useState(initial.hasMore);
   const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [input, setInput] = useState(search.q ?? "");
   const debouncedInput = useDebouncedValue(input, 300);
 
-  useEffect(() => {
-    setSongs(initial.items);
-    setHasMore(initial.hasMore);
-  }, [initial]);
+  // When the URL query changes (e.g. another search input — PC sidebar and
+  // mobile header both mount simultaneously), sync local state synchronously
+  // during render. A useEffect-based sync would leave `input` stale during
+  // the same render's navigate effect, triggering a revert-navigate loop.
+  const queryKey = search.q ?? "";
+  const [boundKey, setBoundKey] = useState(queryKey);
+  const [extras, setExtras] = useState<typeof initial.items>([]);
+  const [extrasHasMore, setExtrasHasMore] = useState(false);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  if (boundKey !== queryKey) {
+    setBoundKey(queryKey);
+    setInput(queryKey);
+    setExtras([]);
+    setExtrasHasMore(false);
+    setDeletedIds(new Set());
+  }
+
+  const songs = useMemo(() => {
+    const all = extras.length > 0 ? [...initial.items, ...extras] : initial.items;
+    return deletedIds.size > 0 ? all.filter((it) => !deletedIds.has(it.song.id)) : all;
+  }, [initial.items, extras, deletedIds]);
+  const hasMore = extras.length > 0 ? extrasHasMore : initial.hasMore;
 
   useEffect(() => {
     const next = debouncedInput.trim() || undefined;
     if (next === search.q) return;
+    // Skip while the debounce is still catching up to the latest input —
+    // otherwise we'd navigate with a stale value (e.g. revert an in-flight
+    // search just because our local debounce hasn't settled yet).
+    if (input !== debouncedInput) return;
     navigate({ to: "/songs", search: next ? { q: next } : {}, replace: true });
-  }, [debouncedInput, search.q, navigate]);
+  }, [debouncedInput, input, search.q, navigate]);
 
   function handleCreate() {
     navigate({ to: "/songs/new" });
@@ -53,7 +73,11 @@ function SongsPage() {
     setDeletingId(id);
     try {
       await deleteSong({ data: { id } });
-      setSongs((prev) => prev.filter((item) => item.song.id !== id));
+      setDeletedIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
       router.invalidate();
     } catch (error) {
       clientLogger.error("deleteSong", error);
@@ -67,8 +91,8 @@ function SongsPage() {
     setLoadingMore(true);
     try {
       const next = await listSongs({ data: { offset: songs.length, query: search.q } });
-      setSongs((prev) => [...prev, ...next.items]);
-      setHasMore(next.hasMore);
+      setExtras((prev) => [...prev, ...next.items]);
+      setExtrasHasMore(next.hasMore);
     } catch (error) {
       clientLogger.error("loadMoreSongs", error);
       toast.error(t.common.errorLoadFailed);
@@ -148,7 +172,7 @@ function SongsPage() {
         >
           <IconSearch size={14} />
           <input
-            type="search"
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t.song.searchPlaceholder}

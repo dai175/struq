@@ -716,7 +716,7 @@ function SongPickerModal({
           >
             <IconSearch size={14} />
             <input
-              type="search"
+              type="text"
               value={input}
               onChange={(e) => onInputChange(e.target.value)}
               placeholder={t.song.searchPlaceholder}
