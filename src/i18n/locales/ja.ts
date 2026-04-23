@@ -89,6 +89,7 @@ export const ja: Translations = {
     deleteAccount: "アカウント削除",
     clickSound: "クリック音",
     clickSoundDescription: "自動モード中に拍ごとにクリックを鳴らす",
+    applied: "設定を適用しました",
   },
   perform: {
     section: "セクション",
