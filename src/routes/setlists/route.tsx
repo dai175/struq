@@ -1,8 +1,9 @@
-import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack/react-router";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
-import { IconCal } from "@/ui/icons";
+import { ConsoleBtn } from "@/ui/console-btn";
+import { IconCal, IconPlus } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 
 export const Route = createFileRoute("/setlists")({
@@ -28,7 +29,12 @@ function SetlistsPcListColumn() {
   // active child is `/setlists/` (no id param).
   const params = useParams({ strict: false }) as { id?: string };
   const activeId = params.id;
+  const navigate = useNavigate();
   const { t } = useI18n();
+
+  function handleCreate() {
+    navigate({ to: "/setlists/new" });
+  }
 
   return (
     <aside
@@ -41,15 +47,23 @@ function SetlistsPcListColumn() {
       }}
     >
       <div
+        className="flex items-center"
         style={{
           padding: "14px 22px",
           borderBottom: "1px solid var(--color-line)",
+          gap: 10,
         }}
       >
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t.nav.setlists}</div>
-        <div style={{ marginTop: 2 }}>
-          <MetaTag size={9}>{String(items.length).padStart(2, "0")} ACTIVE</MetaTag>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t.nav.setlists}</div>
+          <div style={{ marginTop: 2 }}>
+            <MetaTag size={9}>{String(items.length).padStart(2, "0")} ACTIVE</MetaTag>
+          </div>
         </div>
+        <ConsoleBtn tone="white" onClick={handleCreate}>
+          <IconPlus size={10} />
+          NEW
+        </ConsoleBtn>
       </div>
 
       <ul className="overflow-auto" style={{ flex: 1 }}>
