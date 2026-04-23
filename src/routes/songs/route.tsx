@@ -2,10 +2,8 @@ import { createFileRoute, Link, Outlet, useMatches, useNavigate, useParams } fro
 import { useEffect, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
-import { clientLogger } from "@/lib/client-logger";
-import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-import { createSong, listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
+import { listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconPlus, IconSearch } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
@@ -46,10 +44,8 @@ function SongsPcLibraryColumn() {
   const activeId = params.id;
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { toast } = useToast();
 
   const [input, setInput] = useState(search.q ?? "");
-  const [creating, setCreating] = useState(false);
   const debouncedInput = useDebouncedValue(input, 300);
 
   useEffect(() => {
@@ -58,17 +54,8 @@ function SongsPcLibraryColumn() {
     navigate({ to: "/songs", search: next ? { q: next } : {}, replace: true });
   }, [debouncedInput, search.q, navigate]);
 
-  async function handleCreate() {
-    if (creating) return;
-    setCreating(true);
-    try {
-      const result = await createSong({ data: { title: t.nav.newSong } });
-      navigate({ to: "/songs/$id", params: { id: result.id }, search: {} });
-    } catch (error) {
-      clientLogger.error("createSong", error);
-      toast.error(t.common.errorCreateFailed);
-      setCreating(false);
-    }
+  function handleCreate() {
+    navigate({ to: "/songs/new" });
   }
 
   const items = initial.items;
@@ -100,9 +87,9 @@ function SongsPcLibraryColumn() {
             </MetaTag>
           </div>
         </div>
-        <ConsoleBtn tone="white" onClick={handleCreate} disabled={creating}>
+        <ConsoleBtn tone="white" onClick={handleCreate}>
           <IconPlus size={10} />
-          {creating ? t.common.loading : "NEW"}
+          NEW
         </ConsoleBtn>
       </div>
 

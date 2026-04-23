@@ -9,23 +9,22 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
-import { saveSetlistWithSongsInputSchema } from "@/lib/schemas";
+import { createSetlistWithSongsInputSchema, saveSetlistWithSongsInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { type DummySongMeta, dummySetlistStats, dummySongMeta } from "@/setlists/dummy-stats";
 import type { SetlistSongItem } from "@/setlists/server-fns";
 import {
-  addSongToSetlist,
+  createSetlistWithSongs,
   deleteSetlist,
   getSetlist,
   listSongsForPicker,
-  removeSongFromSetlist,
   saveSetlistWithSongs,
 } from "@/setlists/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
@@ -47,22 +46,37 @@ export const Route = createFileRoute("/setlists/$id")({
 function SetlistDetailPage() {
   const data = Route.useLoaderData();
   const { id } = Route.useParams();
-  return <SetlistEditor key={id} setlistId={id} data={data} />;
+  return <SetlistEditor key={id} mode="edit" setlistId={id} data={data} />;
 }
 
 type PickerSong = { id: string; title: string; artist: string | null };
 
-function SetlistEditor({
-  setlistId,
-  data,
-}: {
-  setlistId: string;
-  data: NonNullable<Awaited<ReturnType<typeof getSetlist>>>;
-}) {
+export type SetlistEditorProps =
+  | { mode: "new" }
+  | { mode: "edit"; setlistId: string; data: NonNullable<Awaited<ReturnType<typeof getSetlist>>> };
+
+const EMPTY_SETLIST_DATA: NonNullable<Awaited<ReturnType<typeof getSetlist>>> = {
+  setlist: {
+    id: "",
+    title: "",
+    description: null,
+    sessionDate: null,
+    venue: null,
+    sortOrder: 0,
+    createdAt: 0,
+    updatedAt: 0,
+  },
+  songs: [],
+};
+
+export function SetlistEditor(props: SetlistEditorProps) {
+  const isNew = props.mode === "new";
+  const data = props.mode === "edit" ? props.data : EMPTY_SETLIST_DATA;
+  const editSetlistId = props.mode === "edit" ? props.setlistId : null;
+
   const { t } = useI18n();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const router = useRouter();
 
   const [title, setTitle] = useState(data.setlist.title);
   const [description, setDescription] = useState(data.setlist.description ?? "");
@@ -82,8 +96,13 @@ function SetlistEditor({
   const debouncedPickerInput = useDebouncedValue(pickerInput, 300);
   const [availableSongs, setAvailableSongs] = useState<PickerSong[]>([]);
   const [pickerLoading, setPickerLoading] = useState(false);
-  const [addingId, setAddingId] = useState<string | null>(null);
   const latestPickerQueryRef = useRef<string | undefined>(undefined);
+
+  // Server-side NOT IN can't see local-only edits; also dedupe client-side.
+  const pickerAvailableSongs = useMemo(() => {
+    const existingIds = new Set(songs.map((s) => s.songId));
+    return availableSongs.filter((s) => !existingIds.has(s.id));
+  }, [availableSongs, songs]);
 
   // Per-song BPM/Key/sections are not yet joined into getSetlist — the PC
   // overview/structure/rows render against deterministic dummy values keyed
@@ -102,7 +121,7 @@ function SetlistEditor({
     const query = debouncedPickerInput.trim() || undefined;
     latestPickerQueryRef.current = query;
     setPickerLoading(true);
-    listSongsForPicker({ data: { setlistId, query } })
+    listSongsForPicker({ data: { setlistId: editSetlistId ?? undefined, query } })
       .then((result) => {
         if (latestPickerQueryRef.current !== query) return;
         setAvailableSongs(result);
@@ -117,9 +136,9 @@ function SetlistEditor({
         if (latestPickerQueryRef.current !== query) return;
         setPickerLoading(false);
       });
-  }, [showPicker, setlistId, debouncedPickerInput, t.common.errorLoadFailed, toast.error]);
+  }, [showPicker, editSetlistId, debouncedPickerInput, t.common.errorLoadFailed, toast.error]);
 
-  const handleSongAdded = useCallback((song: PickerSong) => {
+  const handlePickerAdd = useCallback((song: PickerSong) => {
     setSongs((prev) => [
       ...prev,
       {
@@ -130,20 +149,6 @@ function SetlistEditor({
       },
     ]);
   }, []);
-
-  async function handlePickerAdd(song: PickerSong) {
-    setAddingId(song.id);
-    try {
-      await addSongToSetlist({ data: { setlistId, songId: song.id } });
-      handleSongAdded(song);
-      setAvailableSongs((prev) => prev.filter((s) => s.id !== song.id));
-    } catch (error) {
-      clientLogger.error("addSong", error);
-      toast.error(t.common.errorAddFailed);
-    } finally {
-      setAddingId(null);
-    }
-  }
 
   function handlePickerClose() {
     setShowPicker(false);
@@ -166,13 +171,37 @@ function SetlistEditor({
 
   async function handleSave() {
     const trimmed = title.trim();
-    const parsed = saveSetlistWithSongsInputSchema.safeParse({
-      id: setlistId,
+    const basePayload = {
       title: trimmed,
       description: description.trim() || undefined,
       sessionDate: sessionDate || undefined,
       venue: venue.trim() || undefined,
       songIds: songs.map((s) => s.songId),
+    };
+
+    if (isNew) {
+      const parsed = createSetlistWithSongsInputSchema.safeParse(basePayload);
+      if (!parsed.success) {
+        const hasTitleIssue = parsed.error.issues.some((issue) => issue.path[0] === "title");
+        if (hasTitleIssue) setTitleError(true);
+        else toast.error(t.common.errorCreateFailed);
+        return;
+      }
+      setSaving(true);
+      try {
+        const result = await createSetlistWithSongs({ data: parsed.data });
+        navigate({ to: "/setlists/$id", params: { id: result.id }, replace: true });
+      } catch (error) {
+        clientLogger.error("createSetlist", error);
+        toast.error(t.common.errorCreateFailed);
+        setSaving(false);
+      }
+      return;
+    }
+
+    const parsed = saveSetlistWithSongsInputSchema.safeParse({
+      id: editSetlistId ?? "",
+      ...basePayload,
     });
     if (!parsed.success) {
       const hasTitleIssue = parsed.error.issues.some((issue) => issue.path[0] === "title");
@@ -196,9 +225,10 @@ function SetlistEditor({
   }
 
   async function executeDelete() {
+    if (!editSetlistId) return;
     setShowDeleteConfirm(false);
     try {
-      await deleteSetlist({ data: { id: setlistId } });
+      await deleteSetlist({ data: { id: editSetlistId } });
       navigate({ to: "/setlists" });
     } catch (error) {
       clientLogger.error("deleteSetlist", error);
@@ -206,15 +236,11 @@ function SetlistEditor({
     }
   }
 
-  async function handleRemoveSong(songId: string) {
+  function handleRemoveSong(songId: string) {
     setSongs((prev) => prev.filter((s) => s.songId !== songId));
-    try {
-      await removeSongFromSetlist({ data: { setlistId, songId } });
-    } catch (error) {
-      clientLogger.error("removeSong", error);
-      router.invalidate();
-    }
   }
+
+  const fallbackTitle = isNew ? t.setlist.newSetlist : data.setlist.title;
 
   return (
     <div
@@ -227,7 +253,7 @@ function SetlistEditor({
     >
       <PcDetailPane
         title={title}
-        fallbackTitle={data.setlist.title}
+        fallbackTitle={fallbackTitle}
         description={description}
         sessionDate={sessionDate}
         venue={venue}
@@ -237,7 +263,8 @@ function SetlistEditor({
         overviewStats={overviewStats}
         saving={saving}
         saved={saved}
-        setlistId={setlistId}
+        setlistId={editSetlistId}
+        isNew={isNew}
         onTitleChange={(v) => {
           setTitle(v);
           if (titleError) setTitleError(false);
@@ -272,18 +299,18 @@ function SetlistEditor({
               color: "#fff",
             }}
           >
-            {title.trim() || data.setlist.title}
+            {title.trim() || fallbackTitle}
           </div>
           <div style={{ marginTop: 3 }}>
             <MetaTag size={9}>{String(songs.length).padStart(2, "0")} SONGS</MetaTag>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          {songs.length > 0 && (
+          {!isNew && editSetlistId && songs.length > 0 && (
             <Link
               to="/songs/$id/perform"
               params={{ id: songs[0].songId }}
-              search={{ setlistId }}
+              search={{ setlistId: editSetlistId }}
               aria-label="Perform"
               style={{
                 width: 36,
@@ -299,24 +326,26 @@ function SetlistEditor({
               <IconPlay size={14} />
             </Link>
           )}
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            aria-label={t.common.delete}
-            style={{
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--color-section-solo)",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <IconTrash size={16} />
-          </button>
+          {!isNew && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              aria-label={t.common.delete}
+              style={{
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--color-section-solo)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <IconTrash size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -494,9 +523,8 @@ function SetlistEditor({
         open={showPicker}
         input={pickerInput}
         onInputChange={setPickerInput}
-        availableSongs={availableSongs}
+        availableSongs={pickerAvailableSongs}
         loading={pickerLoading}
-        addingId={addingId}
         setlistHasSongs={songs.length > 0}
         onAdd={handlePickerAdd}
         onClose={handlePickerClose}
@@ -607,7 +635,6 @@ function SongPickerModal({
   onInputChange,
   availableSongs,
   loading,
-  addingId,
   setlistHasSongs,
   onAdd,
   onClose,
@@ -617,7 +644,6 @@ function SongPickerModal({
   onInputChange: (value: string) => void;
   availableSongs: PickerSong[];
   loading: boolean;
-  addingId: string | null;
   setlistHasSongs: boolean;
   onAdd: (song: PickerSong) => void;
   onClose: () => void;
@@ -738,7 +764,6 @@ function SongPickerModal({
                   <button
                     type="button"
                     onClick={() => onAdd(song)}
-                    disabled={addingId === song.id}
                     className="flex w-full items-center gap-3 text-left"
                     style={{
                       padding: "14px 4px",
@@ -747,8 +772,7 @@ function SongPickerModal({
                       border: "none",
                       borderBottomStyle: "solid",
                       color: "var(--color-text)",
-                      cursor: addingId === song.id ? "not-allowed" : "pointer",
-                      opacity: addingId === song.id ? 0.5 : 1,
+                      cursor: "pointer",
                     }}
                   >
                     <div className="min-w-0 flex-1">
@@ -798,6 +822,7 @@ function PcDetailPane({
   saving,
   saved,
   setlistId,
+  isNew,
   onTitleChange,
   onDescriptionChange,
   onSessionDateChange,
@@ -819,7 +844,8 @@ function PcDetailPane({
   overviewStats: ReturnType<typeof dummySetlistStats>;
   saving: boolean;
   saved: boolean;
-  setlistId: string;
+  setlistId: string | null;
+  isNew: boolean;
   onTitleChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onSessionDateChange: (v: string) => void;
@@ -869,17 +895,21 @@ function PcDetailPane({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <ConsoleBtn disabled title="Coming soon">
-            DUPLICATE
-          </ConsoleBtn>
-          <ConsoleBtn tone="coral" onClick={onDelete}>
-            <IconTrash size={14} />
-            DELETE
-          </ConsoleBtn>
+          {!isNew && (
+            <ConsoleBtn disabled title="Coming soon">
+              DUPLICATE
+            </ConsoleBtn>
+          )}
+          {!isNew && (
+            <ConsoleBtn tone="coral" onClick={onDelete}>
+              <IconTrash size={14} />
+              DELETE
+            </ConsoleBtn>
+          )}
           <ConsoleBtn tone="white" onClick={onSave} disabled={saving}>
-            {saving ? t.common.loading : saved ? t.setlist.saved : "SAVE CHANGES"}
+            {saving ? t.common.loading : saved ? t.setlist.saved : isNew ? "CREATE SETLIST" : "SAVE CHANGES"}
           </ConsoleBtn>
-          {songs.length > 0 ? (
+          {!isNew && setlistId && songs.length > 0 ? (
             <Link
               to="/songs/$id/perform"
               params={{ id: songs[0].songId }}

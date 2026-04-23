@@ -5,6 +5,7 @@ import type { Database } from "@/db";
 import { getDb, schema } from "@/db";
 import {
   createSetlistInputSchema,
+  createSetlistWithSongsInputSchema,
   deleteByIdInputSchema,
   listInputSchema,
   listSongsForPickerInputSchema,
@@ -161,6 +162,81 @@ export const createSetlist = createServerFn({ method: "POST" })
     });
 
     return { id };
+  });
+
+// ─── createSetlistWithSongs ────────────────────────────
+
+export const createSetlistWithSongs = createServerFn({ method: "POST" })
+  .inputValidator(
+    (input: { title: string; description?: string; sessionDate?: string; venue?: string; songIds: string[] }) =>
+      createSetlistWithSongsInputSchema.parse(input),
+  )
+  .handler(async ({ data }): Promise<{ id: string }> => {
+    const user = await requireUser();
+    const db = getDb(env.DB);
+    const timestamp = now();
+
+    const title = data.title.trim();
+    if (!title) throw new Error("Title is required");
+
+    const [ownedSongIds, [maxOrderResult]] = await Promise.all([
+      data.songIds.length > 0
+        ? db
+            .select({ id: schema.songs.id })
+            .from(schema.songs)
+            .where(
+              and(
+                inArray(schema.songs.id, data.songIds),
+                eq(schema.songs.userId, user.userId),
+                isNull(schema.songs.deletedAt),
+              ),
+            )
+        : Promise.resolve([] as { id: string }[]),
+      db
+        .select({ maxOrder: max(schema.setlists.sortOrder) })
+        .from(schema.setlists)
+        .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt))),
+    ]);
+    if (ownedSongIds.length !== data.songIds.length) {
+      throw new Error("Song not found");
+    }
+
+    const sortOrder = (maxOrderResult?.maxOrder ?? -1) + 1;
+
+    const setlistId = crypto.randomUUID();
+
+    // Executes as a single batched request (not a true ACID transaction —
+    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
+    // batch are not rolled back if a later one fails).
+    const insertSongStatements = [];
+    for (let i = 0; i < data.songIds.length; i += SETLIST_SONGS_INSERT_BATCH) {
+      insertSongStatements.push(
+        db.insert(schema.setlistSongs).values(
+          data.songIds.slice(i, i + SETLIST_SONGS_INSERT_BATCH).map((songId, j) => ({
+            setlistId,
+            songId,
+            sortOrder: i + j,
+          })),
+        ),
+      );
+    }
+
+    await db.batch([
+      db.insert(schema.setlists).values({
+        id: setlistId,
+        userId: user.userId,
+        title,
+        description: data.description?.trim() || null,
+        sessionDate: data.sessionDate?.trim() || null,
+        venue: data.venue?.trim() || null,
+        sortOrder,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }),
+      ...insertSongStatements,
+    ] as Parameters<typeof db.batch>[0]);
+
+    return { id: setlistId };
   });
 
 // ─── deleteSetlist ─────────────────────────────────────
@@ -327,20 +403,24 @@ export const saveSetlistWithSongs = createServerFn({ method: "POST" })
 const PICKER_SONG_LIMIT = 100;
 
 export const listSongsForPicker = createServerFn({ method: "GET" })
-  .inputValidator((input: { setlistId: string; query?: string }) => listSongsForPickerInputSchema.parse(input))
+  .inputValidator((input: { setlistId?: string; query?: string }) => listSongsForPickerInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ id: string; title: string; artist: string | null }[]> => {
     const user = await requireUser();
     const db = getDb(env.DB);
 
-    const baseScope = and(
-      eq(schema.songs.userId, user.userId),
-      isNull(schema.songs.deletedAt),
-      sql`${schema.songs.id} NOT IN (
-          SELECT ${schema.setlistSongs.songId}
-          FROM ${schema.setlistSongs}
-          WHERE ${schema.setlistSongs.setlistId} = ${data.setlistId}
-        )`,
-    );
+    // When setlistId is omitted (new setlist flow), skip the NOT IN subquery —
+    // the client de-duplicates against the in-memory song list instead.
+    const baseScope = data.setlistId
+      ? and(
+          eq(schema.songs.userId, user.userId),
+          isNull(schema.songs.deletedAt),
+          sql`${schema.songs.id} NOT IN (
+            SELECT ${schema.setlistSongs.songId}
+            FROM ${schema.setlistSongs}
+            WHERE ${schema.setlistSongs.setlistId} = ${data.setlistId}
+          )`,
+        )
+      : and(eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt));
     let whereClause = baseScope;
     if (data.query) {
       const pattern = `%${escapeLikePattern(data.query)}%`;

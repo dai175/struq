@@ -130,8 +130,8 @@ describe("listSongsForPickerInputSchema", () => {
     expect(() => listSongsForPickerInputSchema.parse({ setlistId: validId, query: "a".repeat(101) })).toThrow();
   });
 
-  it("throws when setlistId is missing", () => {
-    expect(() => listSongsForPickerInputSchema.parse({ query: "hello" })).toThrow();
+  it("succeeds when setlistId is omitted (used by the new-setlist flow)", () => {
+    expect(listSongsForPickerInputSchema.parse({ query: "hello" })).toEqual({ query: "hello" });
   });
 
   it("throws for a non-UUID setlistId", () => {

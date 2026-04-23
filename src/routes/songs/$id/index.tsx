@@ -17,7 +17,11 @@ import type { SectionType } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
 import { RATE_LIMIT_ERROR } from "@/lib/rate-limit";
-import { generateSectionsInputSchema, saveSongWithSectionsInputSchema } from "@/lib/schemas";
+import {
+  createSongWithSectionsInputSchema,
+  generateSectionsInputSchema,
+  saveSongWithSectionsInputSchema,
+} from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { isValidUrl } from "@/lib/validation";
 import { PcSectionRow } from "@/songs/components/PcSectionRow";
@@ -25,10 +29,12 @@ import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { DEFAULT_BARS, SECTION_COLORS } from "@/songs/constants";
 import {
+  createSongWithSections,
   deleteSong,
   generateSections,
   getSongWithSections,
   type SectionRow,
+  type SongRow,
   saveSongWithSections,
 } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
@@ -56,8 +62,32 @@ export const Route = createFileRoute("/songs/$id/")({
     if (!data) throw redirect({ to: "/songs" });
     return data;
   },
-  component: SongEditPage,
+  component: SongEditRoute,
 });
+
+function SongEditRoute() {
+  const loaderData = Route.useLoaderData();
+  const { id } = Route.useParams();
+  return <SongEditor mode="edit" id={id} initial={loaderData} />;
+}
+
+export type SongEditorProps =
+  | { mode: "new" }
+  | { mode: "edit"; id: string; initial: { song: SongRow; sections: SectionRow[] } };
+
+const EMPTY_SONG_SNAPSHOT = {
+  song: {
+    id: "",
+    title: "",
+    artist: null,
+    bpm: null,
+    key: null,
+    referenceUrl: null,
+    createdAt: 0,
+    updatedAt: 0,
+  } satisfies SongRow,
+  sections: [] as SectionRow[],
+};
 
 function SortableSection({
   section,
@@ -116,23 +146,25 @@ function PcSortableSectionRow({
   );
 }
 
-function SongEditPage() {
-  const loaderData = Route.useLoaderData();
-  const { id } = Route.useParams();
+export function SongEditor(props: SongEditorProps) {
+  const isNew = props.mode === "new";
+  const initialData = props.mode === "edit" ? props.initial : EMPTY_SONG_SNAPSHOT;
+  const editId = props.mode === "edit" ? props.id : null;
+
   const { t } = useI18n();
   const { toast } = useToast();
   const navigate = useNavigate();
   const router = useRouter();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const [title, setTitle] = useState(loaderData.song.title);
-  const [artist, setArtist] = useState(loaderData.song.artist ?? "");
-  const [bpm, setBpm] = useState(loaderData.song.bpm?.toString() ?? "");
-  const [key, setKey] = useState(loaderData.song.key ?? "");
-  const [referenceUrl, setReferenceUrl] = useState(loaderData.song.referenceUrl ?? "");
+  const [title, setTitle] = useState(initialData.song.title);
+  const [artist, setArtist] = useState(initialData.song.artist ?? "");
+  const [bpm, setBpm] = useState(initialData.song.bpm?.toString() ?? "");
+  const [key, setKey] = useState(initialData.song.key ?? "");
+  const [referenceUrl, setReferenceUrl] = useState(initialData.song.referenceUrl ?? "");
   const [titleError, setTitleError] = useState(false);
   const [urlError, setUrlError] = useState(false);
-  const [sectionsList, setSectionsList] = useState<SectionData[]>(loaderData.sections.map(toSectionData));
+  const [sectionsList, setSectionsList] = useState<SectionData[]>(initialData.sections.map(toSectionData));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -143,14 +175,16 @@ function SongEditPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const handleCancelDeleteConfirm = useCallback(() => setShowDeleteConfirm(false), []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only re-sync when loader data changes
   useEffect(() => {
-    setTitle(loaderData.song.title);
-    setArtist(loaderData.song.artist ?? "");
-    setBpm(loaderData.song.bpm?.toString() ?? "");
-    setKey(loaderData.song.key ?? "");
-    setReferenceUrl(loaderData.song.referenceUrl ?? "");
-    setSectionsList(loaderData.sections.map(toSectionData));
-  }, [loaderData]);
+    if (isNew) return;
+    setTitle(initialData.song.title);
+    setArtist(initialData.song.artist ?? "");
+    setBpm(initialData.song.bpm?.toString() ?? "");
+    setKey(initialData.song.key ?? "");
+    setReferenceUrl(initialData.song.referenceUrl ?? "");
+    setSectionsList(initialData.sections.map(toSectionData));
+  }, [initialData]);
 
   useEffect(() => {
     return () => clearTimeout(savedTimerRef.current);
@@ -238,33 +272,61 @@ function SongEditPage() {
 
   async function handleSave() {
     const parsedBpm = bpm ? Number.parseInt(bpm, 10) : undefined;
-    const parsed = saveSongWithSectionsInputSchema.safeParse({
-      song: {
-        id,
-        title: title.trim(),
-        artist: artist.trim() || undefined,
-        bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
-        key: key.trim() || undefined,
-        referenceUrl: referenceUrl.trim() || undefined,
-      },
-      sections: sectionsList.map((s, i) => ({
-        type: s.type,
-        label: s.label,
-        bars: s.bars,
-        extraBeats: s.extraBeats,
-        chordProgression: s.chordProgression,
-        memo: s.memo,
-        sortOrder: i,
-      })),
-    });
-    if (!parsed.success) {
-      const hasTitleIssue = parsed.error.issues.some((issue) => issue.path[0] === "song" && issue.path[1] === "title");
-      const hasUrlIssue = parsed.error.issues.some(
-        (issue) => issue.path[0] === "song" && issue.path[1] === "referenceUrl",
-      );
+    const songPayload = {
+      title: title.trim(),
+      artist: artist.trim() || undefined,
+      bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : undefined,
+      key: key.trim() || undefined,
+      referenceUrl: referenceUrl.trim() || undefined,
+    };
+    const sectionsPayload = sectionsList.map((s, i) => ({
+      type: s.type,
+      label: s.label,
+      bars: s.bars,
+      extraBeats: s.extraBeats,
+      chordProgression: s.chordProgression,
+      memo: s.memo,
+      sortOrder: i,
+    }));
+
+    function applyValidationError(
+      issues: readonly { readonly path: readonly PropertyKey[] }[],
+      fallbackKey: "save" | "create",
+    ) {
+      const hasTitleIssue = issues.some((issue) => issue.path[0] === "song" && issue.path[1] === "title");
+      const hasUrlIssue = issues.some((issue) => issue.path[0] === "song" && issue.path[1] === "referenceUrl");
       if (hasTitleIssue) setTitleError(true);
       else if (hasUrlIssue) setUrlError(true);
-      else toast.error(t.common.errorSaveFailed);
+      else toast.error(fallbackKey === "create" ? t.common.errorCreateFailed : t.common.errorSaveFailed);
+    }
+
+    if (isNew) {
+      const parsed = createSongWithSectionsInputSchema.safeParse({
+        song: songPayload,
+        sections: sectionsPayload,
+      });
+      if (!parsed.success) {
+        applyValidationError(parsed.error.issues, "create");
+        return;
+      }
+      setSaving(true);
+      try {
+        const result = await createSongWithSections({ data: parsed.data });
+        navigate({ to: "/songs/$id", params: { id: result.id }, search: {}, replace: true });
+      } catch (error) {
+        clientLogger.error("createSong", error);
+        toast.error(t.common.errorCreateFailed);
+        setSaving(false);
+      }
+      return;
+    }
+
+    const parsed = saveSongWithSectionsInputSchema.safeParse({
+      song: { id: editId ?? "", ...songPayload },
+      sections: sectionsPayload,
+    });
+    if (!parsed.success) {
+      applyValidationError(parsed.error.issues, "save");
       return;
     }
 
@@ -284,9 +346,10 @@ function SongEditPage() {
   }
 
   async function executeDeleteSong() {
+    if (!editId) return;
     setShowDeleteConfirm(false);
     try {
-      await deleteSong({ data: { id } });
+      await deleteSong({ data: { id: editId } });
       navigate({ to: "/songs" });
     } catch (error) {
       clientLogger.error("deleteSong", error);
@@ -306,9 +369,10 @@ function SongEditPage() {
       }}
     >
       <PcEditorPane
-        id={id}
+        id={editId}
+        isNew={isNew}
         title={title}
-        fallbackTitle={loaderData.song.title}
+        fallbackTitle={isNew ? t.nav.newSong : initialData.song.title}
         artist={artist}
         bpm={bpm}
         songKey={key}
@@ -365,41 +429,45 @@ function SongEditPage() {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <Link
-            to="/songs/$id/perform"
-            params={{ id }}
-            aria-label="Perform"
-            style={{
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--color-accent)",
-              border: "1px solid var(--color-accent)",
-              borderRadius: 2,
-            }}
-          >
-            <IconPlay size={14} />
-          </Link>
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            aria-label={t.song.deleteSong}
-            style={{
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--color-section-solo)",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <IconTrash size={16} />
-          </button>
+          {!isNew && editId && (
+            <Link
+              to="/songs/$id/perform"
+              params={{ id: editId }}
+              aria-label="Perform"
+              style={{
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--color-accent)",
+                border: "1px solid var(--color-accent)",
+                borderRadius: 2,
+              }}
+            >
+              <IconPlay size={14} />
+            </Link>
+          )}
+          {!isNew && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              aria-label={t.song.deleteSong}
+              style={{
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--color-section-solo)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <IconTrash size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -655,7 +723,8 @@ function SongEditPage() {
 const PC_PALETTE_TYPES: SectionType[] = ["intro", "a", "b", "chorus", "bridge", "solo", "interlude", "outro"];
 
 interface PcEditorPaneProps {
-  id: string;
+  id: string | null;
+  isNew: boolean;
   title: string;
   fallbackTitle: string;
   artist: string;
@@ -687,6 +756,7 @@ interface PcEditorPaneProps {
 
 function PcEditorPane({
   id,
+  isNew,
   title,
   fallbackTitle,
   artist,
@@ -751,37 +821,41 @@ function PcEditorPane({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ConsoleBtn tone="coral" onClick={onDelete}>
-            <IconTrash size={14} />
-            {t.common.delete.toUpperCase()}
-          </ConsoleBtn>
+          {!isNew && (
+            <ConsoleBtn tone="coral" onClick={onDelete}>
+              <IconTrash size={14} />
+              {t.common.delete.toUpperCase()}
+            </ConsoleBtn>
+          )}
           <ConsoleBtn tone="white" onClick={onSave} disabled={saving}>
-            {saving ? t.common.loading : saved ? t.song.saved : "SAVE CHANGES"}
+            {saving ? t.common.loading : saved ? t.song.saved : isNew ? "CREATE SONG" : "SAVE CHANGES"}
           </ConsoleBtn>
-          <Link
-            to="/songs/$id/perform"
-            params={{ id }}
-            style={{
-              background: "var(--color-accent)",
-              color: "#111",
-              padding: "9px 14px",
-              borderRadius: 2,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              lineHeight: 1,
-              border: "1px solid var(--color-accent)",
-              textDecoration: "none",
-            }}
-          >
-            <IconPlay size={12} />
-            PERFORM
-          </Link>
+          {!isNew && id && (
+            <Link
+              to="/songs/$id/perform"
+              params={{ id }}
+              style={{
+                background: "var(--color-accent)",
+                color: "#111",
+                padding: "9px 14px",
+                borderRadius: 2,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                lineHeight: 1,
+                border: "1px solid var(--color-accent)",
+                textDecoration: "none",
+              }}
+            >
+              <IconPlay size={12} />
+              PERFORM
+            </Link>
+          )}
         </div>
       </div>
 

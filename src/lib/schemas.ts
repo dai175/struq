@@ -90,12 +90,17 @@ export const saveSongWithSectionsInputSchema = z.object({
   sections: z.array(sectionItemSchema).max(200),
 });
 
+export const createSongWithSectionsInputSchema = z.object({
+  song: songBaseInputSchema,
+  sections: z.array(sectionItemSchema).max(200),
+});
+
 export const setlistIdInputSchema = z.object({
   setlistId: z.string().uuid(),
 });
 
 export const listSongsForPickerInputSchema = z.object({
-  setlistId: z.string().uuid(),
+  setlistId: z.string().uuid().optional(),
   query: z
     .string()
     .trim()
@@ -123,9 +128,12 @@ export const setlistBaseInputSchema = z.object({
 
 export const createSetlistInputSchema = setlistBaseInputSchema;
 
-export const saveSetlistWithSongsInputSchema = setlistBaseInputSchema.extend({
-  id: z.string().uuid(),
+export const createSetlistWithSongsInputSchema = setlistBaseInputSchema.extend({
   songIds: z.array(z.string().uuid()).max(500),
+});
+
+export const saveSetlistWithSongsInputSchema = createSetlistWithSongsInputSchema.extend({
+  id: z.string().uuid(),
 });
 
 export const setlistSongPairInputSchema = z.object({

@@ -5,7 +5,7 @@ import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
 import { useToast } from "@/lib/toast";
-import { createSetlist, deleteSetlist, listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
+import { deleteSetlist, listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconCal, IconPin, IconPlus, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
@@ -28,19 +28,9 @@ function SetlistsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
 
-  async function handleCreate() {
-    if (creating) return;
-    setCreating(true);
-    try {
-      const result = await createSetlist({ data: { title: t.setlist.newSetlist } });
-      navigate({ to: "/setlists/$id", params: { id: result.id } });
-    } catch (error) {
-      clientLogger.error("createSetlist", error);
-      toast.error(t.common.errorCreateFailed);
-      setCreating(false);
-    }
+  function handleCreate() {
+    navigate({ to: "/setlists/new" });
   }
 
   async function executeDelete() {
@@ -92,7 +82,7 @@ function SetlistsPage() {
             <p style={{ color: "var(--color-dim)", fontSize: 14, maxWidth: 320 }}>{t.setlist.noSetlists}</p>
           )}
           <div className="mt-2">
-            <ConsoleBtn tone="accent" onClick={handleCreate} disabled={creating}>
+            <ConsoleBtn tone="accent" onClick={handleCreate}>
               <IconPlus size={10} />
               NEW SETLIST
             </ConsoleBtn>
@@ -117,9 +107,9 @@ function SetlistsPage() {
               <MetaTag>{String(setlists.length).padStart(2, "0")} ACTIVE</MetaTag>
             </div>
           </div>
-          <ConsoleBtn tone="white" onClick={handleCreate} disabled={creating}>
+          <ConsoleBtn tone="white" onClick={handleCreate}>
             <IconPlus size={10} />
-            {creating ? t.common.loading : "NEW"}
+            NEW
           </ConsoleBtn>
         </header>
 
@@ -133,7 +123,7 @@ function SetlistsPage() {
               <MetaTag>NO SETLISTS</MetaTag>
               <p style={{ color: "var(--color-dim)", fontSize: 14 }}>{t.setlist.noSetlists}</p>
               <div className="mt-2">
-                <ConsoleBtn tone="accent" onClick={handleCreate} disabled={creating}>
+                <ConsoleBtn tone="accent" onClick={handleCreate}>
                   <IconPlus size={10} />
                   NEW SETLIST
                 </ConsoleBtn>

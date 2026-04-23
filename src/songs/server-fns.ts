@@ -8,6 +8,7 @@ import { checkAiRateLimit, RATE_LIMIT_ERROR } from "@/lib/rate-limit";
 import {
   aiSectionsSchema,
   createSongInputSchema,
+  createSongWithSectionsInputSchema,
   deleteByIdInputSchema,
   generateSectionsInputSchema,
   listInputSchema,
@@ -162,6 +163,71 @@ export const createSong = createServerFn({ method: "POST" })
     });
 
     return { id };
+  });
+
+// ─── createSongWithSections ─────────────────────────────
+
+export const createSongWithSections = createServerFn({ method: "POST" })
+  .inputValidator(
+    (input: {
+      song: { title: string; artist?: string; bpm?: number; key?: string; referenceUrl?: string };
+      sections: Array<{
+        type: SectionType;
+        label?: string | null;
+        bars: number;
+        extraBeats: number;
+        chordProgression?: string | null;
+        memo?: string | null;
+        sortOrder: number;
+      }>;
+    }) => createSongWithSectionsInputSchema.parse(input),
+  )
+  .handler(async ({ data }): Promise<{ id: string }> => {
+    const user = await requireUser();
+    const db = getDb(env.DB);
+
+    const title = data.song.title.trim();
+    if (!title) throw new Error("Title is required");
+
+    const songId = crypto.randomUUID();
+    const timestamp = now();
+    const referenceUrl = data.song.referenceUrl?.trim();
+
+    const sectionRows = data.sections.map((sec) => ({
+      id: crypto.randomUUID(),
+      songId,
+      type: sec.type,
+      label: sec.type === "custom" ? sec.label?.trim() || null : null,
+      bars: sec.bars,
+      extraBeats: sec.extraBeats,
+      chordProgression: sec.chordProgression?.trim() || null,
+      memo: sec.memo?.trim() || null,
+      sortOrder: sec.sortOrder,
+    }));
+
+    // Executes as a single batched request (not a true ACID transaction —
+    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
+    // batch are not rolled back if a later one fails).
+    const insertSectionStatements = [];
+    for (let i = 0; i < sectionRows.length; i += SECTION_INSERT_BATCH) {
+      insertSectionStatements.push(db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH)));
+    }
+    await db.batch([
+      db.insert(schema.songs).values({
+        id: songId,
+        userId: user.userId,
+        title,
+        artist: data.song.artist?.trim() || null,
+        bpm: data.song.bpm ?? null,
+        key: data.song.key?.trim() || null,
+        referenceUrl: referenceUrl && isValidUrl(referenceUrl) ? referenceUrl : null,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }),
+      ...insertSectionStatements,
+    ] as Parameters<typeof db.batch>[0]);
+
+    return { id: songId };
   });
 
 // ─── deleteSong ─────────────────────────────────────────
