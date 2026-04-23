@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ConsoleBtn } from "@/ui/console-btn";
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+type ConfirmTone = "coral" | "accent";
 
 interface ConfirmModalProps {
   open: boolean;
@@ -10,9 +13,19 @@ interface ConfirmModalProps {
   cancelLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Visual weight of the confirm button. Defaults to "coral" for destructive actions. */
+  tone?: ConfirmTone;
 }
 
-export function ConfirmModal({ open, message, confirmLabel, cancelLabel, onConfirm, onCancel }: ConfirmModalProps) {
+export function ConfirmModal({
+  open,
+  message,
+  confirmLabel,
+  cancelLabel,
+  onConfirm,
+  onCancel,
+  tone = "coral",
+}: ConfirmModalProps) {
   const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<Element | null>(null);
@@ -55,34 +68,71 @@ export function ConfirmModal({ open, message, confirmLabel, cancelLabel, onConfi
 
   if (!mounted || !open) return null;
 
+  const confirmTone: ConfirmTone = tone;
+
   return createPortal(
     // biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismisses modal on click
     // biome-ignore lint/a11y/useKeyWithClickEvents: Escape is handled via document keydown listener
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4" onClick={onCancel}>
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.6)" }}
+      onClick={onCancel}
+    >
       <div
         ref={dialogRef}
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+        className="w-full max-w-[420px]"
+        style={{
+          background: "var(--color-ink-2)",
+          border: "1px solid var(--color-line)",
+          color: "var(--color-text)",
+          borderRadius: 2,
+        }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleDialogKeyDown}
       >
-        <p className="text-sm text-gray-700">{message}</p>
-        <div className="mt-5 flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="w-full rounded-xl bg-gray-900 py-3 text-sm font-semibold text-white transition-opacity active:opacity-70"
+        <div style={{ padding: "20px 22px 18px" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.22em",
+              color: "var(--color-dim-2)",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              marginBottom: 10,
+            }}
           >
-            {confirmLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-semibold text-gray-700 transition-opacity active:opacity-70"
+            CONFIRM
+          </div>
+          <p
+            style={{
+              margin: 0,
+              fontFamily: "var(--font-sans)",
+              fontSize: 14,
+              fontWeight: 400,
+              lineHeight: 1.6,
+              color: "var(--color-text)",
+            }}
           >
+            {message}
+          </p>
+        </div>
+        <div
+          className="flex justify-end gap-2"
+          style={{
+            padding: "12px 14px",
+            borderTop: "1px solid var(--color-line)",
+            background: "var(--color-ink)",
+          }}
+        >
+          <ConsoleBtn tone="neutral" onClick={onCancel}>
             {cancelLabel}
-          </button>
+          </ConsoleBtn>
+          <ConsoleBtn tone={confirmTone} onClick={onConfirm}>
+            {confirmLabel}
+          </ConsoleBtn>
         </div>
       </div>
     </div>,

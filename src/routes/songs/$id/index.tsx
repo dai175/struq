@@ -599,6 +599,7 @@ function SongEditPage() {
           cancelLabel={t.common.cancel}
           onConfirm={executeAiGenerate}
           onCancel={handleCancelAiConfirm}
+          tone="accent"
         />
         <ConfirmModal
           open={showDeleteConfirm}
