@@ -100,7 +100,6 @@ export const en: Translations = {
     account: "Account",
     deleteAccount: "Delete Account",
     clickSound: "Click sound",
-    clickSoundDescription: "Play a click on each beat during auto mode",
   },
   perform: {
     section: "Section",
