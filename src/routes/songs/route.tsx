@@ -95,10 +95,10 @@ function SongsPcLibraryColumn() {
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t.nav.songs}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)" }}>{t.nav.songs}</div>
           <div style={{ marginTop: 2 }}>
             <MetaTag size={9}>
-              {String(items.length).padStart(2, "0")} {isSearching ? "SHOWN" : "TOTAL"}
+              {String(items.length).padStart(2, "0")} {(isSearching ? t.song.shown : t.song.total).toUpperCase()}
             </MetaTag>
           </div>
         </div>
@@ -129,7 +129,7 @@ function SongsPcLibraryColumn() {
             background: "transparent",
             border: "none",
             outline: "none",
-            color: "#fff",
+            color: "var(--color-text)",
             fontSize: 13,
             fontFamily: "var(--font-sans)",
           }}
@@ -216,8 +216,8 @@ function SongsPcLibraryRow({
               className="truncate"
               style={{
                 fontSize: 13,
-                fontWeight: 600,
-                color: active ? "#fff" : "var(--color-text)",
+                fontWeight: active ? 700 : 600,
+                color: "var(--color-text)",
               }}
             >
               {song.title}

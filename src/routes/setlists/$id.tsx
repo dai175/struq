@@ -455,7 +455,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
             }}
           >
             <IconPlus size={10} />
-            ADD SONG FROM LIBRARY
+            {t.setlist.addFromLibrary}
           </button>
         </section>
       </div>
@@ -869,7 +869,7 @@ function PcDetailPane({
               fontSize: 20,
               fontWeight: 700,
               letterSpacing: "-0.01em",
-              color: "#fff",
+              color: "var(--color-text)",
             }}
           >
             {title.trim() || fallbackTitle}
@@ -882,8 +882,8 @@ function PcDetailPane({
         </div>
         <div className="flex items-center gap-2">
           {!isNew && (
-            <ConsoleBtn disabled title="Coming soon">
-              DUPLICATE
+            <ConsoleBtn disabled title={t.common.comingSoon}>
+              {t.common.duplicate.toUpperCase()}
             </ConsoleBtn>
           )}
           {!isNew && (
@@ -1137,7 +1137,7 @@ function PcDetailPane({
             }}
           >
             <IconPlus size={10} />
-            ADD SONG FROM LIBRARY
+            {t.setlist.addFromLibrary}
           </button>
         </section>
       </div>
@@ -1155,7 +1155,7 @@ function OverviewStat({ label, value }: { label: string; value: string }) {
           fontWeight: 700,
           marginTop: 6,
           letterSpacing: "-0.02em",
-          color: "#fff",
+          color: "var(--color-text)",
           fontFamily: "var(--font-sans)",
         }}
       >

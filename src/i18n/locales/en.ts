@@ -36,6 +36,8 @@ export const en: Translations = {
     errorAddFailed: "Failed to add",
     errorLoadFailed: "Failed to load",
     loadMore: "Load more",
+    duplicate: "Duplicate",
+    comingSoon: "Coming soon",
   },
   nav: {
     setlists: "Setlists",
@@ -70,6 +72,10 @@ export const en: Translations = {
     searchPlaceholder: "Search by title or artist",
     searchNoResults: "No matching songs",
     searchClear: "Clear search",
+    shown: "Shown",
+    total: "Total",
+    noMatches: "No matches",
+    selectOne: "Select a song",
   },
   setlist: {
     title: "Title",
@@ -87,6 +93,7 @@ export const en: Translations = {
     noSongs: "No songs in this setlist",
     removeSong: "Remove song",
     pickerAllAdded: "All your songs are already in this setlist",
+    addFromLibrary: "Add song from library",
   },
   settings: {
     language: "Language",

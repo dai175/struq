@@ -25,7 +25,7 @@ export function TopBar({ title, subtitle, left, right }: TopBarProps) {
       <div style={{ minWidth: 32 }}>{left}</div>
       <div style={{ minWidth: 0 }}>
         {typeof title === "string" ? (
-          <div className="truncate" style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>
+          <div className="truncate" style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)" }}>
             {title}
           </div>
         ) : (

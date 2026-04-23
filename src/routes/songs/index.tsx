@@ -114,7 +114,7 @@ function SongsPage() {
           this pane fills the detail slot when no song is selected. */}
       <div className="hidden min-h-screen lg:flex lg:items-center lg:justify-center">
         <div className="flex flex-col items-center gap-3 text-center">
-          <MetaTag>{songs.length === 0 ? (isSearching ? "NO MATCHES" : "NO SONGS") : "SELECT A SONG"}</MetaTag>
+          <MetaTag>{songs.length === 0 ? (isSearching ? t.song.noMatches : t.song.noSongs) : t.song.selectOne}</MetaTag>
           {songs.length === 0 && isSearching && (
             <p style={{ color: "var(--color-dim)", fontSize: 14, maxWidth: 320 }}>{t.song.searchNoResults}</p>
           )}
@@ -144,14 +144,14 @@ function SongsPage() {
                 fontSize: 22,
                 fontWeight: 700,
                 letterSpacing: "-0.01em",
-                color: "#fff",
+                color: "var(--color-text)",
               }}
             >
               {t.nav.songs}
             </h1>
             <div className="mt-1.5">
               <MetaTag>
-                {String(songs.length).padStart(2, "0")} {isSearching ? "SHOWN" : "TOTAL"}
+                {String(songs.length).padStart(2, "0")} {isSearching ? t.song.shown : t.song.total}
               </MetaTag>
             </div>
           </div>
@@ -181,7 +181,7 @@ function SongsPage() {
               background: "transparent",
               border: "none",
               outline: "none",
-              color: "#fff",
+              color: "var(--color-text)",
               fontSize: 14,
               fontFamily: "var(--font-sans)",
             }}
@@ -207,7 +207,7 @@ function SongsPage() {
 
         {songs.length === 0 ? (
           <div className="flex flex-col items-center py-20 text-center gap-3">
-            <MetaTag>{isSearching ? "NO MATCHES" : "NO SONGS"}</MetaTag>
+            <MetaTag>{isSearching ? t.song.noMatches : t.song.noSongs}</MetaTag>
             {isSearching && <p style={{ color: "var(--color-dim)", fontSize: 14 }}>{t.song.searchNoResults}</p>}
             {!isSearching && (
               <div className="mt-2">
@@ -294,7 +294,7 @@ function SongRowView({
         {String(index + 1).padStart(2, "0")}
       </span>
       <Link to="/songs/$id" params={{ id: song.id }} className="min-w-0">
-        <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
+        <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
           {song.title}
         </p>
         {song.artist && (

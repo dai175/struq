@@ -36,6 +36,8 @@ export const ja: Translations = {
     errorAddFailed: "追加に失敗しました",
     errorLoadFailed: "読み込みに失敗しました",
     loadMore: "もっと読み込む",
+    duplicate: "複製",
+    comingSoon: "準備中",
   },
   nav: {
     setlists: "セットリスト",
@@ -70,6 +72,10 @@ export const ja: Translations = {
     searchPlaceholder: "曲名・アーティストで検索",
     searchNoResults: "該当する曲はありません",
     searchClear: "検索をクリア",
+    shown: "表示中",
+    total: "全件",
+    noMatches: "該当なし",
+    selectOne: "曲を選択",
   },
   setlist: {
     title: "タイトル",
@@ -87,6 +93,7 @@ export const ja: Translations = {
     noSongs: "曲がありません",
     removeSong: "曲を外す",
     pickerAllAdded: "すべての曲がこのセットリストに追加されています",
+    addFromLibrary: "ライブラリから追加",
   },
   settings: {
     language: "言語",

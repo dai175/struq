@@ -7,8 +7,8 @@ interface ToggleProps {
 }
 
 /**
- * Toggle — 54x28 track, 24x24 thumb. On = accent background + black thumb right.
- * Off = 10% white track + 35% white thumb left. 150ms linear `left` transition.
+ * Toggle — 54x28 track, 24x24 thumb. On = accent background + ink thumb right.
+ * Off = line-2 track + dim-2 thumb left. 150ms linear `left` transition.
  */
 export function Toggle({ on, onChange, ariaLabel, disabled }: ToggleProps) {
   return (
@@ -22,7 +22,7 @@ export function Toggle({ on, onChange, ariaLabel, disabled }: ToggleProps) {
       style={{
         width: 54,
         height: 28,
-        background: on ? "var(--color-accent)" : "rgba(255,255,255,0.1)",
+        background: on ? "var(--color-accent)" : "var(--color-line-2)",
         border: "none",
         borderRadius: 2,
         position: "relative",
@@ -39,7 +39,7 @@ export function Toggle({ on, onChange, ariaLabel, disabled }: ToggleProps) {
           left: on ? 28 : 2,
           width: 24,
           height: 24,
-          background: on ? "#0b0b0b" : "rgba(255,255,255,0.35)",
+          background: on ? "var(--color-ink)" : "var(--color-dim-2)",
           borderRadius: 2,
           transition: "left 150ms linear, background 150ms linear",
           display: "block",
