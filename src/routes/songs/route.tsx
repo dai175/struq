@@ -48,11 +48,26 @@ function SongsPcLibraryColumn() {
   const [input, setInput] = useState(search.q ?? "");
   const debouncedInput = useDebouncedValue(input, 300);
 
+  // Sync local input with the URL query synchronously during render when
+  // another input (mobile header mounts alongside this one) navigates.
+  // A useEffect-based sync would leave `input` stale during the same
+  // render's navigate effect, triggering a revert-navigate loop.
+  const queryKey = search.q ?? "";
+  const [boundKey, setBoundKey] = useState(queryKey);
+  if (boundKey !== queryKey) {
+    setBoundKey(queryKey);
+    setInput(queryKey);
+  }
+
   useEffect(() => {
     const next = debouncedInput.trim() || undefined;
     if (next === search.q) return;
+    // Skip while the debounce is still catching up to the latest input —
+    // otherwise we'd navigate with a stale value (e.g. revert an in-flight
+    // search just because our local debounce hasn't settled yet).
+    if (input !== debouncedInput) return;
     navigate({ to: "/songs", search: next ? { q: next } : {}, replace: true });
-  }, [debouncedInput, search.q, navigate]);
+  }, [debouncedInput, input, search.q, navigate]);
 
   function handleCreate() {
     navigate({ to: "/songs/new" });
@@ -105,7 +120,7 @@ function SongsPcLibraryColumn() {
           <IconSearch size={14} />
         </div>
         <input
-          type="search"
+          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t.song.searchPlaceholder}
