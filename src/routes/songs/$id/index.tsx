@@ -42,6 +42,7 @@ import { ConsoleField } from "@/ui/console-field";
 import { IconBack, IconExt, IconPlay, IconSparkles, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
+import { TopBar } from "@/ui/top-bar";
 
 function toSectionData(s: SectionRow): SectionData {
   return {
@@ -110,7 +111,8 @@ function SortableSection({
         section={section}
         onChange={onChange}
         onDelete={onDelete}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        dragAttributes={attributes}
+        dragListeners={listeners}
       />
     </div>
   );
@@ -140,7 +142,8 @@ function PcSortableSectionRow({
         index={index}
         onChange={onChange}
         onDelete={onDelete}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        dragAttributes={attributes}
+        dragListeners={listeners}
       />
     </div>
   );
@@ -406,70 +409,62 @@ export function SongEditor(props: SongEditorProps) {
         onDragEnd={handleDragEnd}
       />
 
-      {/* TopRail */}
-      <div
-        className="grid items-center gap-3 lg:hidden"
-        style={{
-          gridTemplateColumns: "auto 1fr auto",
-          padding: "14px 18px",
-          borderBottom: "1px solid var(--color-line)",
-        }}
-      >
-        <Link to="/songs" aria-label={t.common.back} style={{ color: "#fff", padding: 6 }}>
-          <IconBack size={20} />
-        </Link>
-        <div style={{ minWidth: 0 }}>
-          <div className="truncate" style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>
-            {title || t.song.title}
-          </div>
-          <div style={{ marginTop: 3 }}>
-            <MetaTag size={9}>
-              EDITING · {String(sectionsList.length).padStart(2, "0")} SECTIONS · {totalBars} BARS
-            </MetaTag>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {!isNew && editId && (
-            <Link
-              to="/songs/$id/perform"
-              params={{ id: editId }}
-              aria-label="Perform"
-              style={{
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-accent)",
-                border: "1px solid var(--color-accent)",
-                borderRadius: 2,
-              }}
-            >
-              <IconPlay size={14} />
-            </Link>
-          )}
-          {!isNew && (
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              aria-label={t.song.deleteSong}
-              style={{
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-section-solo)",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <IconTrash size={16} />
-            </button>
-          )}
-        </div>
-      </div>
+      <TopBar
+        left={
+          <Link to="/songs" aria-label={t.common.back} style={{ color: "#fff", padding: 6 }}>
+            <IconBack size={20} />
+          </Link>
+        }
+        title={title || t.song.title}
+        subtitle={
+          <MetaTag size={9}>
+            EDITING · {String(sectionsList.length).padStart(2, "0")} SECTIONS · {totalBars} BARS
+          </MetaTag>
+        }
+        right={
+          <>
+            {!isNew && editId && (
+              <Link
+                to="/songs/$id/perform"
+                params={{ id: editId }}
+                aria-label={t.perform.start}
+                style={{
+                  width: 36,
+                  height: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--color-accent)",
+                  border: "1px solid var(--color-accent)",
+                  borderRadius: 2,
+                }}
+              >
+                <IconPlay size={14} />
+              </Link>
+            )}
+            {!isNew && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                aria-label={t.song.deleteSong}
+                style={{
+                  width: 36,
+                  height: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--color-section-solo)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <IconTrash size={16} />
+              </button>
+            )}
+          </>
+        }
+      />
 
       <div className="mx-auto max-w-2xl px-5 pb-40 pt-6 lg:hidden">
         <section className="grid gap-4">
@@ -828,7 +823,13 @@ function PcEditorPane({
             </ConsoleBtn>
           )}
           <ConsoleBtn tone="white" onClick={onSave} disabled={saving}>
-            {saving ? t.common.loading : saved ? t.song.saved : isNew ? "CREATE SONG" : "SAVE CHANGES"}
+            {saving
+              ? t.common.loading
+              : saved
+                ? t.song.saved
+                : isNew
+                  ? t.song.createSong.toUpperCase()
+                  : t.common.saveChanges.toUpperCase()}
           </ConsoleBtn>
           {!isNew && id && (
             <Link
@@ -853,7 +854,7 @@ function PcEditorPane({
               }}
             >
               <IconPlay size={12} />
-              PERFORM
+              {t.perform.start.toUpperCase()}
             </Link>
           )}
         </div>

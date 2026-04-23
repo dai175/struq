@@ -32,6 +32,7 @@ import { ConsoleField } from "@/ui/console-field";
 import { IconBack, IconDrag, IconPlay, IconPlus, IconSearch, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
+import { TopBar } from "@/ui/top-bar";
 
 export const Route = createFileRoute("/setlists/$id")({
   beforeLoad: requireAuth,
@@ -279,75 +280,59 @@ export function SetlistEditor(props: SetlistEditorProps) {
         onOpenPicker={() => setShowPicker(true)}
       />
 
-      <div
-        className="grid items-center gap-3 lg:hidden"
-        style={{
-          gridTemplateColumns: "auto 1fr auto",
-          padding: "14px 18px",
-          borderBottom: "1px solid var(--color-line)",
-        }}
-      >
-        <Link to="/setlists" aria-label={t.common.back} style={{ color: "#fff", padding: 6 }}>
-          <IconBack size={20} />
-        </Link>
-        <div style={{ minWidth: 0 }}>
-          <div
-            className="truncate"
-            style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: "#fff",
-            }}
-          >
-            {title.trim() || fallbackTitle}
-          </div>
-          <div style={{ marginTop: 3 }}>
-            <MetaTag size={9}>{String(songs.length).padStart(2, "0")} SONGS</MetaTag>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {!isNew && editSetlistId && songs.length > 0 && (
-            <Link
-              to="/songs/$id/perform"
-              params={{ id: songs[0].songId }}
-              search={{ setlistId: editSetlistId }}
-              aria-label="Perform"
-              style={{
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-accent)",
-                border: "1px solid var(--color-accent)",
-                borderRadius: 2,
-              }}
-            >
-              <IconPlay size={14} />
-            </Link>
-          )}
-          {!isNew && (
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              aria-label={t.common.delete}
-              style={{
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-section-solo)",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              <IconTrash size={16} />
-            </button>
-          )}
-        </div>
-      </div>
+      <TopBar
+        left={
+          <Link to="/setlists" aria-label={t.common.back} style={{ color: "#fff", padding: 6 }}>
+            <IconBack size={20} />
+          </Link>
+        }
+        title={title.trim() || fallbackTitle}
+        subtitle={<MetaTag size={9}>{String(songs.length).padStart(2, "0")} SONGS</MetaTag>}
+        right={
+          <>
+            {!isNew && editSetlistId && songs.length > 0 && (
+              <Link
+                to="/songs/$id/perform"
+                params={{ id: songs[0].songId }}
+                search={{ setlistId: editSetlistId }}
+                aria-label={t.perform.start}
+                style={{
+                  width: 36,
+                  height: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--color-accent)",
+                  border: "1px solid var(--color-accent)",
+                  borderRadius: 2,
+                }}
+              >
+                <IconPlay size={14} />
+              </Link>
+            )}
+            {!isNew && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                aria-label={t.common.delete}
+                style={{
+                  width: 36,
+                  height: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--color-section-solo)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <IconTrash size={16} />
+              </button>
+            )}
+          </>
+        }
+      />
 
       <div className="mx-auto max-w-2xl px-5 pb-36 pt-6 lg:hidden">
         <section className="grid gap-4">
@@ -698,7 +683,7 @@ function SongPickerModal({
           <div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>{t.setlist.addSong}</div>
           </div>
-          <ConsoleBtn onClick={onClose}>CLOSE</ConsoleBtn>
+          <ConsoleBtn onClick={onClose}>{t.common.close.toUpperCase()}</ConsoleBtn>
         </div>
         <div
           style={{
@@ -904,11 +889,17 @@ function PcDetailPane({
           {!isNew && (
             <ConsoleBtn tone="coral" onClick={onDelete}>
               <IconTrash size={14} />
-              DELETE
+              {t.common.delete.toUpperCase()}
             </ConsoleBtn>
           )}
           <ConsoleBtn tone="white" onClick={onSave} disabled={saving}>
-            {saving ? t.common.loading : saved ? t.setlist.saved : isNew ? "CREATE SETLIST" : "SAVE CHANGES"}
+            {saving
+              ? t.common.loading
+              : saved
+                ? t.setlist.saved
+                : isNew
+                  ? t.setlist.createSetlist.toUpperCase()
+                  : t.common.saveChanges.toUpperCase()}
           </ConsoleBtn>
           {!isNew && setlistId && songs.length > 0 ? (
             <Link
@@ -934,12 +925,12 @@ function PcDetailPane({
               }}
             >
               <IconPlay size={12} />
-              START PERFORM
+              {t.perform.start.toUpperCase()}
             </Link>
           ) : (
             <ConsoleBtn tone="accent" disabled>
               <IconPlay size={12} />
-              START PERFORM
+              {t.perform.start.toUpperCase()}
             </ConsoleBtn>
           )}
         </div>

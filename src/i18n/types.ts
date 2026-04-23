@@ -10,11 +10,14 @@ export interface Translations {
 
   common: {
     save: string;
+    saveChanges: string;
     cancel: string;
     delete: string;
     edit: string;
     back: string;
     reset: string;
+    close: string;
+    new: string;
     loading: string;
     error: string;
     retry: string;
@@ -50,6 +53,7 @@ export interface Translations {
     addSection: string;
     noSections: string;
     noSongs: string;
+    createSong: string;
     deleteSong: string;
     confirmDelete: string;
     saved: string;
@@ -75,6 +79,7 @@ export interface Translations {
     noSetlists: string;
     addSong: string;
     newSetlist: string;
+    createSetlist: string;
     confirmDelete: string;
     saved: string;
     titleRequired: string;
@@ -95,6 +100,7 @@ export interface Translations {
     section: string;
     of: string;
     songOf: string;
+    start: string;
     modeSelect: {
       manual: string;
       auto: string;

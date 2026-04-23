@@ -1,3 +1,4 @@
+import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import { getSectionLabel, useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
 import { SECTION_COLORS } from "@/songs/constants";
@@ -21,10 +22,11 @@ interface SectionCardProps {
   section: SectionData;
   onChange: (updated: SectionData) => void;
   onDelete: () => void;
-  dragHandleProps?: Record<string, unknown>;
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: DraggableSyntheticListeners;
 }
 
-export function SectionCard({ section, onChange, onDelete, dragHandleProps }: SectionCardProps) {
+export function SectionCard({ section, onChange, onDelete, dragAttributes, dragListeners }: SectionCardProps) {
   const { t, locale } = useI18n();
   const color = SECTION_COLORS[section.type];
   const displayLabel = section.type === "custom" ? (section.label ?? "") : getSectionLabel(section.type, locale);
@@ -41,7 +43,8 @@ export function SectionCard({ section, onChange, onDelete, dragHandleProps }: Se
         <button
           type="button"
           aria-label="Reorder"
-          {...dragHandleProps}
+          {...dragAttributes}
+          {...dragListeners}
           style={{
             width: 22,
             height: 22,

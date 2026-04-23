@@ -1,3 +1,4 @@
+import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import { useEffect, useRef, useState } from "react";
 import { getSectionLabel, useI18n } from "@/i18n";
 import { SECTION_COLORS } from "@/songs/constants";
@@ -13,7 +14,8 @@ interface PcSectionRowProps {
   index: number;
   onChange: (updated: SectionData) => void;
   onDelete: () => void;
-  dragHandleProps?: Record<string, unknown>;
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: DraggableSyntheticListeners;
 }
 
 /**
@@ -22,7 +24,7 @@ interface PcSectionRowProps {
  * Bars + extra beats edit via a popover anchored to the NN BARS cell; memo
  * lives in a secondary row ("+ NOTE" when empty, inline input when present).
  */
-export function PcSectionRow({ section, index, onChange, onDelete, dragHandleProps }: PcSectionRowProps) {
+export function PcSectionRow({ section, index, onChange, onDelete, dragAttributes, dragListeners }: PcSectionRowProps) {
   const { t, locale } = useI18n();
   const color = SECTION_COLORS[section.type];
   const displayLabel = section.type === "custom" ? (section.label ?? "") : getSectionLabel(section.type, locale);
@@ -54,7 +56,8 @@ export function PcSectionRow({ section, index, onChange, onDelete, dragHandlePro
       >
         <button
           type="button"
-          {...dragHandleProps}
+          {...dragAttributes}
+          {...dragListeners}
           aria-label="Reorder"
           style={{
             width: 18,

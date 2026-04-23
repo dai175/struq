@@ -8,8 +8,9 @@ interface TopBarProps {
 }
 
 /**
- * TopBar — mobile screen header. 3-column grid (left action · centered title
- * stack · right actions). Subtitle renders as JBM meta below the title.
+ * TopBar — mobile screen header. 3-column grid (left action · title+subtitle ·
+ * right actions). Title renders left-aligned and truncates on overflow; pass a
+ * `<MetaTag>` as `subtitle` for the JBM meta row beneath the title.
  */
 export function TopBar({ title, subtitle, left, right }: TopBarProps) {
   return (
@@ -18,50 +19,21 @@ export function TopBar({ title, subtitle, left, right }: TopBarProps) {
       style={{
         gridTemplateColumns: "auto 1fr auto",
         padding: "14px 18px",
-        background: "var(--color-ink)",
         borderColor: "var(--color-line)",
       }}
     >
       <div style={{ minWidth: 32 }}>{left}</div>
-      <div style={{ textAlign: "center", minWidth: 0 }}>
-        <div
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 15,
-            fontWeight: 600,
-            color: "#fff",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {title}
-        </div>
-        {subtitle && (
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.22em",
-              color: "var(--color-dim-2)",
-              marginTop: 3,
-              textTransform: "uppercase",
-              fontWeight: 500,
-            }}
-          >
-            {subtitle}
+      <div style={{ minWidth: 0 }}>
+        {typeof title === "string" ? (
+          <div className="truncate" style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>
+            {title}
           </div>
+        ) : (
+          title
         )}
+        {subtitle && <div style={{ marginTop: 3 }}>{subtitle}</div>}
       </div>
-      <div
-        style={{
-          minWidth: 32,
-          textAlign: "right",
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: 4,
-        }}
-      >
+      <div className="flex items-center" style={{ gap: 6 }}>
         {right}
       </div>
     </header>
