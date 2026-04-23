@@ -28,6 +28,7 @@ src/
 ├── setlists/        # Setlist server-fns
 ├── i18n/            # Translation keys + I18nProvider
 ├── server/          # Shared server helpers (requireUser, now)
+├── ui/              # Shared UI primitives (top-bar, bottom-nav, side-rail, console-btn/field, structure-bar, toggle, tokens)
 └── lib/             # Utilities (logger etc.)
 ```
 
@@ -49,11 +50,12 @@ src/
 
 ## UI/UX Guidelines
 
-- Minimal, calm aesthetic; keep animations subtle
-- Sections color-coded consistently across views
-- Touch-first design (large tap targets)
+- **Broadcast Console** design language: dark ink surfaces (`--color-ink*`), high-contrast mono labels (JetBrains Mono), subtle line dividers (`--color-line*`)
+- Sections color-coded via OKLCH palette (`--color-section-*`); section A (blue) is the app-wide accent (`C.accent`), chorus amber is reserved for chorus only
+- Touch-first design (large tap targets); `touch-landscape` variant = landscape on touch devices only (excludes desktop)
 - Performance view optimized for iPad landscape (fullscreen, dark)
 - Edit/list views optimized for mobile (iPhone)
+- Animations kept subtle: `led-pulse`, `live-pulse`, `beat-pop` defined in `src/styles.css`
 
 ## Development Commands
 
@@ -107,3 +109,5 @@ For production, set via `wrangler secret put`.
 - Sections `label` field is only used for `custom` type — fixed types derive their label from locale at render time
 - Unit tests cover pure functions only (schemas, validation, constants); server functions depend on D1 + session and are tested via E2E only
 - Server functions that operate on both a setlist and songs must verify ownership of **both** (see `addSongToSetlist` for the reference pattern)
+- Design tokens: use `import { C } from "@/ui/tokens"` for dynamic inline styles (per-section colors, box-shadow); for static Tailwind utilities use arbitrary values like `bg-[color:var(--color-ink)]`
+- Legacy tokens (`--color-surface*`, `--color-text-primary/secondary/on-dark`) coexist with Broadcast Console tokens — they're deprecated per-screen as each redesign PR lands; prefer `--color-ink*` / `--color-text` / `--color-dim*` for new code

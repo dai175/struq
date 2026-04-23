@@ -95,6 +95,7 @@ src/
 ├── setlists/        # セットリスト CRUD サーバー関数
 ├── i18n/            # 翻訳キー + I18nProvider (ja / en)
 ├── server/          # 共通サーバーヘルパー (requireUser, now)
+├── ui/              # 共通 UI プリミティブ (top-bar, bottom-nav, side-rail, console-btn/field, structure-bar, toggle, tokens)
 └── lib/             # ユーティリティ (logger など)
 ```
 
