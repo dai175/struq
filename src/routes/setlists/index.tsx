@@ -1,6 +1,5 @@
-import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useLoaderData, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
@@ -11,13 +10,11 @@ import { IconCal, IconPin, IconPlus, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 
 export const Route = createFileRoute("/setlists/")({
-  beforeLoad: requireAuth,
-  loader: () => listSetlists({ data: {} }),
   component: SetlistsPage,
 });
 
 function SetlistsPage() {
-  const initial = Route.useLoaderData();
+  const initial = useLoaderData({ from: "/setlists" });
   const { t } = useI18n();
   const { toast } = useToast();
   const router = useRouter();

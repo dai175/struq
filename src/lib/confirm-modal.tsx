@@ -68,8 +68,6 @@ export function ConfirmModal({
 
   if (!mounted || !open) return null;
 
-  const confirmTone: ConfirmTone = tone;
-
   return createPortal(
     // biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismisses modal on click
     // biome-ignore lint/a11y/useKeyWithClickEvents: Escape is handled via document keydown listener
@@ -130,7 +128,7 @@ export function ConfirmModal({
           <ConsoleBtn tone="neutral" onClick={onCancel}>
             {cancelLabel}
           </ConsoleBtn>
-          <ConsoleBtn tone={confirmTone} onClick={onConfirm}>
+          <ConsoleBtn tone={tone} onClick={onConfirm}>
             {confirmLabel}
           </ConsoleBtn>
         </div>

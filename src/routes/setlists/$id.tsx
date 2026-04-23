@@ -862,6 +862,7 @@ function PcDetailPane({
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
   const subtitle = [sessionDate, venue].filter(Boolean).join(" · ");
+  const songBars = useMemo(() => songMetas.map((meta) => meta.sections.reduce((n, s) => n + s.bars, 0)), [songMetas]);
 
   return (
     <div
@@ -1036,36 +1037,30 @@ function PcDetailPane({
               <MetaTag size={9}>HOVER SEGMENT TO PREVIEW</MetaTag>
             </div>
             <div style={{ display: "flex", gap: 1 }}>
-              {songs.map((song, si) => {
-                const bars = songMetas[si].sections.reduce((n, s) => n + s.bars, 0);
-                return (
-                  <div key={song.songId} style={{ flex: bars, minWidth: 0 }}>
-                    <StructureBar sections={songMetas[si].sections} height={10} gap={1} />
-                  </div>
-                );
-              })}
+              {songs.map((song, si) => (
+                <div key={song.songId} style={{ flex: songBars[si], minWidth: 0 }}>
+                  <StructureBar sections={songMetas[si].sections} height={10} gap={1} />
+                </div>
+              ))}
             </div>
             <div style={{ display: "flex", gap: 1, marginTop: 3 }}>
-              {songs.map((song, si) => {
-                const bars = songMetas[si].sections.reduce((n, s) => n + s.bars, 0);
-                return (
-                  <div
-                    key={song.songId}
-                    style={{
-                      flex: bars,
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 8,
-                      letterSpacing: "0.15em",
-                      color: "var(--color-dim-2)",
-                      paddingTop: 4,
-                      borderTop: "1px solid var(--color-line)",
-                      textAlign: "center",
-                    }}
-                  >
-                    {String(si + 1).padStart(2, "0")}
-                  </div>
-                );
-              })}
+              {songs.map((song, si) => (
+                <div
+                  key={song.songId}
+                  style={{
+                    flex: songBars[si],
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 8,
+                    letterSpacing: "0.15em",
+                    color: "var(--color-dim-2)",
+                    paddingTop: 4,
+                    borderTop: "1px solid var(--color-line)",
+                    textAlign: "center",
+                  }}
+                >
+                  {String(si + 1).padStart(2, "0")}
+                </div>
+              ))}
             </div>
           </section>
         )}
