@@ -141,21 +141,15 @@ function SongsPcLibraryColumn() {
       </div>
 
       <ul className="overflow-auto" style={{ flex: 1 }}>
-        {items.length === 0 ? (
-          <li style={{ padding: "20px 22px", color: "var(--color-dim)", fontSize: 13 }}>
-            {isSearching ? t.song.searchNoResults : t.song.noSongs}
-          </li>
-        ) : (
-          items.map((it, i) => (
-            <SongsPcLibraryRow
-              key={it.song.id}
-              song={it.song}
-              sections={it.sections}
-              index={i}
-              active={it.song.id === activeId}
-            />
-          ))
-        )}
+        {items.map((it, i) => (
+          <SongsPcLibraryRow
+            key={it.song.id}
+            song={it.song}
+            sections={it.sections}
+            index={i}
+            active={it.song.id === activeId}
+          />
+        ))}
       </ul>
     </aside>
   );

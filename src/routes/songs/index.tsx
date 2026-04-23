@@ -91,10 +91,8 @@ function SongsPage() {
       <div className="hidden min-h-screen lg:flex lg:items-center lg:justify-center">
         <div className="flex flex-col items-center gap-3 text-center">
           <MetaTag>{songs.length === 0 ? (isSearching ? "NO MATCHES" : "NO SONGS") : "SELECT A SONG"}</MetaTag>
-          {songs.length === 0 && (
-            <p style={{ color: "var(--color-dim)", fontSize: 14, maxWidth: 320 }}>
-              {isSearching ? t.song.searchNoResults : t.song.noSongs}
-            </p>
+          {songs.length === 0 && isSearching && (
+            <p style={{ color: "var(--color-dim)", fontSize: 14, maxWidth: 320 }}>{t.song.searchNoResults}</p>
           )}
           {!isSearching && (
             <div className="mt-2">
@@ -186,9 +184,7 @@ function SongsPage() {
         {songs.length === 0 ? (
           <div className="flex flex-col items-center py-20 text-center gap-3">
             <MetaTag>{isSearching ? "NO MATCHES" : "NO SONGS"}</MetaTag>
-            <p style={{ color: "var(--color-dim)", fontSize: 14 }}>
-              {isSearching ? t.song.searchNoResults : t.song.noSongs}
-            </p>
+            {isSearching && <p style={{ color: "var(--color-dim)", fontSize: 14 }}>{t.song.searchNoResults}</p>}
             {!isSearching && (
               <div className="mt-2">
                 <ConsoleBtn tone="accent" onClick={handleCreate}>
