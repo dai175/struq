@@ -122,7 +122,7 @@ function SongsPage() {
             <div className="mt-2">
               <ConsoleBtn tone="accent" onClick={handleCreate}>
                 <IconPlus size={10} />
-                NEW SONG
+                {t.nav.newSong.toUpperCase()}
               </ConsoleBtn>
             </div>
           )}
@@ -157,7 +157,7 @@ function SongsPage() {
           </div>
           <ConsoleBtn tone="white" onClick={handleCreate}>
             <IconPlus size={10} />
-            NEW
+            {t.common.new.toUpperCase()}
           </ConsoleBtn>
         </header>
 
@@ -213,7 +213,7 @@ function SongsPage() {
               <div className="mt-2">
                 <ConsoleBtn tone="accent" onClick={handleCreate}>
                   <IconPlus size={10} />
-                  NEW SONG
+                  {t.nav.newSong.toUpperCase()}
                 </ConsoleBtn>
               </div>
             )}

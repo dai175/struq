@@ -104,7 +104,7 @@ function SongsPcLibraryColumn() {
         </div>
         <ConsoleBtn tone="white" onClick={handleCreate}>
           <IconPlus size={10} />
-          NEW
+          {t.common.new.toUpperCase()}
         </ConsoleBtn>
       </div>
 

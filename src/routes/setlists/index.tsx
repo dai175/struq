@@ -78,7 +78,7 @@ function SetlistsPage() {
           <div className="mt-2">
             <ConsoleBtn tone="accent" onClick={handleCreate}>
               <IconPlus size={10} />
-              NEW SETLIST
+              {t.setlist.newSetlist.toUpperCase()}
             </ConsoleBtn>
           </div>
         </div>
@@ -103,7 +103,7 @@ function SetlistsPage() {
           </div>
           <ConsoleBtn tone="white" onClick={handleCreate}>
             <IconPlus size={10} />
-            NEW
+            {t.common.new.toUpperCase()}
           </ConsoleBtn>
         </header>
 
@@ -118,7 +118,7 @@ function SetlistsPage() {
               <div className="mt-2">
                 <ConsoleBtn tone="accent" onClick={handleCreate}>
                   <IconPlus size={10} />
-                  NEW SETLIST
+                  {t.setlist.newSetlist.toUpperCase()}
                 </ConsoleBtn>
               </div>
             </div>
