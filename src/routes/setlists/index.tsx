@@ -78,9 +78,6 @@ function SetlistsPage() {
       <div className="hidden min-h-screen lg:flex lg:items-center lg:justify-center">
         <div className="flex flex-col items-center gap-3 text-center">
           <MetaTag>{setlists.length === 0 ? "NO SETLISTS" : "SELECT A SETLIST"}</MetaTag>
-          {setlists.length === 0 && (
-            <p style={{ color: "var(--color-dim)", fontSize: 14, maxWidth: 320 }}>{t.setlist.noSetlists}</p>
-          )}
           <div className="mt-2">
             <ConsoleBtn tone="accent" onClick={handleCreate}>
               <IconPlus size={10} />
@@ -121,7 +118,6 @@ function SetlistsPage() {
           {setlists.length === 0 ? (
             <div className="flex flex-col items-center py-20 text-center" style={{ gap: 14 }}>
               <MetaTag>NO SETLISTS</MetaTag>
-              <p style={{ color: "var(--color-dim)", fontSize: 14 }}>{t.setlist.noSetlists}</p>
               <div className="mt-2">
                 <ConsoleBtn tone="accent" onClick={handleCreate}>
                   <IconPlus size={10} />

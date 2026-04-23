@@ -53,13 +53,9 @@ function SetlistsPcListColumn() {
       </div>
 
       <ul className="overflow-auto" style={{ flex: 1 }}>
-        {items.length === 0 ? (
-          <li style={{ padding: "20px 22px", color: "var(--color-dim)", fontSize: 13 }}>{t.setlist.noSetlists}</li>
-        ) : (
-          items.map((setlist, i) => (
-            <SetlistsPcListRow key={setlist.id} setlist={setlist} index={i} active={setlist.id === activeId} />
-          ))
-        )}
+        {items.map((setlist, i) => (
+          <SetlistsPcListRow key={setlist.id} setlist={setlist} index={i} active={setlist.id === activeId} />
+        ))}
       </ul>
     </aside>
   );
