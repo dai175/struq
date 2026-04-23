@@ -117,8 +117,8 @@ function SetlistsPcListRow({
               className="truncate"
               style={{
                 fontSize: 14,
-                fontWeight: 600,
-                color: active ? "#fff" : "var(--color-text)",
+                fontWeight: active ? 700 : 600,
+                color: "var(--color-text)",
               }}
             >
               {setlist.title}

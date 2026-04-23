@@ -24,7 +24,7 @@ export function ModeSelectOverlay({ bpm, onSelectManual, onSelectAuto }: ModeSel
             padding: "48px 20px",
             border: "1px solid var(--color-line-2)",
             background: "transparent",
-            color: "#fff",
+            color: "var(--color-text)",
             cursor: "pointer",
             borderRadius: 2,
           }}

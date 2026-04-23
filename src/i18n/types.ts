@@ -32,6 +32,8 @@ export interface Translations {
     errorAddFailed: string;
     errorLoadFailed: string;
     loadMore: string;
+    duplicate: string;
+    comingSoon: string;
   };
 
   nav: {
@@ -68,6 +70,10 @@ export interface Translations {
     searchPlaceholder: string;
     searchNoResults: string;
     searchClear: string;
+    shown: string;
+    total: string;
+    noMatches: string;
+    selectOne: string;
   };
 
   setlist: {
@@ -86,6 +92,7 @@ export interface Translations {
     noSongs: string;
     removeSong: string;
     pickerAllAdded: string;
+    addFromLibrary: string;
   };
 
   settings: {
