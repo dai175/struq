@@ -16,6 +16,7 @@ import { useCurrentBeat } from "@/songs/use-current-beat";
 import { useSectionTimer } from "@/songs/use-section-timer";
 import { IconBack } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
+import { C } from "@/ui/tokens";
 
 type PerformSearch = { setlistId?: string };
 
@@ -299,7 +300,7 @@ function PerformView({
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: "0.22em",
-                color: "#ef4444",
+                color: C.live,
                 fontWeight: 600,
                 textTransform: "uppercase",
               }}
@@ -310,8 +311,8 @@ function PerformView({
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  background: "#ef4444",
-                  boxShadow: "0 0 8px #ef4444",
+                  background: C.live,
+                  boxShadow: `0 0 8px ${C.live}`,
                   animation: "live-pulse 1.2s ease-in-out infinite",
                 }}
               />
