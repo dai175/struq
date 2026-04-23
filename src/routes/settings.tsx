@@ -149,7 +149,6 @@ function SettingsPage() {
                 preRollBars={preRollBars}
                 onPreRollBars={setPreRollBars}
                 clickAriaLabel={t.settings.clickSound}
-                clickDescription={t.settings.clickSoundDescription}
               />
             )}
             {activeNav === "appearance" && <PcAppearanceSection appearance={appearance} onAppearance={setAppearance} />}
@@ -289,7 +288,7 @@ function SettingsPage() {
           <div className="flex flex-col">
             <SettingRow
               label="CLICK TRACK"
-              description={t.settings.clickSoundDescription}
+              description="Play a click on each beat during auto mode."
               control={<Toggle on={clickEnabled} onChange={setClickEnabled} ariaLabel={t.settings.clickSound} />}
             />
             <SettingRow
@@ -960,7 +959,6 @@ function PcAudioSection({
   preRollBars,
   onPreRollBars,
   clickAriaLabel,
-  clickDescription,
 }: {
   clickEnabled: boolean;
   onClickEnabled: (v: boolean) => void;
@@ -975,7 +973,6 @@ function PcAudioSection({
   preRollBars: PreRoll;
   onPreRollBars: (v: PreRoll) => void;
   clickAriaLabel: string;
-  clickDescription: string;
 }) {
   return (
     <div
@@ -986,7 +983,7 @@ function PcAudioSection({
         alignContent: "flex-start",
       }}
     >
-      <PcSettingRow label="CLICK TRACK" desc={clickDescription}>
+      <PcSettingRow label="CLICK TRACK" desc="Play a click on each beat during auto mode.">
         <Toggle on={clickEnabled} onChange={onClickEnabled} ariaLabel={clickAriaLabel} />
       </PcSettingRow>
       <PcSettingRow label="COUNT-IN" desc="Play 4 beats before the song starts in Auto mode.">

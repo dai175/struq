@@ -100,7 +100,6 @@ export interface Translations {
     account: string;
     deleteAccount: string;
     clickSound: string;
-    clickSoundDescription: string;
   };
 
   perform: {

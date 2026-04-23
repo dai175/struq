@@ -100,7 +100,6 @@ export const ja: Translations = {
     account: "アカウント",
     deleteAccount: "アカウント削除",
     clickSound: "クリック音",
-    clickSoundDescription: "自動モード中に拍ごとにクリックを鳴らす",
   },
   perform: {
     section: "セクション",
