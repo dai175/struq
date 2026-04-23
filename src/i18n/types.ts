@@ -89,6 +89,7 @@ export interface Translations {
     deleteAccount: string;
     clickSound: string;
     clickSoundDescription: string;
+    applied: string;
   };
 
   perform: {
