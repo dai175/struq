@@ -62,15 +62,19 @@ const SONGS_OWNERSHIP_CHECK_BATCH = 90;
 async function verifySongsOwnership(db: Database, songIds: string[], userId: string): Promise<void> {
   if (songIds.length === 0) return;
   const uniqueIds = Array.from(new Set(songIds));
-  let ownedCount = 0;
+  const chunks: string[][] = [];
   for (let i = 0; i < uniqueIds.length; i += SONGS_OWNERSHIP_CHECK_BATCH) {
-    const chunk = uniqueIds.slice(i, i + SONGS_OWNERSHIP_CHECK_BATCH);
-    const rows = await db
-      .select({ id: schema.songs.id })
-      .from(schema.songs)
-      .where(and(inArray(schema.songs.id, chunk), eq(schema.songs.userId, userId), isNull(schema.songs.deletedAt)));
-    ownedCount += rows.length;
+    chunks.push(uniqueIds.slice(i, i + SONGS_OWNERSHIP_CHECK_BATCH));
   }
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      db
+        .select({ id: schema.songs.id })
+        .from(schema.songs)
+        .where(and(inArray(schema.songs.id, chunk), eq(schema.songs.userId, userId), isNull(schema.songs.deletedAt))),
+    ),
+  );
+  const ownedCount = results.reduce((n, rows) => n + rows.length, 0);
   if (ownedCount !== uniqueIds.length) {
     throw new Error("Song not found");
   }
