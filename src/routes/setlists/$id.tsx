@@ -18,7 +18,6 @@ import { ConfirmModal } from "@/lib/confirm-modal";
 import { createSetlistWithSongsInputSchema, saveSetlistWithSongsInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-import { type DummySongMeta, dummySetlistStats, dummySongMeta } from "@/setlists/dummy-stats";
 import type { SetlistSongItem } from "@/setlists/server-fns";
 import {
   createSetlistWithSongs,
@@ -31,7 +30,6 @@ import { ConsoleBtn } from "@/ui/console-btn";
 import { ConsoleField } from "@/ui/console-field";
 import { IconBack, IconDrag, IconPlay, IconPlus, IconSearch, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
-import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
 
 export const Route = createFileRoute("/setlists/$id")({
@@ -104,12 +102,6 @@ export function SetlistEditor(props: SetlistEditorProps) {
     const existingIds = new Set(songs.map((s) => s.songId));
     return availableSongs.filter((s) => !existingIds.has(s.id));
   }, [availableSongs, songs]);
-
-  // Per-song BPM/Key/sections are not yet joined into getSetlist — the PC
-  // overview/structure/rows render against deterministic dummy values keyed
-  // off songId so output stays stable across renders.
-  const songMetas = useMemo(() => songs.map((s) => dummySongMeta(s.songId)), [songs]);
-  const overviewStats = useMemo(() => dummySetlistStats(songMetas), [songMetas]);
 
   useEffect(() => {
     return () => {
@@ -260,8 +252,6 @@ export function SetlistEditor(props: SetlistEditorProps) {
         venue={venue}
         titleError={titleError}
         songs={songs}
-        songMetas={songMetas}
-        overviewStats={overviewStats}
         saving={saving}
         saved={saved}
         setlistId={editSetlistId}
@@ -802,8 +792,6 @@ function PcDetailPane({
   venue,
   titleError,
   songs,
-  songMetas,
-  overviewStats,
   saving,
   saved,
   setlistId,
@@ -825,8 +813,6 @@ function PcDetailPane({
   venue: string;
   titleError: boolean;
   songs: SetlistSongItem[];
-  songMetas: DummySongMeta[];
-  overviewStats: ReturnType<typeof dummySetlistStats>;
   saving: boolean;
   saved: boolean;
   setlistId: string | null;
@@ -847,7 +833,6 @@ function PcDetailPane({
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
   const subtitle = [sessionDate, venue].filter(Boolean).join(" · ");
-  const songBars = useMemo(() => songMetas.map((meta) => meta.sections.reduce((n, s) => n + s.bars, 0)), [songMetas]);
 
   return (
     <div
@@ -1005,61 +990,15 @@ function PcDetailPane({
         {/* 02 OVERVIEW */}
         <section style={{ marginTop: 32 }}>
           <MetaTag>02 · OVERVIEW</MetaTag>
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: 32,
-            }}
-          >
+          <div style={{ marginTop: 14 }}>
             <OverviewStat label="SONGS" value={String(songs.length).padStart(2, "0")} />
-            <OverviewStat label="TOTAL SECTIONS" value={String(overviewStats.totalSections).padStart(2, "0")} />
-            <OverviewStat label="EST. DURATION" value={`${overviewStats.estDurationMin} MIN`} />
-            <OverviewStat label="AVG BPM" value={String(overviewStats.avgBpm)} />
           </div>
         </section>
 
-        {/* 03 TOTAL STRUCTURE */}
-        {songs.length > 0 && (
-          <section style={{ marginTop: 32 }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
-              <MetaTag>03 · TOTAL STRUCTURE</MetaTag>
-              <MetaTag size={9}>HOVER SEGMENT TO PREVIEW</MetaTag>
-            </div>
-            <div style={{ display: "flex", gap: 1 }}>
-              {songs.map((song, si) => (
-                <div key={song.songId} style={{ flex: songBars[si], minWidth: 0 }}>
-                  <StructureBar sections={songMetas[si].sections} height={10} gap={1} />
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 1, marginTop: 3 }}>
-              {songs.map((song, si) => (
-                <div
-                  key={song.songId}
-                  style={{
-                    flex: songBars[si],
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 8,
-                    letterSpacing: "0.15em",
-                    color: "var(--color-dim-2)",
-                    paddingTop: 4,
-                    borderTop: "1px solid var(--color-line)",
-                    textAlign: "center",
-                  }}
-                >
-                  {String(si + 1).padStart(2, "0")}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 04 SONGS */}
+        {/* 03 SONGS */}
         <section style={{ marginTop: 32 }}>
           <div className="flex items-center" style={{ marginBottom: 14, gap: 10 }}>
-            <MetaTag>04 · SONGS · {String(songs.length).padStart(2, "0")} TOTAL</MetaTag>
+            <MetaTag>03 · SONGS · {String(songs.length).padStart(2, "0")} TOTAL</MetaTag>
             <div style={{ flex: 1, height: 1, background: "var(--color-line)" }} />
           </div>
 
@@ -1080,7 +1019,7 @@ function PcDetailPane({
               <div
                 className="grid"
                 style={{
-                  gridTemplateColumns: "28px 42px 1fr 220px 100px 80px 100px",
+                  gridTemplateColumns: "28px 42px 1fr 100px",
                   padding: "10px 4px",
                   borderBottom: "1px solid var(--color-line)",
                   fontFamily: "var(--font-mono)",
@@ -1095,10 +1034,7 @@ function PcDetailPane({
                 <div />
                 <div>#</div>
                 <div>TITLE</div>
-                <div>STRUCTURE</div>
-                <div style={{ textAlign: "right" }}>BPM</div>
-                <div style={{ textAlign: "right" }}>KEY</div>
-                <div style={{ textAlign: "right" }}>SEC</div>
+                <div />
               </div>
 
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -1108,7 +1044,6 @@ function PcDetailPane({
                       key={song.songId}
                       song={song}
                       index={i}
-                      meta={songMetas[i]}
                       onRemove={() => onRemoveSong(song.songId)}
                     />
                   ))}
@@ -1165,17 +1100,7 @@ function OverviewStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PcSortableSongRow({
-  song,
-  index,
-  meta,
-  onRemove,
-}: {
-  song: SetlistSongItem;
-  index: number;
-  meta: DummySongMeta;
-  onRemove: () => void;
-}) {
+function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; index: number; onRemove: () => void }) {
   const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: song.songId,
@@ -1189,7 +1114,7 @@ function PcSortableSongRow({
         transition,
         opacity: isDragging ? 0.5 : 1,
         display: "grid",
-        gridTemplateColumns: "28px 42px 1fr 220px 100px 80px 100px",
+        gridTemplateColumns: "28px 42px 1fr 100px",
         padding: "14px 4px",
         borderBottom: "1px solid var(--color-line)",
         alignItems: "center",
@@ -1247,42 +1172,7 @@ function PcSortableSongRow({
           </div>
         )}
       </div>
-      <div style={{ minWidth: 0 }}>
-        <StructureBar sections={meta.sections} height={5} gap={1} />
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          fontWeight: 600,
-          color: "#fff",
-          textAlign: "right",
-          letterSpacing: "0.05em",
-        }}
-      >
-        {meta.bpm}
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          fontWeight: 600,
-          color: "#fff",
-          textAlign: "right",
-        }}
-      >
-        {meta.key}
-      </div>
-      <div
-        className="flex items-center justify-end"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          color: "var(--color-dim)",
-          gap: 8,
-        }}
-      >
-        <span>{String(meta.sections.length).padStart(2, "0")}</span>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={onRemove}
