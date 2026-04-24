@@ -104,10 +104,12 @@ const EMPTY_SONG_SNAPSHOT = {
 
 function SortableSection({
   section,
+  index,
   onChange,
   onDelete,
 }: {
   section: SectionData;
+  index: number;
   onChange: (updated: SectionData) => void;
   onDelete: () => void;
 }) {
@@ -121,6 +123,7 @@ function SortableSection({
     <div ref={setNodeRef} style={style}>
       <SectionCard
         section={section}
+        index={index}
         onChange={onChange}
         onDelete={onDelete}
         dragAttributes={attributes}
@@ -388,6 +391,8 @@ export function SongEditor(props: SongEditorProps) {
     });
   }, [title, artist, bpm, key, referenceUrl, sectionsList]);
   const isDirty = isNew || currentSnapshot !== savedSnapshotRef.current;
+  const trimmedReferenceUrl = referenceUrl.trim();
+  const referenceUrlOpenable = isValidUrl(trimmedReferenceUrl);
 
   return (
     <div
@@ -562,38 +567,29 @@ export function SongEditor(props: SongEditorProps) {
                 mono
               />
             </div>
-            {(() => {
-              const trimmed = referenceUrl.trim();
-              const openable = isValidUrl(trimmed);
-              return (
-                <a
-                  href={openable ? trimmed : undefined}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Open reference"
-                  aria-disabled={!openable}
-                  onClick={(e) => {
-                    if (!openable) e.preventDefault();
-                  }}
-                  tabIndex={openable ? 0 : -1}
-                  style={{
-                    padding: 12,
-                    border: "1px solid var(--color-line-2)",
-                    color: "var(--color-dim)",
-                    borderRadius: 1,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    opacity: openable ? 1 : 0.35,
-                    cursor: openable ? "pointer" : "not-allowed",
-                    pointerEvents: openable ? "auto" : "none",
-                  }}
-                >
-                  <IconExt size={14} />
-                </a>
-              );
-            })()}
+            <a
+              href={referenceUrlOpenable ? trimmedReferenceUrl : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open reference"
+              aria-disabled={!referenceUrlOpenable}
+              tabIndex={referenceUrlOpenable ? 0 : -1}
+              style={{
+                padding: 12,
+                border: "1px solid var(--color-line-2)",
+                color: "var(--color-dim)",
+                borderRadius: 1,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                opacity: referenceUrlOpenable ? 1 : 0.35,
+                cursor: referenceUrlOpenable ? "pointer" : "not-allowed",
+                pointerEvents: referenceUrlOpenable ? "auto" : "none",
+              }}
+            >
+              <IconExt size={14} />
+            </a>
           </div>
           {urlError && (
             <p
@@ -712,10 +708,11 @@ export function SongEditor(props: SongEditorProps) {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                 <div className="grid gap-3">
-                  {sectionsList.map((section) => (
+                  {sectionsList.map((section, i) => (
                     <SortableSection
                       key={section.id}
                       section={section}
+                      index={i}
                       onChange={handleSectionChange}
                       onDelete={() => handleSectionDelete(section.id)}
                     />

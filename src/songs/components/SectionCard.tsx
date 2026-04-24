@@ -1,12 +1,10 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
+import { useEffect, useRef, useState } from "react";
 import { getSectionLabel, useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
 import { SECTION_COLORS } from "@/songs/constants";
 import { IconDrag, IconTrash } from "@/ui/icons";
-import { MetaTag } from "@/ui/meta-tag";
-
-const BAR_PRESETS = [1, 2, 4, 8, 16];
-const EXTRA_BEATS_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
+import { BarsPopover } from "./BarsPopover";
 
 export interface SectionData {
   id: string;
@@ -20,16 +18,23 @@ export interface SectionData {
 
 interface SectionCardProps {
   section: SectionData;
+  index: number;
   onChange: (updated: SectionData) => void;
   onDelete: () => void;
   dragAttributes?: DraggableAttributes;
   dragListeners?: DraggableSyntheticListeners;
 }
 
-export function SectionCard({ section, onChange, onDelete, dragAttributes, dragListeners }: SectionCardProps) {
+export function SectionCard({ section, index, onChange, onDelete, dragAttributes, dragListeners }: SectionCardProps) {
   const { t, locale } = useI18n();
   const color = SECTION_COLORS[section.type];
   const displayLabel = section.type === "custom" ? (section.label ?? "") : getSectionLabel(section.type, locale);
+  const [editingMemo, setEditingMemo] = useState(false);
+  const memoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingMemo && !section.memo) memoInputRef.current?.focus();
+  }, [editingMemo, section.memo]);
 
   return (
     <div
@@ -37,17 +42,26 @@ export function SectionCard({ section, onChange, onDelete, dragAttributes, dragL
         border: "1px solid var(--color-line)",
         borderLeft: `3px solid ${color}`,
         background: "rgba(255,255,255,0.02)",
+        borderRadius: 1,
       }}
     >
-      <div className="flex items-center gap-2" style={{ padding: "12px 14px 10px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "18px 28px 1fr auto 28px",
+          alignItems: "center",
+          gap: 10,
+          padding: "10px 14px",
+        }}
+      >
         <button
           type="button"
-          aria-label="Reorder"
           {...dragAttributes}
           {...dragListeners}
+          aria-label="Reorder"
           style={{
-            width: 22,
-            height: 22,
+            width: 18,
+            height: 18,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -56,35 +70,64 @@ export function SectionCard({ section, onChange, onDelete, dragAttributes, dragL
             border: "none",
             cursor: "grab",
             touchAction: "none",
+            padding: 0,
           }}
         >
           <IconDrag size={14} />
         </button>
 
-        {section.type === "custom" ? (
-          <input
-            type="text"
-            value={section.label ?? ""}
-            onChange={(e) => onChange({ ...section, label: e.target.value })}
-            placeholder={t.song.customLabel}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              fontSize: 14,
-              fontWeight: 600,
-              color: "#fff",
-            }}
-          />
-        ) : (
-          <span className="flex-1 min-w-0 truncate" style={{ fontSize: 14, fontWeight: 600, color }}>
-            {displayLabel}
-          </span>
-        )}
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.2em",
+            color: "var(--color-dim)",
+            fontWeight: 500,
+          }}
+        >
+          {String(index + 1).padStart(2, "0")}
+        </div>
 
-        <MetaTag size={9}>{section.type.toUpperCase()}</MetaTag>
+        <div className="flex items-baseline min-w-0" style={{ gap: 10 }}>
+          {section.type === "custom" ? (
+            <input
+              type="text"
+              value={section.label ?? ""}
+              onChange={(e) => onChange({ ...section, label: e.target.value })}
+              placeholder={t.song.customLabel}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                fontSize: 15,
+                fontWeight: 600,
+                color: "#fff",
+                padding: 0,
+              }}
+            />
+          ) : (
+            <span className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+              {displayLabel}
+            </span>
+          )}
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.22em",
+              color,
+              textTransform: "uppercase",
+              fontWeight: 500,
+              flexShrink: 0,
+            }}
+          >
+            {section.type.toUpperCase()}
+          </span>
+        </div>
+
+        <BarsPopover section={section} color={color} onChange={onChange} />
 
         <button
           type="button"
@@ -96,7 +139,7 @@ export function SectionCard({ section, onChange, onDelete, dragAttributes, dragL
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "var(--color-dim-2)",
+            color: "var(--color-dim-3)",
             background: "transparent",
             border: "none",
             cursor: "pointer",
@@ -106,138 +149,68 @@ export function SectionCard({ section, onChange, onDelete, dragAttributes, dragL
         </button>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gap: 10,
-          padding: "6px 14px 14px",
-        }}
-      >
-        <div>
-          <div style={{ marginBottom: 6 }}>
-            <MetaTag size={9}>{t.common.bars.toUpperCase()}</MetaTag>
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {BAR_PRESETS.map((preset) => {
-              const active = section.bars === preset;
-              return (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => onChange({ ...section, bars: preset })}
-                  style={{
-                    width: 36,
-                    height: 32,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    border: active ? `1px solid ${color}` : "1px solid var(--color-line)",
-                    background: active ? `color-mix(in srgb, ${color} 18%, transparent)` : "transparent",
-                    color: active ? color : "var(--color-text)",
-                    cursor: "pointer",
-                    borderRadius: 2,
-                  }}
-                >
-                  {preset}
-                </button>
-              );
-            })}
-            <input
-              type="number"
-              min={1}
-              value={section.bars}
-              onChange={(e) => {
-                const v = Number.parseInt(e.target.value, 10);
-                if (v > 0) onChange({ ...section, bars: v });
-              }}
-              style={{
-                width: 56,
-                height: 32,
-                border: "1px solid var(--color-line)",
-                background: "transparent",
-                color: "#fff",
-                fontFamily: "var(--font-mono)",
-                fontSize: 13,
-                textAlign: "center",
-                outline: "none",
-                borderRadius: 2,
-              }}
-            />
-          </div>
-        </div>
-
-        <div>
-          <div style={{ marginBottom: 6 }}>
-            <MetaTag size={9}>{t.common.extraBeats.toUpperCase()}</MetaTag>
-          </div>
-          <div className="flex items-center gap-1">
-            {EXTRA_BEATS_OPTIONS.map((val) => {
-              const active = section.extraBeats === val;
-              return (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => onChange({ ...section, extraBeats: val })}
-                  style={{
-                    width: 30,
-                    height: 28,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    border: active ? `1px solid ${color}` : "1px solid var(--color-line)",
-                    background: active ? `color-mix(in srgb, ${color} 18%, transparent)` : "transparent",
-                    color: active ? color : "var(--color-text)",
-                    cursor: "pointer",
-                    borderRadius: 2,
-                  }}
-                >
-                  {val}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
+      <div style={{ padding: "0 14px 8px 56px" }}>
         <input
           type="text"
           value={section.chordProgression ?? ""}
           onChange={(e) => onChange({ ...section, chordProgression: e.target.value || null })}
-          placeholder={`${t.song.chordProgression}  (Am F C G)`}
+          placeholder={t.song.chordProgression}
+          aria-label={t.song.chordProgression}
           style={{
             width: "100%",
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid var(--color-line)",
-            padding: "10px 12px",
+            background: "transparent",
+            border: "none",
+            outline: "none",
             fontFamily: "var(--font-mono)",
-            fontSize: 14,
-            color: "#fff",
-            outline: "none",
-            borderRadius: 0,
-            letterSpacing: "0.08em",
+            fontSize: 13,
+            letterSpacing: "0.15em",
+            color: "var(--color-dim)",
+            fontWeight: 500,
+            padding: 0,
           }}
         />
-        <input
-          type="text"
-          value={section.memo ?? ""}
-          onChange={(e) => onChange({ ...section, memo: e.target.value || null })}
-          placeholder={t.song.memo}
-          style={{
-            width: "100%",
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid var(--color-line)",
-            padding: "10px 12px",
-            fontSize: 14,
-            color: "#fff",
-            outline: "none",
-            borderRadius: 0,
-          }}
-        />
+      </div>
+
+      <div style={{ padding: "0 14px 10px 56px" }}>
+        {editingMemo || section.memo ? (
+          <input
+            ref={memoInputRef}
+            type="text"
+            value={section.memo ?? ""}
+            onChange={(e) => onChange({ ...section, memo: e.target.value || null })}
+            onBlur={() => setEditingMemo(false)}
+            placeholder={t.song.memo}
+            aria-label={t.song.memo}
+            style={{
+              width: "100%",
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              fontSize: 12,
+              color: "var(--color-text)",
+              padding: 0,
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditingMemo(true)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--color-dim-2)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            + {t.song.memo}
+          </button>
+        )}
       </div>
     </div>
   );
