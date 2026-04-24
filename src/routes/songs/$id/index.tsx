@@ -24,16 +24,15 @@ import {
 } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { isValidUrl } from "@/lib/validation";
-import { PcSectionRow } from "@/songs/components/PcSectionRow";
-import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { SectionPalette } from "@/songs/components/SectionPalette";
+import { type SectionData, SectionRow, type SectionRowVariant } from "@/songs/components/SectionRow";
 import { DEFAULT_BARS, PALETTE_TYPES, SECTION_COLORS } from "@/songs/constants";
 import {
   createSongWithSections,
   deleteSong,
   generateSections,
   getSongWithSections,
-  type SectionRow,
+  type SectionRow as SectionDbRow,
   type SongRow,
   saveSongWithSections,
 } from "@/songs/server-fns";
@@ -44,7 +43,7 @@ import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
 
-function toSectionData(s: SectionRow): SectionData {
+function toSectionData(s: SectionDbRow): SectionData {
   return {
     id: s.id,
     type: s.type,
@@ -56,7 +55,7 @@ function toSectionData(s: SectionRow): SectionData {
   };
 }
 
-function buildSongSnapshot(data: { song: SongRow; sections: SectionRow[] }): string {
+function buildSongSnapshot(data: { song: SongRow; sections: SectionDbRow[] }): string {
   const bpm = data.song.bpm;
   return JSON.stringify({
     title: data.song.title.trim(),
@@ -86,7 +85,7 @@ function SongEditRoute() {
 
 export type SongEditorProps =
   | { mode: "new" }
-  | { mode: "edit"; id: string; initial: { song: SongRow; sections: SectionRow[] } };
+  | { mode: "edit"; id: string; initial: { song: SongRow; sections: SectionDbRow[] } };
 
 const EMPTY_SONG_SNAPSHOT = {
   song: {
@@ -99,17 +98,19 @@ const EMPTY_SONG_SNAPSHOT = {
     createdAt: 0,
     updatedAt: 0,
   } satisfies SongRow,
-  sections: [] as SectionRow[],
+  sections: [] as SectionDbRow[],
 };
 
-function SortableSection({
+function SortableSectionRow({
   section,
   index,
+  variant,
   onChange,
   onDelete,
 }: {
   section: SectionData;
   index: number;
+  variant: SectionRowVariant;
   onChange: (updated: SectionData) => void;
   onDelete: () => void;
 }) {
@@ -121,40 +122,10 @@ function SortableSection({
   };
   return (
     <div ref={setNodeRef} style={style}>
-      <SectionCard
+      <SectionRow
         section={section}
         index={index}
-        onChange={onChange}
-        onDelete={onDelete}
-        dragAttributes={attributes}
-        dragListeners={listeners}
-      />
-    </div>
-  );
-}
-
-function PcSortableSectionRow({
-  section,
-  index,
-  onChange,
-  onDelete,
-}: {
-  section: SectionData;
-  index: number;
-  onChange: (updated: SectionData) => void;
-  onDelete: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-  return (
-    <div ref={setNodeRef} style={style}>
-      <PcSectionRow
-        section={section}
-        index={index}
+        variant={variant}
         onChange={onChange}
         onDelete={onDelete}
         dragAttributes={attributes}
@@ -709,10 +680,11 @@ export function SongEditor(props: SongEditorProps) {
               <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                 <div className="grid gap-3">
                   {sectionsList.map((section, i) => (
-                    <SortableSection
+                    <SortableSectionRow
                       key={section.id}
                       section={section}
                       index={i}
+                      variant="mobile"
                       onChange={handleSectionChange}
                       onDelete={() => handleSectionDelete(section.id)}
                     />
@@ -1157,10 +1129,11 @@ function PcEditorPane({
               <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                 <div className="grid" style={{ gap: 8 }}>
                   {sectionsList.map((section, i) => (
-                    <PcSortableSectionRow
+                    <SortableSectionRow
                       key={section.id}
                       section={section}
                       index={i}
+                      variant="pc"
                       onChange={onSectionChange}
                       onDelete={() => onSectionDelete(section.id)}
                     />

@@ -16,25 +16,60 @@ export interface SectionData {
   memo: string | null;
 }
 
-interface SectionCardProps {
+export type SectionRowVariant = "mobile" | "pc";
+
+interface SectionRowProps {
   section: SectionData;
   index: number;
+  variant: SectionRowVariant;
   onChange: (updated: SectionData) => void;
   onDelete: () => void;
   dragAttributes?: DraggableAttributes;
   dragListeners?: DraggableSyntheticListeners;
 }
 
-export function SectionCard({ section, index, onChange, onDelete, dragAttributes, dragListeners }: SectionCardProps) {
+export function SectionRow({
+  section,
+  index,
+  variant,
+  onChange,
+  onDelete,
+  dragAttributes,
+  dragListeners,
+}: SectionRowProps) {
   const { t, locale } = useI18n();
   const color = SECTION_COLORS[section.type];
   const displayLabel = section.type === "custom" ? (section.label ?? "") : getSectionLabel(section.type, locale);
+  const isPc = variant === "pc";
+  const totalBeats = section.bars * 4 + section.extraBeats;
   const [editingMemo, setEditingMemo] = useState(false);
   const memoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingMemo && !section.memo) memoInputRef.current?.focus();
   }, [editingMemo, section.memo]);
+
+  const chordInput = (
+    <input
+      type="text"
+      value={section.chordProgression ?? ""}
+      onChange={(e) => onChange({ ...section, chordProgression: e.target.value || null })}
+      placeholder={t.song.chordProgression}
+      aria-label={t.song.chordProgression}
+      style={{
+        width: "100%",
+        background: "transparent",
+        border: "none",
+        outline: "none",
+        fontFamily: "var(--font-mono)",
+        fontSize: 13,
+        letterSpacing: "0.15em",
+        color: "var(--color-dim)",
+        fontWeight: 500,
+        padding: 0,
+      }}
+    />
+  );
 
   return (
     <div
@@ -48,7 +83,7 @@ export function SectionCard({ section, index, onChange, onDelete, dragAttributes
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "18px 28px 1fr auto 28px",
+          gridTemplateColumns: isPc ? "18px 36px 1fr 140px 90px 90px 28px" : "18px 28px 1fr auto 28px",
           alignItems: "center",
           gap: 10,
           padding: "10px 14px",
@@ -88,7 +123,7 @@ export function SectionCard({ section, index, onChange, onDelete, dragAttributes
           {String(index + 1).padStart(2, "0")}
         </div>
 
-        <div className="flex items-baseline min-w-0" style={{ gap: 10 }}>
+        <div className="flex items-baseline min-w-0" style={{ gap: 12 }}>
           {section.type === "custom" ? (
             <input
               type="text"
@@ -127,7 +162,23 @@ export function SectionCard({ section, index, onChange, onDelete, dragAttributes
           </span>
         </div>
 
+        {isPc && chordInput}
+
         <BarsPopover section={section} color={color} onChange={onChange} />
+
+        {isPc && (
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--color-dim-2)",
+              letterSpacing: "0.08em",
+              textAlign: "right",
+            }}
+          >
+            {totalBeats}b
+          </div>
+        )}
 
         <button
           type="button"
@@ -149,29 +200,9 @@ export function SectionCard({ section, index, onChange, onDelete, dragAttributes
         </button>
       </div>
 
-      <div style={{ padding: "0 14px 8px 56px" }}>
-        <input
-          type="text"
-          value={section.chordProgression ?? ""}
-          onChange={(e) => onChange({ ...section, chordProgression: e.target.value || null })}
-          placeholder={t.song.chordProgression}
-          aria-label={t.song.chordProgression}
-          style={{
-            width: "100%",
-            background: "transparent",
-            border: "none",
-            outline: "none",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            letterSpacing: "0.15em",
-            color: "var(--color-dim)",
-            fontWeight: 500,
-            padding: 0,
-          }}
-        />
-      </div>
+      {!isPc && <div style={{ padding: "0 14px 8px 58px" }}>{chordInput}</div>}
 
-      <div style={{ padding: "0 14px 10px 56px" }}>
+      <div style={{ padding: "0 14px 10px 58px" }}>
         {editingMemo || section.memo ? (
           <input
             ref={memoInputRef}
