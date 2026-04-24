@@ -23,15 +23,31 @@ export function TopBar({ title, subtitle, left, right }: TopBarProps) {
       }}
     >
       <div style={{ minWidth: 32 }}>{left}</div>
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, textAlign: "center" }}>
         {typeof title === "string" ? (
-          <div className="truncate" style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)" }}>
+          <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
             {title}
           </div>
         ) : (
           title
         )}
-        {subtitle && <div style={{ marginTop: 3 }}>{subtitle}</div>}
+        {subtitle &&
+          (typeof subtitle === "string" ? (
+            <div
+              style={{
+                marginTop: 3,
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.22em",
+                color: "rgba(255,255,255,0.4)",
+                textTransform: "uppercase",
+              }}
+            >
+              {subtitle}
+            </div>
+          ) : (
+            <div style={{ marginTop: 3 }}>{subtitle}</div>
+          ))}
       </div>
       <div className="flex items-center" style={{ gap: 6 }}>
         {right}
