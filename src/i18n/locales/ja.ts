@@ -154,7 +154,7 @@ export const ja: Translations = {
     section: "セクション",
     of: "/",
     songOf: "曲 {current}/{total}",
-    start: "演奏を開始",
+    start: "演奏",
     modeSelect: {
       manual: "手動",
       auto: "自動",

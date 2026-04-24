@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SECTION_TYPES } from "@/i18n/types";
-import { DEFAULT_BARS, SECTION_COLORS } from "./constants";
+import { DEFAULT_BARS, PALETTE_TYPES, SECTION_COLORS } from "./constants";
 
 describe("SECTION_COLORS", () => {
   it("defines a color for every section type", () => {
@@ -48,5 +48,19 @@ describe("DEFAULT_BARS", () => {
     expect(DEFAULT_BARS.b).toBe(8);
     expect(DEFAULT_BARS.bridge).toBe(8);
     expect(DEFAULT_BARS.solo).toBe(8);
+  });
+});
+
+describe("PALETTE_TYPES", () => {
+  it("exposes 8 section types (all built-ins except custom)", () => {
+    expect(PALETTE_TYPES).toHaveLength(8);
+    expect(PALETTE_TYPES).not.toContain("custom");
+  });
+
+  it("covers every non-custom SECTION_TYPES entry", () => {
+    for (const type of SECTION_TYPES) {
+      if (type === "custom") continue;
+      expect(PALETTE_TYPES).toContain(type);
+    }
   });
 });

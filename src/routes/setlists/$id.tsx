@@ -300,7 +300,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
           </Link>
         }
         title={title.trim() || fallbackTitle}
-        subtitle={<MetaTag size={9}>{String(songs.length).padStart(2, "0")} SONGS</MetaTag>}
+        subtitle={`${String(songs.length).padStart(2, "0")} SONGS`}
         right={
           <>
             {!isNew && editSetlistId && songs.length > 0 && (

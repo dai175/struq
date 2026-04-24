@@ -12,6 +12,17 @@ export const SECTION_COLORS: Record<SectionType, string> = {
   custom: "var(--color-section-custom)",
 };
 
+export const PALETTE_TYPES: readonly SectionType[] = [
+  "intro",
+  "a",
+  "b",
+  "chorus",
+  "bridge",
+  "solo",
+  "interlude",
+  "outro",
+];
+
 export const DEFAULT_BARS: Record<SectionType, number> = {
   intro: 4,
   a: 8,
