@@ -54,6 +54,28 @@ async function requireSetlistOwner(db: Database, setlistId: string, userId: stri
   return setlist;
 }
 
+// D1 limits bound parameters to 100 per statement. The ownership check combines
+// inArray(songIds) with userId eq, so chunk songIds at 90 to stay under the limit
+// even for the max input size (songIds.max = 500).
+const SONGS_OWNERSHIP_CHECK_BATCH = 90;
+
+async function verifySongsOwnership(db: Database, songIds: string[], userId: string): Promise<void> {
+  if (songIds.length === 0) return;
+  const uniqueIds = Array.from(new Set(songIds));
+  let ownedCount = 0;
+  for (let i = 0; i < uniqueIds.length; i += SONGS_OWNERSHIP_CHECK_BATCH) {
+    const chunk = uniqueIds.slice(i, i + SONGS_OWNERSHIP_CHECK_BATCH);
+    const rows = await db
+      .select({ id: schema.songs.id })
+      .from(schema.songs)
+      .where(and(inArray(schema.songs.id, chunk), eq(schema.songs.userId, userId), isNull(schema.songs.deletedAt)));
+    ownedCount += rows.length;
+  }
+  if (ownedCount !== uniqueIds.length) {
+    throw new Error("Song not found");
+  }
+}
+
 // ─── listSetlists ──────────────────────────────────────
 
 const LIST_SETLISTS_LIMIT = 30;
@@ -179,27 +201,13 @@ export const createSetlistWithSongs = createServerFn({ method: "POST" })
     const title = data.title.trim();
     if (!title) throw new Error("Title is required");
 
-    const [ownedSongIds, [maxOrderResult]] = await Promise.all([
-      data.songIds.length > 0
-        ? db
-            .select({ id: schema.songs.id })
-            .from(schema.songs)
-            .where(
-              and(
-                inArray(schema.songs.id, data.songIds),
-                eq(schema.songs.userId, user.userId),
-                isNull(schema.songs.deletedAt),
-              ),
-            )
-        : Promise.resolve([] as { id: string }[]),
+    const [, [maxOrderResult]] = await Promise.all([
+      verifySongsOwnership(db, data.songIds, user.userId),
       db
         .select({ maxOrder: max(schema.setlists.sortOrder) })
         .from(schema.setlists)
         .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt))),
     ]);
-    if (ownedSongIds.length !== data.songIds.length) {
-      throw new Error("Song not found");
-    }
 
     const sortOrder = (maxOrderResult?.maxOrder ?? -1) + 1;
 
@@ -339,24 +347,10 @@ export const saveSetlistWithSongs = createServerFn({ method: "POST" })
     const db = getDb(env.DB);
     const timestamp = now();
 
-    const [, ownedSongIds] = await Promise.all([
+    await Promise.all([
       requireSetlistOwner(db, data.id, user.userId),
-      data.songIds.length > 0
-        ? db
-            .select({ id: schema.songs.id })
-            .from(schema.songs)
-            .where(
-              and(
-                inArray(schema.songs.id, data.songIds),
-                eq(schema.songs.userId, user.userId),
-                isNull(schema.songs.deletedAt),
-              ),
-            )
-        : Promise.resolve([] as { id: string }[]),
+      verifySongsOwnership(db, data.songIds, user.userId),
     ]);
-    if (ownedSongIds.length !== data.songIds.length) {
-      throw new Error("Song not found");
-    }
 
     // Executes as a single batched request (not a true ACID transaction —
     // D1 does not support BEGIN/COMMIT semantics; prior statements in the
@@ -407,6 +401,10 @@ export const listSongsForPicker = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<{ id: string; title: string; artist: string | null }[]> => {
     const user = await requireUser();
     const db = getDb(env.DB);
+
+    if (data.setlistId) {
+      await requireSetlistOwner(db, data.setlistId, user.userId);
+    }
 
     // When setlistId is omitted (new setlist flow), skip the NOT IN subquery —
     // the client de-duplicates against the in-memory song list instead.
