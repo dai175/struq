@@ -96,6 +96,12 @@ export const en: Translations = {
     removeSong: "Remove song",
     pickerAllAdded: "All your songs are already in this setlist",
     addFromLibrary: "Add song from library",
+    searchPlaceholder: "Search by title or venue",
+    searchNoResults: "No matching setlists",
+    searchClear: "Clear search",
+    shown: "Shown",
+    total: "Total",
+    noMatches: "No matches",
   },
   settings: {
     language: "Language",

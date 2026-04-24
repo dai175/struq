@@ -85,11 +85,25 @@ async function verifySongsOwnership(db: Database, songIds: string[], userId: str
 const LIST_SETLISTS_LIMIT = 30;
 
 export const listSetlists = createServerFn({ method: "GET" })
-  .inputValidator((input: { offset?: number } | undefined) => listInputSchema.parse(input ?? {}))
+  .inputValidator((input: { offset?: number; query?: string } | undefined) => listInputSchema.parse(input ?? {}))
   .handler(async ({ data }): Promise<{ items: SetlistWithSongCount[]; hasMore: boolean }> => {
     const user = await requireUser();
     const db = getDb(env.DB);
     const offset = Math.max(0, data.offset ?? 0);
+
+    const baseWhere = and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt));
+    const whereClause = data.query
+      ? and(
+          baseWhere,
+          (() => {
+            const pattern = `%${escapeLikePattern(data.query)}%`;
+            return or(
+              sql`${schema.setlists.title} LIKE ${pattern} ESCAPE '\\'`,
+              sql`${schema.setlists.venue} LIKE ${pattern} ESCAPE '\\'`,
+            );
+          })(),
+        )
+      : baseWhere;
 
     const rows = await db
       .select({
@@ -100,7 +114,7 @@ export const listSetlists = createServerFn({ method: "GET" })
           )`.as("song_count"),
       })
       .from(schema.setlists)
-      .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt)))
+      .where(whereClause)
       .orderBy(schema.setlists.sortOrder)
       .limit(LIST_SETLISTS_LIMIT + 1)
       .offset(offset);
