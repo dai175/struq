@@ -6,6 +6,7 @@ import type { SessionUser } from "@/auth/session";
 import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
+import { usePersistedState } from "@/lib/use-persisted-state";
 import { useClickPreference } from "@/songs/click-preference";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { MetaTag } from "@/ui/meta-tag";
@@ -28,6 +29,16 @@ type PreRoll = 0 | 1 | 2 | 4;
 const CLICK_SOUNDS: ClickSound[] = ["TICK", "BEEP", "SNAP", "RIM"];
 const APPEARANCES: Appearance[] = ["DARK", "AUTO", "LIGHT"];
 const PRE_ROLL_OPTIONS: PreRoll[] = [0, 1, 2, 4];
+
+const validateBool = (v: unknown): boolean | null => (typeof v === "boolean" ? v : null);
+const validateClickVolume = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100 ? v : null;
+const validateClickSound = (v: unknown): ClickSound | null =>
+  typeof v === "string" && (CLICK_SOUNDS as readonly string[]).includes(v) ? (v as ClickSound) : null;
+const validatePreRoll = (v: unknown): PreRoll | null =>
+  (PRE_ROLL_OPTIONS as readonly number[]).includes(v as number) ? (v as PreRoll) : null;
+const validateAppearance = (v: unknown): Appearance | null =>
+  typeof v === "string" && (APPEARANCES as readonly string[]).includes(v) ? (v as Appearance) : null;
 
 type PcNavId = "account" | "language" | "audio" | "appearance" | "shortcuts" | "about";
 
@@ -66,14 +77,22 @@ function SettingsPage() {
   const [localeUpdating, setLocaleUpdating] = useState(false);
   const [clickEnabled, setClickEnabled] = useClickPreference();
 
-  // New settings — UI-only (not persisted); matches the broadcast spec
-  // until a user_settings table lands in a follow-up PR.
-  const [countIn, setCountIn] = useState(false);
-  const [clickVolume, setClickVolume] = useState(62);
-  const [clickSound, setClickSound] = useState<ClickSound>("TICK");
-  const [accentDownbeat, setAccentDownbeat] = useState(true);
-  const [preRollBars, setPreRollBars] = useState<PreRoll>(0);
-  const [appearance, setAppearance] = useState<Appearance>("DARK");
+  // Persisted client-side until a user_settings table lands. Server still has
+  // the locale source of truth (see updateLocale above).
+  const [countIn, setCountIn] = usePersistedState("struq.settings.countIn", false, validateBool);
+  const [clickVolume, setClickVolume] = usePersistedState("struq.settings.clickVolume", 62, validateClickVolume);
+  const [clickSound, setClickSound] = usePersistedState<ClickSound>(
+    "struq.settings.clickSound",
+    "TICK",
+    validateClickSound,
+  );
+  const [accentDownbeat, setAccentDownbeat] = usePersistedState("struq.settings.accentDownbeat", true, validateBool);
+  const [preRollBars, setPreRollBars] = usePersistedState<PreRoll>("struq.settings.preRollBars", 0, validatePreRoll);
+  const [appearance, setAppearance] = usePersistedState<Appearance>(
+    "struq.settings.appearance",
+    "DARK",
+    validateAppearance,
+  );
 
   const [activeNav, setActiveNav] = useState<PcNavId>("account");
   const activeMeta = PC_NAV.find((n) => n.id === activeNav) ?? PC_NAV[0];
