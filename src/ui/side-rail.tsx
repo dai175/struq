@@ -16,8 +16,7 @@ function initials(name: string): string {
 
 /**
  * SideRail — 76px-wide fixed PC navigation (≥ lg breakpoint).
- * Layout follows `design_handoff_struq/designs/console-pc.jsx` L5-57:
- * logo section + border → flex-1 nav with tabs at flex-start → avatar
+ * Layout: logo section + border → flex-1 nav with tabs at flex-start → avatar
  * section + border. Active tab has a 2px accent left border and `color: #fff`.
  */
 export function SideRail({ user }: SideRailProps) {

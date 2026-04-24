@@ -167,9 +167,8 @@ interface LogomarkProps {
 
 /**
  * Logomark — 5 colored rects in a 3-row structure chart, echoing a song's
- * section layout. Geometry matches the handoff reference verbatim
- * (design_handoff_struq/designs/console-pc.jsx L24-30). The fills reference
- * the section palette so any later palette retune keeps the logo in sync.
+ * section layout. Fills reference the section palette so any later palette
+ * retune keeps the logo in sync.
  */
 export function Logomark({ size = 26 }: LogomarkProps) {
   return (
