@@ -59,7 +59,7 @@ function RootLayout() {
   return (
     <>
       {showNav && <SideRail user={user} />}
-      <div className={showNav ? "pb-16 lg:pb-0 lg:pl-[76px]" : ""}>
+      <div className={showNav ? "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-[76px]" : ""}>
         <Outlet />
       </div>
       {showNav && <BottomNav />}
