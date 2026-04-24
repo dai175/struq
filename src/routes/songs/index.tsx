@@ -47,6 +47,7 @@ function SongsPage() {
     hasMore,
     loading: loadingMore,
     loadMore,
+    reset: resetLoadMore,
   } = useLoadMore({
     initialItems: initial.items,
     initialHasMore: initial.hasMore,
@@ -80,6 +81,10 @@ function SongsPage() {
     setDeletingId(id);
     try {
       await deleteSong({ data: { id } });
+      // Extras may hold later pages whose offsets shift once the server side
+      // drops the deleted row; clearing them prevents duplicate rows appearing
+      // across the page-1 boundary after invalidation.
+      resetLoadMore();
       setDeletedIds((prev) => {
         const next = new Set(prev);
         next.add(id);
