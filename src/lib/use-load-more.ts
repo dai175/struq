@@ -46,7 +46,8 @@ export function useLoadMore<T>({
   const hasMore = extras.length > 0 ? extrasHasMore : initialHasMore;
 
   async function loadMore() {
-    const token = ++runTokenRef.current;
+    runTokenRef.current++;
+    const token = runTokenRef.current;
     setLoading(true);
     try {
       const next = await fetchMore(items.length);
