@@ -1,16 +1,16 @@
-import { createFileRoute, Link, useLoaderData, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link, useLoaderData, useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
-import { ConfirmModal } from "@/lib/confirm-modal";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useLoadMore } from "@/lib/use-load-more";
-import { deleteSong, listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
+import { listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
-import { IconPlus, IconSearch, IconTrash } from "@/ui/icons";
+import { IconPlus, IconSearch } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
+import { TopBar } from "@/ui/top-bar";
 
 export const Route = createFileRoute("/songs/")({
   component: SongsPage,
@@ -22,10 +22,7 @@ function SongsPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
   const { toast } = useToast();
-  const router = useRouter();
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [input, setInput] = useState(search.q ?? "");
   const debouncedInput = useDebouncedValue(input, 300);
 
@@ -35,30 +32,22 @@ function SongsPage() {
   // the same render's navigate effect, triggering a revert-navigate loop.
   const queryKey = search.q ?? "";
   const [boundKey, setBoundKey] = useState(queryKey);
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   if (boundKey !== queryKey) {
     setBoundKey(queryKey);
     setInput(queryKey);
-    setDeletedIds(new Set());
   }
 
   const {
-    items: fetched,
+    items: songs,
     hasMore,
     loading: loadingMore,
     loadMore,
-    reset: resetLoadMore,
   } = useLoadMore({
     initialItems: initial.items,
     initialHasMore: initial.hasMore,
     resetKey: queryKey,
     fetchMore: (offset) => listSongs({ data: { offset, query: search.q } }),
   });
-
-  const songs = useMemo(
-    () => (deletedIds.size > 0 ? fetched.filter((it) => !deletedIds.has(it.song.id)) : fetched),
-    [fetched, deletedIds],
-  );
 
   useEffect(() => {
     const next = debouncedInput.trim() || undefined;
@@ -72,31 +61,6 @@ function SongsPage() {
 
   function handleCreate() {
     navigate({ to: "/songs/new" });
-  }
-
-  async function executeDelete() {
-    const id = pendingDeleteId;
-    if (!id) return;
-    setPendingDeleteId(null);
-    setDeletingId(id);
-    try {
-      await deleteSong({ data: { id } });
-      // Extras may hold later pages whose offsets shift once the server side
-      // drops the deleted row; clearing them prevents duplicate rows appearing
-      // across the page-1 boundary after invalidation.
-      resetLoadMore();
-      setDeletedIds((prev) => {
-        const next = new Set(prev);
-        next.add(id);
-        return next;
-      });
-      router.invalidate();
-    } catch (error) {
-      clientLogger.error("deleteSong", error);
-      toast.error(t.common.errorDeleteFailed);
-    } finally {
-      setDeletingId(null);
-    }
   }
 
   async function handleLoadMore() {
@@ -137,47 +101,33 @@ function SongsPage() {
       </div>
 
       <div
-        className="mx-auto min-h-screen max-w-2xl px-5 pt-6 pb-8 lg:hidden"
+        className="mx-auto min-h-screen max-w-2xl lg:hidden flex flex-col"
         style={{
           background: "var(--color-ink)",
           color: "var(--color-text)",
           fontFamily: "var(--font-sans)",
         }}
       >
-        <header className="flex items-end justify-between gap-3 pb-5">
-          <div>
-            <h1
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                letterSpacing: "-0.01em",
-                color: "var(--color-text)",
-              }}
-            >
-              {t.nav.songs}
-            </h1>
-            <div className="mt-1.5">
-              <MetaTag>
-                {String(songs.length).padStart(2, "0")} {isSearching ? t.song.shown : t.song.total}
-              </MetaTag>
-            </div>
-          </div>
-          <ConsoleBtn tone="white" onClick={handleCreate}>
-            <IconPlus size={10} />
-            {t.common.new.toUpperCase()}
-          </ConsoleBtn>
-        </header>
+        <TopBar
+          title={t.nav.songs}
+          subtitle={`${String(songs.length).padStart(2, "0")} ${isSearching ? t.song.shown : t.song.total}`}
+          left={<MetaTag>STRUQ</MetaTag>}
+          right={
+            <ConsoleBtn tone="white" onClick={handleCreate}>
+              <IconPlus size={10} />
+              {t.common.new.toUpperCase()}
+            </ConsoleBtn>
+          }
+        />
 
         <div
-          className="flex items-center gap-2"
+          className="flex items-center gap-3"
           style={{
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid var(--color-line)",
-            padding: "10px 12px",
-            marginBottom: 20,
+            padding: "12px 18px",
+            borderBottom: "1px solid var(--color-line)",
           }}
         >
-          <IconSearch size={14} />
+          <IconSearch size={14} style={{ color: "var(--color-dim)" }} />
           <input
             type="text"
             value={input}
@@ -210,10 +160,11 @@ function SongsPage() {
               ×
             </button>
           )}
+          <MetaTag>A–Z</MetaTag>
         </div>
 
         {songs.length === 0 ? (
-          <div className="flex flex-col items-center py-20 text-center gap-3">
+          <div className="flex flex-col items-center py-20 px-5 text-center gap-3">
             <MetaTag>{isSearching ? t.song.noMatches : t.song.noSongs}</MetaTag>
             {isSearching && <p style={{ color: "var(--color-dim)", fontSize: 14 }}>{t.song.searchNoResults}</p>}
             {!isSearching && (
@@ -229,14 +180,7 @@ function SongsPage() {
           <>
             <ul style={{ borderTop: "1px solid var(--color-line)" }}>
               {songs.map(({ song, sections }, index) => (
-                <SongRowView
-                  key={song.id}
-                  song={song}
-                  sections={sections}
-                  index={index}
-                  deleting={deletingId === song.id}
-                  onDelete={() => setPendingDeleteId(song.id)}
-                />
+                <SongRowView key={song.id} song={song} sections={sections} index={index} />
               ))}
             </ul>
             {hasMore && (
@@ -249,120 +193,88 @@ function SongsPage() {
           </>
         )}
       </div>
-
-      <ConfirmModal
-        open={pendingDeleteId !== null}
-        message={t.song.confirmDelete}
-        confirmLabel={t.common.delete}
-        cancelLabel={t.common.cancel}
-        onConfirm={executeDelete}
-        onCancel={() => setPendingDeleteId(null)}
-      />
     </>
   );
 }
 
-function SongRowView({
-  song,
-  sections,
-  index,
-  deleting,
-  onDelete,
-}: {
-  song: SongRow;
-  sections: SectionRow[];
-  index: number;
-  deleting: boolean;
-  onDelete: () => void;
-}) {
-  const { t } = useI18n();
+function SongRowView({ song, sections, index }: { song: SongRow; sections: SectionRow[]; index: number }) {
   const totalBars = sections.reduce((sum, s) => sum + s.bars, 0);
 
   return (
     <li
       style={{
         display: "grid",
-        gridTemplateColumns: "36px 1fr 32px",
-        alignItems: "center",
-        gap: 12,
-        padding: "16px 4px",
+        gridTemplateColumns: "22px 1fr",
+        alignItems: "start",
+        gap: 14,
+        padding: "16px 18px",
         borderBottom: "1px solid var(--color-line)",
       }}
     >
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          fontWeight: 600,
+          fontSize: 10,
           color: "var(--color-dim-2)",
-          letterSpacing: "0.08em",
+          letterSpacing: "0.18em",
+          paddingTop: 4,
         }}
       >
         {String(index + 1).padStart(2, "0")}
       </span>
       <Link to="/songs/$id" params={{ id: song.id }} className="min-w-0">
-        <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
-          {song.title}
-        </p>
-        {song.artist && (
-          <div
-            className="truncate mt-1"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              color: "var(--color-dim-2)",
-              textTransform: "uppercase",
-              fontWeight: 500,
-            }}
-          >
-            {song.artist}
-          </div>
-        )}
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>
+            {song.title}
+          </span>
+          {song.artist && (
+            <span
+              className="truncate"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                color: "var(--color-dim)",
+                textTransform: "uppercase",
+              }}
+            >
+              {song.artist}
+            </span>
+          )}
+        </div>
         {sections.length > 0 && (
-          <div style={{ marginTop: 8 }}>
-            <StructureBar sections={sections} height={3} gap={1} />
+          <div className="flex items-center gap-2" style={{ marginTop: 10 }}>
+            <StructureBar sections={sections} height={5} gap={1.5} style={{ flex: 1 }} />
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.15em",
+                color: "var(--color-dim)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {String(sections.length).padStart(2, "0")} SEC
+            </span>
           </div>
         )}
         <div
-          className="mt-2 flex"
+          className="flex"
           style={{
             gap: 14,
+            marginTop: 8,
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.18em",
-            color: "var(--color-dim-2)",
+            color: "var(--color-dim)",
             textTransform: "uppercase",
-            fontWeight: 500,
           }}
         >
           {song.bpm != null && <span>{song.bpm} BPM</span>}
           {song.key && <span>KEY {song.key}</span>}
-          <span>
-            {String(sections.length).padStart(2, "0")} SEC · {totalBars} BARS
-          </span>
+          <span>{totalBars} BARS</span>
         </div>
       </Link>
-      <button
-        type="button"
-        onClick={onDelete}
-        disabled={deleting}
-        aria-label={t.song.deleteSong}
-        style={{
-          width: 32,
-          height: 32,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--color-dim-2)",
-          background: "transparent",
-          border: "none",
-          cursor: deleting ? "not-allowed" : "pointer",
-          opacity: deleting ? 0.4 : 1,
-        }}
-      >
-        <IconTrash size={16} />
-      </button>
     </li>
   );
 }
