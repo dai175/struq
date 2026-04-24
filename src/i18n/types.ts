@@ -95,6 +95,12 @@ export interface Translations {
     removeSong: string;
     pickerAllAdded: string;
     addFromLibrary: string;
+    searchPlaceholder: string;
+    searchNoResults: string;
+    searchClear: string;
+    shown: string;
+    total: string;
+    noMatches: string;
   };
 
   settings: {

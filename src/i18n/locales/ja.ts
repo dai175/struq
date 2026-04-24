@@ -96,6 +96,12 @@ export const ja: Translations = {
     removeSong: "曲を外す",
     pickerAllAdded: "すべての曲がこのセットリストに追加されています",
     addFromLibrary: "ライブラリから追加",
+    searchPlaceholder: "タイトル・会場で検索",
+    searchNoResults: "該当するセットリストはありません",
+    searchClear: "検索をクリア",
+    shown: "表示中",
+    total: "全件",
+    noMatches: "該当なし",
   },
   settings: {
     language: "言語",
