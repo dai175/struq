@@ -24,6 +24,7 @@ export function BottomNav() {
       style={{
         background: "var(--color-ink)",
         borderColor: "var(--color-line)",
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
       {tabs.map(({ to, label, Icon }) => {

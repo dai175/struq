@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ConsoleBtn } from "@/ui/console-btn";
 
@@ -29,6 +29,8 @@ export function ConfirmModal({
   const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<Element | null>(null);
+  const titleId = useId();
+  const descId = useId();
 
   useEffect(() => {
     setMounted(true);
@@ -80,6 +82,8 @@ export function ConfirmModal({
         ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
         className="w-full max-w-[420px]"
         style={{
           background: "var(--color-ink-2)",
@@ -92,6 +96,7 @@ export function ConfirmModal({
       >
         <div style={{ padding: "20px 22px 18px" }}>
           <div
+            id={titleId}
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
@@ -105,6 +110,7 @@ export function ConfirmModal({
             CONFIRM
           </div>
           <p
+            id={descId}
             style={{
               margin: 0,
               fontFamily: "var(--font-sans)",
