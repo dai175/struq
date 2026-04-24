@@ -1,7 +1,9 @@
 import { createFileRoute, Link, Outlet, useMatches, useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
+import { clientLogger } from "@/lib/client-logger";
+import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
@@ -44,6 +46,7 @@ function SongsPcLibraryColumn() {
   const activeId = params.id;
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { toast } = useToast();
 
   const [input, setInput] = useState(search.q ?? "");
   const debouncedInput = useDebouncedValue(input, 300);
@@ -54,9 +57,14 @@ function SongsPcLibraryColumn() {
   // render's navigate effect, triggering a revert-navigate loop.
   const queryKey = search.q ?? "";
   const [boundKey, setBoundKey] = useState(queryKey);
+  const [extras, setExtras] = useState<typeof initial.items>([]);
+  const [extrasHasMore, setExtrasHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   if (boundKey !== queryKey) {
     setBoundKey(queryKey);
     setInput(queryKey);
+    setExtras([]);
+    setExtrasHasMore(false);
   }
 
   useEffect(() => {
@@ -73,8 +81,26 @@ function SongsPcLibraryColumn() {
     navigate({ to: "/songs/new" });
   }
 
-  const items = initial.items;
+  const items = useMemo(
+    () => (extras.length > 0 ? [...initial.items, ...extras] : initial.items),
+    [initial.items, extras],
+  );
+  const hasMore = extras.length > 0 ? extrasHasMore : initial.hasMore;
   const isSearching = !!search.q;
+
+  async function handleLoadMore() {
+    setLoadingMore(true);
+    try {
+      const next = await listSongs({ data: { offset: items.length, query: search.q } });
+      setExtras((prev) => [...prev, ...next.items]);
+      setExtrasHasMore(next.hasMore);
+    } catch (error) {
+      clientLogger.error("loadMoreSongs", error);
+      toast.error(t.common.errorLoadFailed);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   return (
     <aside
@@ -98,7 +124,8 @@ function SongsPcLibraryColumn() {
           <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)" }}>{t.nav.songs}</div>
           <div style={{ marginTop: 2 }}>
             <MetaTag size={9}>
-              {String(items.length).padStart(2, "0")} {(isSearching ? t.song.shown : t.song.total).toUpperCase()}
+              {String(items.length).padStart(2, "0")}
+              {hasMore ? "+" : ""} {(isSearching ? t.song.shown : t.song.total).toUpperCase()}
             </MetaTag>
           </div>
         </div>
@@ -165,6 +192,13 @@ function SongsPcLibraryColumn() {
             active={it.song.id === activeId}
           />
         ))}
+        {hasMore && (
+          <li className="flex justify-center" style={{ padding: "16px 22px" }}>
+            <ConsoleBtn onClick={handleLoadMore} disabled={loadingMore}>
+              {loadingMore ? t.common.loading : t.common.loadMore}
+            </ConsoleBtn>
+          </li>
+        )}
       </ul>
     </aside>
   );
