@@ -11,7 +11,9 @@ import { ConsoleBtn } from "@/ui/console-btn";
 import { IconCal, IconPlus, IconSearch } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 
-type SetlistsSearch = { q?: string };
+interface SetlistsSearch {
+  q?: string;
+}
 
 export const Route = createFileRoute("/setlists")({
   beforeLoad: requireAuth,

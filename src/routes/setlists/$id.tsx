@@ -92,10 +92,10 @@ export function SetlistEditor(props: SetlistEditorProps) {
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedSnapshotRef = useRef(
     JSON.stringify({
-      title: data.setlist.title,
-      description: data.setlist.description ?? "",
+      title: data.setlist.title.trim(),
+      description: (data.setlist.description ?? "").trim(),
       sessionDate: data.setlist.sessionDate ?? "",
-      venue: data.setlist.venue ?? "",
+      venue: (data.setlist.venue ?? "").trim(),
       songIds: data.songs.map((s) => s.songId),
     }),
   );
