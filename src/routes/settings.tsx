@@ -469,6 +469,7 @@ function ChoiceCard({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       style={{
         padding: size === "large" ? "18px 12px" : "12px 10px",
@@ -596,7 +597,11 @@ function PcSubNavItem({ item, active, onClick }: { item: PcNavItem; active: bool
       }}
     >
       <span>{item.label}</span>
-      {active && <span style={{ color: "var(--color-accent)" }}>●</span>}
+      {active && (
+        <span aria-hidden="true" style={{ color: "var(--color-accent)" }}>
+          ●
+        </span>
+      )}
     </button>
   );
 }
@@ -687,6 +692,7 @@ function PcSoundCard({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       style={{
         padding: "14px 14px",
@@ -718,6 +724,7 @@ function PcPreRollChip({ value, active, onClick }: { value: number; active: bool
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       style={{
         padding: "10px 14px",
@@ -754,7 +761,10 @@ function PcVolumeSlider({
   return (
     <div>
       <div className="flex items-center" style={{ gap: 16 }}>
-        <div style={{ position: "relative", flex: 1, height: 14, display: "flex", alignItems: "center" }}>
+        <div
+          className="pc-volume-slider"
+          style={{ position: "relative", flex: 1, height: 14, display: "flex", alignItems: "center" }}
+        >
           <div
             style={{
               width: "100%",
@@ -1074,6 +1084,7 @@ function PcAppearanceSection({
               <button
                 key={a}
                 type="button"
+                aria-pressed={active}
                 onClick={() => onAppearance(a)}
                 style={{
                   padding: "18px 12px",

@@ -67,6 +67,14 @@ code {
 	}
 }
 
+/* Settings PC volume slider — the <input type="range"> overlay is opacity:0
+   so the browser's default focus ring is invisible. Surface focus on the
+   container via :focus-within so keyboard users see where they are. */
+.pc-volume-slider:focus-within {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 4px;
+}
+
 /* Touch landscape — orientation:landscape on touch devices (phones + iPad, excludes desktop) */
 @custom-variant touch-landscape {
   @media (orientation: landscape) and (pointer: coarse) {
