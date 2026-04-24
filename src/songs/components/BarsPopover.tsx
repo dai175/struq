@@ -115,6 +115,7 @@ export function BarsPopover({ section, color, onChange }: BarsPopoverProps) {
                 const v = Number.parseInt(e.target.value, 10);
                 if (v > 0) onChange({ ...section, bars: v });
               }}
+              aria-label={t.common.bars}
               style={{
                 width: 56,
                 height: 30,
