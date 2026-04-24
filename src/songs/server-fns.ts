@@ -18,7 +18,7 @@ import {
 import { escapeLikePattern } from "@/lib/sql-like";
 import { isValidUrl } from "@/lib/validation";
 import { now, requireUser } from "@/server/helpers";
-import type { SectionData } from "@/songs/components/SectionCard";
+import type { SectionData } from "@/songs/components/SectionRow";
 import { DEFAULT_BARS } from "@/songs/constants";
 
 // ─── Types ──────────────────────────────────────────────

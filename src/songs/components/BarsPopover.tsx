@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
 import { MetaTag } from "@/ui/meta-tag";
-import type { SectionData } from "./SectionCard";
+import type { SectionData } from "./SectionRow";
 
 const BAR_PRESETS = [1, 2, 4, 8, 16];
 const EXTRA_BEATS_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
