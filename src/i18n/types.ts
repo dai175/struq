@@ -100,6 +100,37 @@ export interface Translations {
     account: string;
     deleteAccount: string;
     clickSound: string;
+    title: string;
+    navAccount: string;
+    navLanguage: string;
+    navAudio: string;
+    navAppearance: string;
+    navShortcuts: string;
+    navAbout: string;
+    descProfile: string;
+    descSession: string;
+    descLocale: string;
+    descClickTrack: string;
+    descCountIn: string;
+    descClickVolume: string;
+    descClickSoundChar: string;
+    descAccentDownbeat: string;
+    descPreRoll: string;
+    descTheme: string;
+    descKeyboard: string;
+    descBuild: string;
+    ariaClickTrack: string;
+    ariaCountIn: string;
+    ariaClickVolume: string;
+    ariaAccentDownbeat: string;
+    soundDescTick: string;
+    soundDescBeep: string;
+    soundDescSnap: string;
+    soundDescRim: string;
+    shortcutAdvance: string;
+    shortcutPrevious: string;
+    shortcutReset: string;
+    shortcutExit: string;
   };
 
   perform: {

@@ -29,36 +29,24 @@ const CLICK_SOUNDS: ClickSound[] = ["TICK", "BEEP", "SNAP", "RIM"];
 const APPEARANCES: Appearance[] = ["DARK", "AUTO", "LIGHT"];
 const PRE_ROLL_OPTIONS: PreRoll[] = [0, 1, 2, 4];
 
-const CLICK_SOUND_DESCRIPTIONS: Record<ClickSound, string> = {
-  TICK: "sharp, wood",
-  BEEP: "sine tone",
-  SNAP: "analog click",
-  RIM: "drum rim",
-};
-
 type PcNavId = "account" | "language" | "audio" | "appearance" | "shortcuts" | "about";
 
 interface PcNavItem {
   id: PcNavId;
   label: string;
-  title: string;
   subtitle: string;
 }
 
+// Stylistic mono labels + subtitles stay English by design (Broadcast Console
+// aesthetic — JetBrains Mono, wide letter-spacing, uppercase). Only the prose
+// "title" shown in PcTopRail is translated via t.settings.nav*.
 const PC_NAV: PcNavItem[] = [
-  { id: "account", label: "ACCOUNT", title: "Account", subtitle: "PROFILE · SESSION · SIGN-OUT" },
-  { id: "language", label: "LANGUAGE", title: "Language", subtitle: "DISPLAY LOCALE" },
-  { id: "audio", label: "AUDIO & CLICK", title: "Audio & Click", subtitle: "METRONOME · COUNT-IN · SOUND" },
-  { id: "appearance", label: "APPEARANCE", title: "Appearance", subtitle: "THEME · DENSITY" },
-  { id: "shortcuts", label: "SHORTCUTS", title: "Shortcuts", subtitle: "KEYBOARD · GESTURES" },
-  { id: "about", label: "ABOUT", title: "About", subtitle: "VERSION · CHANNEL · CREDITS" },
-];
-
-const SHORTCUTS: { keys: string; label: string }[] = [
-  { keys: "SPACE", label: "Advance one bar (Perform)" },
-  { keys: "◁", label: "Previous bar (Perform)" },
-  { keys: "R", label: "Reset to section 01 (Perform)" },
-  { keys: "ESC", label: "Exit Perform mode" },
+  { id: "account", label: "ACCOUNT", subtitle: "PROFILE · SESSION · SIGN-OUT" },
+  { id: "language", label: "LANGUAGE", subtitle: "DISPLAY LOCALE" },
+  { id: "audio", label: "AUDIO & CLICK", subtitle: "METRONOME · COUNT-IN · SOUND" },
+  { id: "appearance", label: "APPEARANCE", subtitle: "THEME · DENSITY" },
+  { id: "shortcuts", label: "SHORTCUTS", subtitle: "KEYBOARD · GESTURES" },
+  { id: "about", label: "ABOUT", subtitle: "VERSION · CHANNEL · CREDITS" },
 ];
 
 function initials(name: string | undefined): string {
@@ -89,6 +77,14 @@ function SettingsPage() {
 
   const [activeNav, setActiveNav] = useState<PcNavId>("account");
   const activeMeta = PC_NAV.find((n) => n.id === activeNav) ?? PC_NAV[0];
+  const navTitles: Record<PcNavId, string> = {
+    account: t.settings.navAccount,
+    language: t.settings.navLanguage,
+    audio: t.settings.navAudio,
+    appearance: t.settings.navAppearance,
+    shortcuts: t.settings.navShortcuts,
+    about: t.settings.navAbout,
+  };
 
   const handleLogout = async () => {
     try {
@@ -126,7 +122,7 @@ function SettingsPage() {
       <div className="hidden lg:flex lg:min-h-screen">
         <PcSubNav active={activeNav} onChange={setActiveNav} />
         <main className="flex min-w-0 flex-1 flex-col">
-          <PcTopRail title={activeMeta.title} subtitle={activeMeta.subtitle} />
+          <PcTopRail title={navTitles[activeMeta.id]} subtitle={activeMeta.subtitle} />
           <div className="flex-1 overflow-auto" style={{ padding: "28px 36px" }}>
             {activeNav === "account" && (
               <PcAccountSection user={user} onLogout={handleLogout} signOutLabel={t.nav.logout} />
@@ -148,7 +144,6 @@ function SettingsPage() {
                 onAccentDownbeat={setAccentDownbeat}
                 preRollBars={preRollBars}
                 onPreRollBars={setPreRollBars}
-                clickAriaLabel={t.settings.clickSound}
               />
             )}
             {activeNav === "appearance" && <PcAppearanceSection appearance={appearance} onAppearance={setAppearance} />}
@@ -288,13 +283,13 @@ function SettingsPage() {
           <div className="flex flex-col">
             <SettingRow
               label="CLICK TRACK"
-              description="Play a click on each beat during auto mode."
-              control={<Toggle on={clickEnabled} onChange={setClickEnabled} ariaLabel={t.settings.clickSound} />}
+              description={t.settings.descClickTrack}
+              control={<Toggle on={clickEnabled} onChange={setClickEnabled} ariaLabel={t.settings.ariaClickTrack} />}
             />
             <SettingRow
               label="COUNT-IN"
-              description="Play a 4-beat count-in before sections start."
-              control={<Toggle on={countIn} onChange={setCountIn} ariaLabel="Count-in" />}
+              description={t.settings.descCountIn}
+              control={<Toggle on={countIn} onChange={setCountIn} ariaLabel={t.settings.ariaCountIn} />}
             />
             <SettingRow
               label="CLICK VOLUME"
@@ -314,7 +309,7 @@ function SettingsPage() {
               }
             >
               <div className="mt-3">
-                <VolumeSlider value={clickVolume} onChange={setClickVolume} />
+                <VolumeSlider value={clickVolume} onChange={setClickVolume} ariaLabel={t.settings.ariaClickVolume} />
                 <div
                   className="mt-2 flex justify-between"
                   style={{
@@ -341,8 +336,10 @@ function SettingsPage() {
             </SettingRow>
             <SettingRow
               label="ACCENT DOWNBEAT"
-              description="Emphasize beat 1 of each bar."
-              control={<Toggle on={accentDownbeat} onChange={setAccentDownbeat} ariaLabel="Accent downbeat" />}
+              description={t.settings.descAccentDownbeat}
+              control={
+                <Toggle on={accentDownbeat} onChange={setAccentDownbeat} ariaLabel={t.settings.ariaAccentDownbeat} />
+              }
             />
             <SettingRow label="PRE-ROLL BARS">
               <div className="mt-3 grid grid-cols-4 gap-2">
@@ -475,7 +472,15 @@ function ChoiceCard({
   );
 }
 
-function VolumeSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function VolumeSlider({
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  ariaLabel: string;
+}) {
   return (
     <input
       type="range"
@@ -483,7 +488,7 @@ function VolumeSlider({ value, onChange }: { value: number; onChange: (v: number
       max={100}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      aria-label="Click volume"
+      aria-label={ariaLabel}
       style={{
         width: "100%",
         accentColor: "var(--color-accent)",
@@ -520,6 +525,7 @@ function AboutRow({ label, value }: { label: string; value: string }) {
 // ─── PC primitives ──────────────────────────────────────────────────────────
 
 function PcSubNav({ active, onChange }: { active: PcNavId; onChange: (id: PcNavId) => void }) {
+  const { t } = useI18n();
   return (
     <aside
       className="flex flex-col"
@@ -532,7 +538,7 @@ function PcSubNav({ active, onChange }: { active: PcNavId; onChange: (id: PcNavI
       }}
     >
       <div style={{ padding: "0 22px 18px", borderBottom: "1px solid var(--color-line)" }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>Settings</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t.settings.title}</div>
         <div style={{ marginTop: 3 }}>
           <MetaTag size={9}>SYSTEM &amp; PREFERENCES</MetaTag>
         </div>
@@ -824,6 +830,7 @@ function PcAccountSection({
   onLogout: () => void;
   signOutLabel: string;
 }) {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -833,7 +840,7 @@ function PcAccountSection({
         alignContent: "flex-start",
       }}
     >
-      <PcSettingRow label="PROFILE" desc="Signed in via Google. Identity sourced from your Google account." span={2}>
+      <PcSettingRow label="PROFILE" desc={t.settings.descProfile} span={2}>
         <div className="flex items-center" style={{ gap: 20 }}>
           <div
             aria-hidden="true"
@@ -874,7 +881,7 @@ function PcAccountSection({
           </div>
         </div>
       </PcSettingRow>
-      <PcSettingRow label="SESSION" desc="End your current session on this device." span={2}>
+      <PcSettingRow label="SESSION" desc={t.settings.descSession} span={2}>
         <ConsoleBtn tone="coral" onClick={onLogout}>
           {signOutLabel.toUpperCase()}
         </ConsoleBtn>
@@ -892,6 +899,7 @@ function PcLanguageSection({
   updating: boolean;
   onChange: (locale: Locale) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -901,7 +909,7 @@ function PcLanguageSection({
         alignContent: "flex-start",
       }}
     >
-      <PcSettingRow label="DISPLAY LOCALE" desc="Affects all UI copy across the app." span={2}>
+      <PcSettingRow label="DISPLAY LOCALE" desc={t.settings.descLocale} span={2}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {LOCALES.map((l) => {
             const active = locale === l;
@@ -958,7 +966,6 @@ function PcAudioSection({
   onAccentDownbeat,
   preRollBars,
   onPreRollBars,
-  clickAriaLabel,
 }: {
   clickEnabled: boolean;
   onClickEnabled: (v: boolean) => void;
@@ -972,8 +979,14 @@ function PcAudioSection({
   onAccentDownbeat: (v: boolean) => void;
   preRollBars: PreRoll;
   onPreRollBars: (v: PreRoll) => void;
-  clickAriaLabel: string;
 }) {
+  const { t } = useI18n();
+  const clickSoundDescs: Record<ClickSound, string> = {
+    TICK: t.settings.soundDescTick,
+    BEEP: t.settings.soundDescBeep,
+    SNAP: t.settings.soundDescSnap,
+    RIM: t.settings.soundDescRim,
+  };
   return (
     <div
       style={{
@@ -983,32 +996,32 @@ function PcAudioSection({
         alignContent: "flex-start",
       }}
     >
-      <PcSettingRow label="CLICK TRACK" desc="Play a click on each beat during auto mode.">
-        <Toggle on={clickEnabled} onChange={onClickEnabled} ariaLabel={clickAriaLabel} />
+      <PcSettingRow label="CLICK TRACK" desc={t.settings.descClickTrack}>
+        <Toggle on={clickEnabled} onChange={onClickEnabled} ariaLabel={t.settings.ariaClickTrack} />
       </PcSettingRow>
-      <PcSettingRow label="COUNT-IN" desc="Play 4 beats before the song starts in Auto mode.">
-        <Toggle on={countIn} onChange={onCountIn} ariaLabel="Count-in" />
+      <PcSettingRow label="COUNT-IN" desc={t.settings.descCountIn}>
+        <Toggle on={countIn} onChange={onCountIn} ariaLabel={t.settings.ariaCountIn} />
       </PcSettingRow>
-      <PcSettingRow label="CLICK VOLUME" desc="Level of the metronome audio output." span={2}>
-        <PcVolumeSlider value={clickVolume} onChange={onClickVolume} ariaLabel="Click volume" />
+      <PcSettingRow label="CLICK VOLUME" desc={t.settings.descClickVolume} span={2}>
+        <PcVolumeSlider value={clickVolume} onChange={onClickVolume} ariaLabel={t.settings.ariaClickVolume} />
       </PcSettingRow>
-      <PcSettingRow label="CLICK SOUND" desc="Tonal character of the metronome." span={2}>
+      <PcSettingRow label="CLICK SOUND" desc={t.settings.descClickSoundChar} span={2}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
           {CLICK_SOUNDS.map((s) => (
             <PcSoundCard
               key={s}
               label={s}
-              desc={CLICK_SOUND_DESCRIPTIONS[s]}
+              desc={clickSoundDescs[s]}
               active={clickSound === s}
               onClick={() => onClickSound(s)}
             />
           ))}
         </div>
       </PcSettingRow>
-      <PcSettingRow label="ACCENT DOWNBEAT" desc="Emphasize beat 1 of each bar.">
-        <Toggle on={accentDownbeat} onChange={onAccentDownbeat} ariaLabel="Accent downbeat" />
+      <PcSettingRow label="ACCENT DOWNBEAT" desc={t.settings.descAccentDownbeat}>
+        <Toggle on={accentDownbeat} onChange={onAccentDownbeat} ariaLabel={t.settings.ariaAccentDownbeat} />
       </PcSettingRow>
-      <PcSettingRow label="PRE-ROLL BARS" desc="Silent bars before Count-in (Auto).">
+      <PcSettingRow label="PRE-ROLL BARS" desc={t.settings.descPreRoll}>
         <div style={{ display: "flex", gap: 4 }}>
           {PRE_ROLL_OPTIONS.map((n) => (
             <PcPreRollChip key={n} value={n} active={preRollBars === n} onClick={() => onPreRollBars(n)} />
@@ -1026,6 +1039,7 @@ function PcAppearanceSection({
   appearance: Appearance;
   onAppearance: (v: Appearance) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -1035,7 +1049,7 @@ function PcAppearanceSection({
         alignContent: "flex-start",
       }}
     >
-      <PcSettingRow label="THEME" desc="Switch between dark, system-driven, and light surfaces." span={2}>
+      <PcSettingRow label="THEME" desc={t.settings.descTheme} span={2}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
           {APPEARANCES.map((a) => {
             const active = appearance === a;
@@ -1069,6 +1083,13 @@ function PcAppearanceSection({
 }
 
 function PcShortcutsSection() {
+  const { t } = useI18n();
+  const shortcuts = [
+    { keys: "SPACE", label: t.settings.shortcutAdvance },
+    { keys: "◁", label: t.settings.shortcutPrevious },
+    { keys: "R", label: t.settings.shortcutReset },
+    { keys: "ESC", label: t.settings.shortcutExit },
+  ];
   return (
     <div
       style={{
@@ -1078,9 +1099,9 @@ function PcShortcutsSection() {
         alignContent: "flex-start",
       }}
     >
-      <PcSettingRow label="KEYBOARD" desc="Shortcuts available in Perform mode." span={2}>
+      <PcSettingRow label="KEYBOARD" desc={t.settings.descKeyboard} span={2}>
         <div className="flex flex-col">
-          {SHORTCUTS.map((s) => (
+          {shortcuts.map((s) => (
             <div
               key={s.keys}
               className="flex items-center justify-between"
@@ -1123,6 +1144,7 @@ function PcShortcutsSection() {
 }
 
 function PcAboutSection() {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -1132,7 +1154,7 @@ function PcAboutSection() {
         alignContent: "flex-start",
       }}
     >
-      <PcSettingRow label="BUILD" desc="Version metadata for the current deployment." span={2}>
+      <PcSettingRow label="BUILD" desc={t.settings.descBuild} span={2}>
         <div className="flex flex-col">
           <AboutRow label="VERSION" value="2.0.0" />
           <AboutRow label="RELEASED" value="2026.04.22" />
