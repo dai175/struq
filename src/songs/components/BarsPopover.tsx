@@ -6,6 +6,24 @@ import type { SectionData } from "./SectionRow";
 const BAR_PRESETS = [1, 2, 4, 8, 16];
 const EXTRA_BEATS_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
 
+function chipStyle(active: boolean, color: string, width: number, height: number, fontSize: number) {
+  return {
+    width,
+    height,
+    fontSize,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "var(--font-mono)",
+    fontWeight: 600,
+    border: active ? `1px solid ${color}` : "1px solid var(--color-line)",
+    background: active ? `color-mix(in srgb, ${color} 18%, transparent)` : "transparent",
+    color: active ? color : "var(--color-text)",
+    cursor: "pointer",
+    borderRadius: 2,
+  } as const;
+}
+
 interface BarsPopoverProps {
   section: SectionData;
   color: string;
@@ -79,33 +97,16 @@ export function BarsPopover({ section, color, onChange }: BarsPopoverProps) {
             <MetaTag size={9}>{t.common.bars.toUpperCase()}</MetaTag>
           </div>
           <div className="flex items-center flex-wrap" style={{ gap: 6 }}>
-            {BAR_PRESETS.map((preset) => {
-              const active = section.bars === preset;
-              return (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => onChange({ ...section, bars: preset })}
-                  style={{
-                    width: 36,
-                    height: 30,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    border: active ? `1px solid ${color}` : "1px solid var(--color-line)",
-                    background: active ? `color-mix(in srgb, ${color} 18%, transparent)` : "transparent",
-                    color: active ? color : "var(--color-text)",
-                    cursor: "pointer",
-                    borderRadius: 2,
-                  }}
-                >
-                  {preset}
-                </button>
-              );
-            })}
+            {BAR_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => onChange({ ...section, bars: preset })}
+                style={chipStyle(section.bars === preset, color, 36, 30, 13)}
+              >
+                {preset}
+              </button>
+            ))}
             <input
               type="number"
               min={1}
@@ -133,33 +134,16 @@ export function BarsPopover({ section, color, onChange }: BarsPopoverProps) {
             <MetaTag size={9}>{t.common.extraBeats.toUpperCase()}</MetaTag>
           </div>
           <div className="flex items-center" style={{ gap: 4, flexWrap: "wrap" }}>
-            {EXTRA_BEATS_OPTIONS.map((val) => {
-              const active = section.extraBeats === val;
-              return (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => onChange({ ...section, extraBeats: val })}
-                  style={{
-                    width: 30,
-                    height: 26,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    border: active ? `1px solid ${color}` : "1px solid var(--color-line)",
-                    background: active ? `color-mix(in srgb, ${color} 18%, transparent)` : "transparent",
-                    color: active ? color : "var(--color-text)",
-                    cursor: "pointer",
-                    borderRadius: 2,
-                  }}
-                >
-                  {val}
-                </button>
-              );
-            })}
+            {EXTRA_BEATS_OPTIONS.map((val) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => onChange({ ...section, extraBeats: val })}
+                style={chipStyle(section.extraBeats === val, color, 30, 26, 11)}
+              >
+                {val}
+              </button>
+            ))}
           </div>
         </div>
       )}
