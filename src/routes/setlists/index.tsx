@@ -286,7 +286,7 @@ function SetlistRow({
         {String(index + 1).padStart(2, "0")}
       </span>
       <Link to="/setlists/$id" params={{ id: setlist.id }} className="min-w-0 flex-1">
-        <p className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>
+        <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
           {setlist.title}
         </p>
         <div

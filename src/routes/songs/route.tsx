@@ -234,7 +234,7 @@ function SongsPcLibraryRow({
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: 10,
               letterSpacing: "0.18em",
               color: "var(--color-dim-2)",
               paddingTop: 4,
@@ -247,7 +247,7 @@ function SongsPcLibraryRow({
             <div
               className="truncate"
               style={{
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: active ? 700 : 600,
                 color: "var(--color-text)",
               }}
