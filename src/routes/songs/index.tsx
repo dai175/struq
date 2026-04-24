@@ -228,7 +228,7 @@ function SongsPage() {
         ) : (
           <>
             <ul style={{ borderTop: "1px solid var(--color-line)" }}>
-              {songs.map(({ song, sections }: { song: SongRow; sections: SectionRow[] }, index: number) => (
+              {songs.map(({ song, sections }, index) => (
                 <SongRowView
                   key={song.id}
                   song={song}

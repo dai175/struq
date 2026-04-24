@@ -742,10 +742,9 @@ function SongPickerModal({
                     className="flex w-full items-center gap-3 text-left"
                     style={{
                       padding: "14px 4px",
-                      borderBottom: "1px solid var(--color-line)",
                       background: "transparent",
                       border: "none",
-                      borderBottomStyle: "solid",
+                      borderBottom: "1px solid var(--color-line)",
                       color: "var(--color-text)",
                       cursor: "pointer",
                     }}
