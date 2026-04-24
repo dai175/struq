@@ -34,6 +34,8 @@ export interface Translations {
     loadMore: string;
     duplicate: string;
     comingSoon: string;
+    confirm: string;
+    reorder: string;
   };
 
   nav: {

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useI18n } from "@/i18n";
 import { ConsoleBtn } from "@/ui/console-btn";
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -15,6 +16,8 @@ interface ConfirmModalProps {
   onCancel: () => void;
   /** Visual weight of the confirm button. Defaults to "coral" for destructive actions. */
   tone?: ConfirmTone;
+  /** Overrides the default localized "Confirm" heading (uppercased). */
+  title?: string;
 }
 
 export function ConfirmModal({
@@ -25,7 +28,9 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
   tone = "coral",
+  title,
 }: ConfirmModalProps) {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<Element | null>(null);
@@ -107,7 +112,7 @@ export function ConfirmModal({
               marginBottom: 10,
             }}
           >
-            CONFIRM
+            {title ?? t.common.confirm}
           </div>
           <p
             id={descId}

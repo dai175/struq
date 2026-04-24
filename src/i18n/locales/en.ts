@@ -38,6 +38,8 @@ export const en: Translations = {
     loadMore: "Load more",
     duplicate: "Duplicate",
     comingSoon: "Coming soon",
+    confirm: "Confirm",
+    reorder: "Reorder",
   },
   nav: {
     setlists: "Setlists",

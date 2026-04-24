@@ -534,7 +534,7 @@ function SortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; ind
           type="button"
           {...attributes}
           {...listeners}
-          aria-label="Reorder"
+          aria-label={t.common.reorder}
           style={{
             width: 24,
             height: 24,
@@ -1125,7 +1125,7 @@ function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; i
         type="button"
         {...attributes}
         {...listeners}
-        aria-label="Reorder"
+        aria-label={t.common.reorder}
         style={{
           width: 24,
           height: 24,

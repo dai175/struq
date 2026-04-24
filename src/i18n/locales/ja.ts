@@ -38,6 +38,8 @@ export const ja: Translations = {
     loadMore: "もっと読み込む",
     duplicate: "複製",
     comingSoon: "準備中",
+    confirm: "確認",
+    reorder: "並び替え",
   },
   nav: {
     setlists: "セットリスト",
