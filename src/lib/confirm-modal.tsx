@@ -16,7 +16,7 @@ interface ConfirmModalProps {
   onCancel: () => void;
   /** Visual weight of the confirm button. Defaults to "coral" for destructive actions. */
   tone?: ConfirmTone;
-  /** Overrides the default localized "Confirm" heading (uppercased). */
+  /** Overrides the default localized "Confirm" heading. */
   title?: string;
 }
 
