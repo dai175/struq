@@ -10,7 +10,7 @@ import {
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
@@ -54,6 +54,18 @@ function toSectionData(s: SectionRow): SectionData {
     chordProgression: s.chordProgression,
     memo: s.memo,
   };
+}
+
+function buildSongSnapshot(data: { song: SongRow; sections: SectionRow[] }): string {
+  const bpm = data.song.bpm;
+  return JSON.stringify({
+    title: data.song.title.trim(),
+    artist: (data.song.artist ?? "").trim(),
+    bpm: bpm != null && bpm > 0 ? bpm : null,
+    key: (data.song.key ?? "").trim(),
+    referenceUrl: (data.song.referenceUrl ?? "").trim(),
+    sections: data.sections.map((s) => [s.type, s.label, s.bars, s.extraBeats, s.chordProgression, s.memo]),
+  });
 }
 
 export const Route = createFileRoute("/songs/$id/")({
@@ -177,6 +189,7 @@ export function SongEditor(props: SongEditorProps) {
   const handleCancelAiConfirm = useCallback(() => setShowAiConfirm(false), []);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const handleCancelDeleteConfirm = useCallback(() => setShowDeleteConfirm(false), []);
+  const savedSnapshotRef = useRef(buildSongSnapshot(initialData));
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only re-sync when loader data changes
   useEffect(() => {
@@ -187,6 +200,7 @@ export function SongEditor(props: SongEditorProps) {
     setKey(initialData.song.key ?? "");
     setReferenceUrl(initialData.song.referenceUrl ?? "");
     setSectionsList(initialData.sections.map(toSectionData));
+    savedSnapshotRef.current = buildSongSnapshot(initialData);
   }, [initialData]);
 
   useEffect(() => {
@@ -361,6 +375,18 @@ export function SongEditor(props: SongEditorProps) {
   }
 
   const totalBars = sectionsList.reduce((sum, s) => sum + s.bars, 0);
+  const currentSnapshot = useMemo(() => {
+    const parsedBpm = bpm ? Number.parseInt(bpm, 10) : undefined;
+    return JSON.stringify({
+      title: title.trim(),
+      artist: artist.trim(),
+      bpm: parsedBpm && parsedBpm > 0 ? parsedBpm : null,
+      key: key.trim(),
+      referenceUrl: referenceUrl.trim(),
+      sections: sectionsList.map((s) => [s.type, s.label, s.bars, s.extraBeats, s.chordProgression, s.memo]),
+    });
+  }, [title, artist, bpm, key, referenceUrl, sectionsList]);
+  const isDirty = isNew || currentSnapshot !== savedSnapshotRef.current;
 
   return (
     <div
@@ -385,6 +411,7 @@ export function SongEditor(props: SongEditorProps) {
         sectionsList={sectionsList}
         saving={saving}
         saved={saved}
+        isDirty={isDirty}
         aiGenerating={aiGenerating}
         aiError={aiError}
         aiRateLimited={aiRateLimited}
@@ -688,7 +715,7 @@ export function SongEditor(props: SongEditorProps) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !isDirty}
             style={{
               width: "100%",
               padding: "14px",
@@ -701,8 +728,8 @@ export function SongEditor(props: SongEditorProps) {
               letterSpacing: "0.22em",
               textTransform: "uppercase",
               fontWeight: 600,
-              cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.5 : 1,
+              cursor: saving || !isDirty ? "not-allowed" : "pointer",
+              opacity: saving || !isDirty ? 0.5 : 1,
             }}
           >
             {saving ? t.common.loading : saved ? t.song.saved : t.common.save}
@@ -731,6 +758,7 @@ interface PcEditorPaneProps {
   sectionsList: SectionData[];
   saving: boolean;
   saved: boolean;
+  isDirty: boolean;
   aiGenerating: boolean;
   aiError: boolean;
   aiRateLimited: boolean;
@@ -763,6 +791,7 @@ function PcEditorPane({
   sectionsList,
   saving,
   saved,
+  isDirty,
   aiGenerating,
   aiError,
   aiRateLimited,
@@ -822,7 +851,7 @@ function PcEditorPane({
               {t.common.delete.toUpperCase()}
             </ConsoleBtn>
           )}
-          <ConsoleBtn tone="white" onClick={onSave} disabled={saving}>
+          <ConsoleBtn tone="white" onClick={onSave} disabled={saving || !isDirty}>
             {saving
               ? t.common.loading
               : saved

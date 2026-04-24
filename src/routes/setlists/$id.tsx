@@ -90,6 +90,15 @@ export function SetlistEditor(props: SetlistEditorProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedSnapshotRef = useRef(
+    JSON.stringify({
+      title: data.setlist.title,
+      description: data.setlist.description ?? "",
+      sessionDate: data.setlist.sessionDate ?? "",
+      venue: data.setlist.venue ?? "",
+      songIds: data.songs.map((s) => s.songId),
+    }),
+  );
 
   const [pickerInput, setPickerInput] = useState("");
   const debouncedPickerInput = useDebouncedValue(pickerInput, 300);
@@ -207,6 +216,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
     try {
       await saveSetlistWithSongs({ data: parsed.data });
       setSaved(true);
+      savedSnapshotRef.current = currentSnapshot;
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (error) {
@@ -234,6 +244,18 @@ export function SetlistEditor(props: SetlistEditorProps) {
   }
 
   const fallbackTitle = isNew ? t.setlist.newSetlist : data.setlist.title;
+  const currentSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        title: title.trim(),
+        description: description.trim(),
+        sessionDate,
+        venue: venue.trim(),
+        songIds: songs.map((s) => s.songId),
+      }),
+    [title, description, sessionDate, venue, songs],
+  );
+  const isDirty = isNew || currentSnapshot !== savedSnapshotRef.current;
 
   return (
     <div
@@ -254,6 +276,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
         songs={songs}
         saving={saving}
         saved={saved}
+        isDirty={isDirty}
         setlistId={editSetlistId}
         isNew={isNew}
         onTitleChange={(v) => {
@@ -463,7 +486,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !isDirty}
             style={{
               width: "100%",
               padding: "14px",
@@ -476,8 +499,8 @@ export function SetlistEditor(props: SetlistEditorProps) {
               letterSpacing: "0.22em",
               textTransform: "uppercase",
               fontWeight: 600,
-              cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.5 : 1,
+              cursor: saving || !isDirty ? "not-allowed" : "pointer",
+              opacity: saving || !isDirty ? 0.5 : 1,
             }}
           >
             {saving
@@ -799,6 +822,7 @@ function PcDetailPane({
   songs,
   saving,
   saved,
+  isDirty,
   setlistId,
   isNew,
   onTitleChange,
@@ -820,6 +844,7 @@ function PcDetailPane({
   songs: SetlistSongItem[];
   saving: boolean;
   saved: boolean;
+  isDirty: boolean;
   setlistId: string | null;
   isNew: boolean;
   onTitleChange: (v: string) => void;
@@ -882,7 +907,7 @@ function PcDetailPane({
               {t.common.delete.toUpperCase()}
             </ConsoleBtn>
           )}
-          <ConsoleBtn tone="white" onClick={onSave} disabled={saving}>
+          <ConsoleBtn tone="white" onClick={onSave} disabled={saving || !isDirty}>
             {saving
               ? t.common.loading
               : saved
