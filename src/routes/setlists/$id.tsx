@@ -272,7 +272,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
 
       <TopBar
         left={
-          <Link to="/setlists" aria-label={t.common.back} style={{ color: "#fff", padding: 6 }}>
+          <Link to="/setlists" aria-label={t.common.back} style={{ color: "var(--color-text)", padding: 6 }}>
             <IconBack size={20} />
           </Link>
         }
@@ -480,7 +480,13 @@ export function SetlistEditor(props: SetlistEditorProps) {
               opacity: saving ? 0.5 : 1,
             }}
           >
-            {saving ? t.common.loading : saved ? t.setlist.saved : t.common.save}
+            {saving
+              ? t.common.loading
+              : saved
+                ? t.setlist.saved
+                : isNew
+                  ? t.setlist.createSetlist
+                  : t.common.saveChanges}
           </button>
         </div>
       </div>
@@ -562,7 +568,7 @@ function SortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; ind
           {String(index + 1).padStart(2, "0")}
         </span>
         <div className="min-w-0">
-          <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
+          <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
             {song.title}
           </div>
           {song.artist && (
@@ -671,7 +677,7 @@ function SongPickerModal({
           }}
         >
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>{t.setlist.addSong}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>{t.setlist.addSong}</div>
           </div>
           <ConsoleBtn onClick={onClose}>{t.common.close.toUpperCase()}</ConsoleBtn>
         </div>
@@ -700,7 +706,7 @@ function SongPickerModal({
                 background: "transparent",
                 border: "none",
                 outline: "none",
-                color: "#fff",
+                color: "var(--color-text)",
                 fontSize: 14,
                 fontFamily: "var(--font-sans)",
               }}
@@ -750,7 +756,7 @@ function SongPickerModal({
                     }}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
+                      <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
                         {song.title}
                       </div>
                       {song.artist && (
@@ -1145,14 +1151,14 @@ function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; i
           fontFamily: "var(--font-mono)",
           fontSize: 16,
           fontWeight: 600,
-          color: "#fff",
+          color: "var(--color-text)",
           letterSpacing: "0.05em",
         }}
       >
         {String(index + 1).padStart(2, "0")}
       </div>
       <div className="min-w-0">
-        <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>
+        <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
           {song.title}
         </div>
         {song.artist && (

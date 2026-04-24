@@ -344,7 +344,7 @@ function SettingsPage() {
                 </div>
               </div>
             </SettingRow>
-            <SettingRow label="CLICK SOUND">
+            <SettingRow label="CLICK SOUND" description={t.settings.desc.clickSoundChar}>
               <div className="mt-3 grid grid-cols-4 gap-2">
                 {CLICK_SOUNDS.map((s) => (
                   <ChoiceCard key={s} label={s} active={clickSound === s} onClick={() => setClickSound(s)} />
@@ -358,7 +358,7 @@ function SettingsPage() {
                 <Toggle on={accentDownbeat} onChange={setAccentDownbeat} ariaLabel={t.settings.aria.accentDownbeat} />
               }
             />
-            <SettingRow label="PRE-ROLL BARS">
+            <SettingRow label="PRE-ROLL BARS" description={t.settings.desc.preRoll}>
               <div className="mt-3 grid grid-cols-4 gap-2">
                 {PRE_ROLL_OPTIONS.map((n) => (
                   <ChoiceCard key={n} label={String(n)} active={preRollBars === n} onClick={() => setPreRollBars(n)} />
@@ -575,6 +575,7 @@ function PcSubNavItem({ item, active, onClick }: { item: PcNavItem; active: bool
     <button
       type="button"
       onClick={onClick}
+      aria-current={active ? "page" : undefined}
       style={{
         width: "100%",
         textAlign: "left",
