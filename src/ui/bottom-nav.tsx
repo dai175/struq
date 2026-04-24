@@ -28,12 +28,13 @@ export function BottomNav() {
       }}
     >
       {tabs.map(({ to, label, Icon }) => {
-        const isActive = currentPath.startsWith(to);
+        const isActive = currentPath === to || currentPath.startsWith(`${to}/`);
         return (
           <Link
             key={to}
             to={to}
             className="flex flex-1 flex-col items-center gap-1.5 px-2 pt-3 pb-3"
+            aria-current={isActive ? "page" : undefined}
             style={{
               color: isActive ? "#fff" : "var(--color-dim-2)",
               borderTop: isActive ? "2px solid var(--color-accent)" : "2px solid transparent",

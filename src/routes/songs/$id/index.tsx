@@ -351,6 +351,7 @@ export function SongEditor(props: SongEditorProps) {
     try {
       await saveSongWithSections({ data: parsed.data });
       setSaved(true);
+      savedSnapshotRef.current = currentSnapshot;
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       router.invalidate();

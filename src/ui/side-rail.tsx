@@ -50,12 +50,13 @@ export function SideRail({ user }: SideRailProps) {
 
       <nav className="flex flex-col" style={{ flex: 1, paddingTop: 6 }}>
         {tabs.map(({ to, label, Icon }) => {
-          const isActive = currentPath.startsWith(to);
+          const isActive = currentPath === to || currentPath.startsWith(`${to}/`);
           return (
             <Link
               key={to}
               to={to}
               className="flex flex-col items-center"
+              aria-current={isActive ? "page" : undefined}
               style={{
                 padding: "18px 0 16px",
                 gap: 6,
