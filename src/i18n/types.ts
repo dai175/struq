@@ -101,36 +101,46 @@ export interface Translations {
     deleteAccount: string;
     clickSound: string;
     title: string;
-    navAccount: string;
-    navLanguage: string;
-    navAudio: string;
-    navAppearance: string;
-    navShortcuts: string;
-    navAbout: string;
-    descProfile: string;
-    descSession: string;
-    descLocale: string;
-    descClickTrack: string;
-    descCountIn: string;
-    descClickVolume: string;
-    descClickSoundChar: string;
-    descAccentDownbeat: string;
-    descPreRoll: string;
-    descTheme: string;
-    descKeyboard: string;
-    descBuild: string;
-    ariaClickTrack: string;
-    ariaCountIn: string;
-    ariaClickVolume: string;
-    ariaAccentDownbeat: string;
-    soundDescTick: string;
-    soundDescBeep: string;
-    soundDescSnap: string;
-    soundDescRim: string;
-    shortcutAdvance: string;
-    shortcutPrevious: string;
-    shortcutReset: string;
-    shortcutExit: string;
+    nav: {
+      account: string;
+      language: string;
+      audio: string;
+      appearance: string;
+      shortcuts: string;
+      about: string;
+    };
+    desc: {
+      profile: string;
+      session: string;
+      locale: string;
+      clickTrack: string;
+      countIn: string;
+      clickVolume: string;
+      clickSoundChar: string;
+      accentDownbeat: string;
+      preRoll: string;
+      theme: string;
+      keyboard: string;
+      build: string;
+    };
+    aria: {
+      clickTrack: string;
+      countIn: string;
+      clickVolume: string;
+      accentDownbeat: string;
+    };
+    soundDesc: {
+      tick: string;
+      beep: string;
+      snap: string;
+      rim: string;
+    };
+    shortcut: {
+      advance: string;
+      previous: string;
+      reset: string;
+      exit: string;
+    };
   };
 
   perform: {

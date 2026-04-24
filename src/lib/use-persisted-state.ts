@@ -18,9 +18,7 @@ export function usePersistedState<T>(
     try {
       const validated = validate(JSON.parse(raw));
       if (validated !== null) setValue(validated);
-    } catch {
-      // corrupt payload — keep default
-    }
+    } catch {}
   }, [key, validate]);
 
   function update(next: T) {

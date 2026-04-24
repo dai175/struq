@@ -5,6 +5,7 @@ import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useLoadMore } from "@/lib/use-load-more";
 import { deleteSong, listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconPlus, IconSearch, IconTrash } from "@/ui/icons";
@@ -23,7 +24,6 @@ function SongsPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [input, setInput] = useState(search.q ?? "");
@@ -35,22 +35,29 @@ function SongsPage() {
   // the same render's navigate effect, triggering a revert-navigate loop.
   const queryKey = search.q ?? "";
   const [boundKey, setBoundKey] = useState(queryKey);
-  const [extras, setExtras] = useState<typeof initial.items>([]);
-  const [extrasHasMore, setExtrasHasMore] = useState(false);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   if (boundKey !== queryKey) {
     setBoundKey(queryKey);
     setInput(queryKey);
-    setExtras([]);
-    setExtrasHasMore(false);
     setDeletedIds(new Set());
   }
 
-  const songs = useMemo(() => {
-    const all = extras.length > 0 ? [...initial.items, ...extras] : initial.items;
-    return deletedIds.size > 0 ? all.filter((it) => !deletedIds.has(it.song.id)) : all;
-  }, [initial.items, extras, deletedIds]);
-  const hasMore = extras.length > 0 ? extrasHasMore : initial.hasMore;
+  const {
+    items: fetched,
+    hasMore,
+    loading: loadingMore,
+    loadMore,
+  } = useLoadMore({
+    initialItems: initial.items,
+    initialHasMore: initial.hasMore,
+    resetKey: queryKey,
+    fetchMore: (offset) => listSongs({ data: { offset, query: search.q } }),
+  });
+
+  const songs = useMemo(
+    () => (deletedIds.size > 0 ? fetched.filter((it) => !deletedIds.has(it.song.id)) : fetched),
+    [fetched, deletedIds],
+  );
 
   useEffect(() => {
     const next = debouncedInput.trim() || undefined;
@@ -88,16 +95,11 @@ function SongsPage() {
   }
 
   async function handleLoadMore() {
-    setLoadingMore(true);
     try {
-      const next = await listSongs({ data: { offset: songs.length, query: search.q } });
-      setExtras((prev) => [...prev, ...next.items]);
-      setExtrasHasMore(next.hasMore);
+      await loadMore();
     } catch (error) {
       clientLogger.error("loadMoreSongs", error);
       toast.error(t.common.errorLoadFailed);
-    } finally {
-      setLoadingMore(false);
     }
   }
 

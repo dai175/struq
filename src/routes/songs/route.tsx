@@ -1,10 +1,11 @@
 import { createFileRoute, Link, Outlet, useMatches, useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useLoadMore } from "@/lib/use-load-more";
 import { listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconPlus, IconSearch } from "@/ui/icons";
@@ -57,15 +58,22 @@ function SongsPcLibraryColumn() {
   // render's navigate effect, triggering a revert-navigate loop.
   const queryKey = search.q ?? "";
   const [boundKey, setBoundKey] = useState(queryKey);
-  const [extras, setExtras] = useState<typeof initial.items>([]);
-  const [extrasHasMore, setExtrasHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   if (boundKey !== queryKey) {
     setBoundKey(queryKey);
     setInput(queryKey);
-    setExtras([]);
-    setExtrasHasMore(false);
   }
+
+  const {
+    items,
+    hasMore,
+    loading: loadingMore,
+    loadMore,
+  } = useLoadMore({
+    initialItems: initial.items,
+    initialHasMore: initial.hasMore,
+    resetKey: queryKey,
+    fetchMore: (offset) => listSongs({ data: { offset, query: search.q } }),
+  });
 
   useEffect(() => {
     const next = debouncedInput.trim() || undefined;
@@ -81,24 +89,14 @@ function SongsPcLibraryColumn() {
     navigate({ to: "/songs/new" });
   }
 
-  const items = useMemo(
-    () => (extras.length > 0 ? [...initial.items, ...extras] : initial.items),
-    [initial.items, extras],
-  );
-  const hasMore = extras.length > 0 ? extrasHasMore : initial.hasMore;
   const isSearching = !!search.q;
 
   async function handleLoadMore() {
-    setLoadingMore(true);
     try {
-      const next = await listSongs({ data: { offset: items.length, query: search.q } });
-      setExtras((prev) => [...prev, ...next.items]);
-      setExtrasHasMore(next.hasMore);
+      await loadMore();
     } catch (error) {
       clientLogger.error("loadMoreSongs", error);
       toast.error(t.common.errorLoadFailed);
-    } finally {
-      setLoadingMore(false);
     }
   }
 
