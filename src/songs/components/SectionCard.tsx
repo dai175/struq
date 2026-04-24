@@ -36,7 +36,7 @@ export function SectionCard({ section, onChange, onDelete, dragAttributes, dragL
       style={{
         border: "1px solid var(--color-line)",
         borderLeft: `3px solid ${color}`,
-        background: "var(--color-ink-2)",
+        background: "rgba(255,255,255,0.02)",
       }}
     >
       <div className="flex items-center gap-2" style={{ padding: "12px 14px 10px" }}>

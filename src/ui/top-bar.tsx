@@ -31,23 +31,22 @@ export function TopBar({ title, subtitle, left, right }: TopBarProps) {
         ) : (
           title
         )}
-        {subtitle &&
-          (typeof subtitle === "string" ? (
-            <div
-              style={{
-                marginTop: 3,
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.22em",
-                color: "rgba(255,255,255,0.4)",
-                textTransform: "uppercase",
-              }}
-            >
-              {subtitle}
-            </div>
-          ) : (
-            <div style={{ marginTop: 3 }}>{subtitle}</div>
-          ))}
+        {subtitle && (
+          <div
+            style={{
+              marginTop: 3,
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              fontWeight: 500,
+              letterSpacing: "0.22em",
+              lineHeight: 1,
+              color: "rgba(255,255,255,0.4)",
+              textTransform: "uppercase",
+            }}
+          >
+            {subtitle}
+          </div>
+        )}
       </div>
       <div className="flex items-center" style={{ gap: 6 }}>
         {right}

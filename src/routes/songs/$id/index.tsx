@@ -27,7 +27,7 @@ import { isValidUrl } from "@/lib/validation";
 import { PcSectionRow } from "@/songs/components/PcSectionRow";
 import { SectionCard, type SectionData } from "@/songs/components/SectionCard";
 import { SectionPalette } from "@/songs/components/SectionPalette";
-import { DEFAULT_BARS, SECTION_COLORS } from "@/songs/constants";
+import { DEFAULT_BARS, PALETTE_TYPES, SECTION_COLORS } from "@/songs/constants";
 import {
   createSongWithSections,
   deleteSong,
@@ -439,248 +439,291 @@ export function SongEditor(props: SongEditorProps) {
 
       <TopBar
         left={
-          <Link to="/songs" aria-label={t.common.back} style={{ color: "#fff", padding: 6 }}>
-            <IconBack size={20} />
+          <Link
+            to="/songs"
+            aria-label={t.common.back}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 4,
+              color: "#fff",
+              lineHeight: 1,
+            }}
+          >
+            <IconBack size={18} />
           </Link>
         }
         title={title || t.song.title}
-        subtitle={
-          <MetaTag size={9}>
-            EDITING · {String(sectionsList.length).padStart(2, "0")} SECTIONS · {totalBars} BARS
-          </MetaTag>
-        }
+        subtitle={`EDITING · ${String(sectionsList.length).padStart(2, "0")} SECTIONS`}
         right={
-          <>
-            {!isNew && editId && (
-              <Link
-                to="/songs/$id/perform"
-                params={{ id: editId }}
-                aria-label={t.perform.start}
-                style={{
-                  width: 36,
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "var(--color-accent)",
-                  border: "1px solid var(--color-accent)",
-                  borderRadius: 2,
-                }}
-              >
-                <IconPlay size={14} />
-              </Link>
-            )}
+          <div className="flex items-center gap-1">
             {!isNew && (
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
                 aria-label={t.song.deleteSong}
                 style={{
-                  width: 36,
-                  height: 36,
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "var(--color-section-solo)",
+                  padding: 4,
+                  color: "var(--color-dim)",
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
+                  lineHeight: 1,
                 }}
               >
                 <IconTrash size={16} />
               </button>
             )}
-          </>
+            {!isNew && editId && (
+              <Link
+                to="/songs/$id/perform"
+                params={{ id: editId }}
+                aria-label={t.perform.start}
+                style={{
+                  background: "var(--color-accent)",
+                  color: "#111",
+                  border: "1px solid var(--color-accent)",
+                  padding: "9px 14px",
+                  borderRadius: 2,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  lineHeight: 1,
+                  textDecoration: "none",
+                }}
+              >
+                <IconPlay size={10} />
+                {t.perform.start.toUpperCase()}
+              </Link>
+            )}
+          </div>
         }
       />
 
-      <div className="mx-auto max-w-2xl px-5 pb-40 pt-6 lg:hidden">
-        <section className="grid gap-4">
+      <div className="pb-40 lg:hidden" style={{ padding: "16px 18px 160px" }}>
+        <section>
           <MetaTag>01 · TRACK META</MetaTag>
-          <ConsoleField
-            label={t.song.title}
-            value={title}
-            onChange={(v) => {
-              setTitle(v);
-              if (titleError) setTitleError(false);
+          <div
+            style={{
+              marginTop: 10,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 10,
             }}
-            required
-          />
-          {titleError && (
+          >
+            <div style={{ gridColumn: "span 2" }}>
+              <ConsoleField
+                label={t.song.title}
+                value={title}
+                onChange={(v) => {
+                  setTitle(v);
+                  if (titleError) setTitleError(false);
+                }}
+                required
+              />
+              {titleError && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--color-section-solo)",
+                    marginTop: 6,
+                  }}
+                >
+                  {t.song.titleRequired}
+                </p>
+              )}
+            </div>
+            <div style={{ gridColumn: "span 2" }}>
+              <ConsoleField label={t.song.artist} value={artist} onChange={setArtist} />
+            </div>
+            <ConsoleField label={t.song.bpm} value={bpm} onChange={setBpm} type="number" placeholder="120" mono />
+            <ConsoleField label={t.song.key} value={key} onChange={setKey} placeholder="Am" mono />
+          </div>
+          <div style={{ marginTop: 10, display: "flex", alignItems: "flex-end", gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <ConsoleField
+                label={t.song.referenceUrl}
+                value={referenceUrl}
+                onChange={(v) => {
+                  setReferenceUrl(v);
+                  if (urlError) setUrlError(false);
+                }}
+                type="url"
+                placeholder="https://..."
+                mono
+              />
+            </div>
+            {(() => {
+              const trimmed = referenceUrl.trim();
+              const openable = isValidUrl(trimmed);
+              return (
+                <a
+                  href={openable ? trimmed : undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open reference"
+                  aria-disabled={!openable}
+                  onClick={(e) => {
+                    if (!openable) e.preventDefault();
+                  }}
+                  tabIndex={openable ? 0 : -1}
+                  style={{
+                    padding: 12,
+                    border: "1px solid var(--color-line-2)",
+                    color: "var(--color-dim)",
+                    borderRadius: 1,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    opacity: openable ? 1 : 0.35,
+                    cursor: openable ? "pointer" : "not-allowed",
+                    pointerEvents: openable ? "auto" : "none",
+                  }}
+                >
+                  <IconExt size={14} />
+                </a>
+              );
+            })()}
+          </div>
+          {urlError && (
             <p
               style={{
                 fontSize: 12,
                 color: "var(--color-section-solo)",
-                marginTop: -8,
+                marginTop: 6,
               }}
             >
-              {t.song.titleRequired}
+              {t.song.invalidUrl}
             </p>
           )}
-          <ConsoleField label={t.song.artist} value={artist} onChange={setArtist} />
-          <div className="grid grid-cols-2 gap-3">
-            <ConsoleField label={t.song.bpm} value={bpm} onChange={setBpm} type="number" placeholder="120" mono />
-            <ConsoleField label={t.song.key} value={key} onChange={setKey} placeholder="Am" mono />
-          </div>
-          <div>
-            <ConsoleField
-              label={t.song.referenceUrl}
-              value={referenceUrl}
-              onChange={(v) => {
-                setReferenceUrl(v);
-                if (urlError) setUrlError(false);
-              }}
-              type="url"
-              placeholder="https://..."
-              mono
-            />
-            {urlError && (
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "var(--color-section-solo)",
-                  marginTop: 6,
-                }}
-              >
-                {t.song.invalidUrl}
-              </p>
-            )}
-            {isValidUrl(referenceUrl.trim()) && (
-              <a
-                href={referenceUrl.trim()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2"
-                style={{
-                  marginTop: 8,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.22em",
-                  color: "var(--color-dim)",
-                  textTransform: "uppercase",
-                }}
-              >
-                <IconExt size={12} /> OPEN LINK
-              </a>
-            )}
-          </div>
         </section>
 
         {sectionsList.length > 0 && (
-          <section className="mt-8">
-            <MetaTag>02 · STRUCTURE PREVIEW</MetaTag>
-            <div style={{ marginTop: 10 }}>
-              <StructureBar sections={sectionsList} height={10} gap={2} showAbbreviations />
+          <section style={{ marginTop: 24 }}>
+            <div className="flex items-center" style={{ gap: 10, marginBottom: 10 }}>
+              <MetaTag>02 · STRUCTURE</MetaTag>
+              <div style={{ flex: 1, height: 1, background: "var(--color-line)" }} />
+              <MetaTag>{totalBars} BARS</MetaTag>
             </div>
+            <StructureBar sections={sectionsList} height={8} gap={2} />
           </section>
         )}
 
-        <section className="mt-8">
-          <MetaTag>AI · GENERATE STRUCTURE</MetaTag>
-          <div className="mt-2">
-            <button
-              type="button"
-              onClick={handleAiGenerate}
-              disabled={aiGenerating}
-              className="flex w-full items-center justify-center gap-2"
+        <section style={{ marginTop: 16 }}>
+          <button
+            type="button"
+            onClick={handleAiGenerate}
+            disabled={aiGenerating}
+            className="flex w-full items-center justify-center gap-2"
+            style={{
+              padding: 12,
+              border: "1px solid var(--color-line-2)",
+              background: "transparent",
+              color: "#fff",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              cursor: aiGenerating ? "not-allowed" : "pointer",
+              opacity: aiGenerating ? 0.5 : 1,
+              borderRadius: 1,
+            }}
+          >
+            <IconSparkles size={14} />
+            {aiGenerating ? t.common.loading : t.song.aiGenerate}
+          </button>
+          {aiRateLimited && (
+            <div
               style={{
-                padding: "13px",
-                border: "1px solid var(--color-line-2)",
-                background: "transparent",
-                color: "var(--color-text)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.22em",
-                textTransform: "uppercase",
-                fontWeight: 600,
-                cursor: aiGenerating ? "not-allowed" : "pointer",
-                opacity: aiGenerating ? 0.5 : 1,
-                borderRadius: 2,
+                marginTop: 8,
+                padding: "10px 12px",
+                border: "1px solid var(--color-section-chorus)",
+                background: "color-mix(in srgb, var(--color-section-chorus) 10%, transparent)",
+                color: "var(--color-section-chorus)",
+                fontSize: 13,
               }}
             >
-              <IconSparkles size={14} />
-              {aiGenerating ? t.common.loading : t.song.aiGenerate}
-            </button>
-            {aiRateLimited && (
-              <div
+              {t.song.aiRateLimited}
+            </div>
+          )}
+          {aiError && (
+            <div
+              className="flex items-center justify-between"
+              style={{
+                marginTop: 8,
+                padding: "10px 12px",
+                border: "1px solid var(--color-section-solo)",
+                background: "color-mix(in srgb, var(--color-section-solo) 10%, transparent)",
+                color: "var(--color-section-solo)",
+                fontSize: 13,
+              }}
+            >
+              <span>{t.song.aiError}</span>
+              <button
+                type="button"
+                onClick={executeAiGenerate}
                 style={{
-                  marginTop: 8,
-                  padding: "10px 12px",
-                  border: "1px solid var(--color-section-chorus)",
-                  background: "color-mix(in srgb, var(--color-section-chorus) 10%, transparent)",
-                  color: "var(--color-section-chorus)",
-                  fontSize: 13,
-                }}
-              >
-                {t.song.aiRateLimited}
-              </div>
-            )}
-            {aiError && (
-              <div
-                className="flex items-center justify-between"
-                style={{
-                  marginTop: 8,
-                  padding: "10px 12px",
-                  border: "1px solid var(--color-section-solo)",
-                  background: "color-mix(in srgb, var(--color-section-solo) 10%, transparent)",
+                  background: "transparent",
+                  border: "none",
                   color: "var(--color-section-solo)",
-                  fontSize: 13,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                  cursor: "pointer",
                 }}
               >
-                <span>{t.song.aiError}</span>
-                <button
-                  type="button"
-                  onClick={executeAiGenerate}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "var(--color-section-solo)",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    letterSpacing: "0.22em",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  {t.common.retry}
-                </button>
-              </div>
-            )}
-          </div>
+                {t.common.retry}
+              </button>
+            </div>
+          )}
         </section>
 
-        <section className="mt-8">
+        <section style={{ marginTop: 22 }}>
           <MetaTag>03 · ADD SECTION</MetaTag>
-          <div className="mt-2">
+          <div style={{ marginTop: 10 }}>
             <SectionPalette onAdd={handleAddSection} />
           </div>
         </section>
 
-        <section className="mt-8">
-          <MetaTag>04 · SECTIONS · {String(sectionsList.length).padStart(2, "0")} TOTAL</MetaTag>
-          <div className="mt-3 grid gap-3">
-            {sectionsList.length === 0 ? (
-              <p className="py-8 text-center" style={{ color: "var(--color-dim)", fontSize: 14 }}>
-                {t.song.noSections}
-              </p>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                  <div className="grid gap-3">
-                    {sectionsList.map((section) => (
-                      <SortableSection
-                        key={section.id}
-                        section={section}
-                        onChange={handleSectionChange}
-                        onDelete={() => handleSectionDelete(section.id)}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
+        <section style={{ marginTop: 24 }}>
+          <div className="flex items-center" style={{ gap: 10, marginBottom: 10 }}>
+            <MetaTag>04 · SECTIONS</MetaTag>
+            <div style={{ flex: 1, height: 1, background: "var(--color-line)" }} />
+            <MetaTag>{String(sectionsList.length).padStart(2, "0")}</MetaTag>
           </div>
+          {sectionsList.length === 0 ? (
+            <p className="py-8 text-center" style={{ color: "var(--color-dim)", fontSize: 14 }}>
+              {t.song.noSections}
+            </p>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={sectionsList.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                <div className="grid gap-3">
+                  {sectionsList.map((section) => (
+                    <SortableSection
+                      key={section.id}
+                      section={section}
+                      onChange={handleSectionChange}
+                      onDelete={() => handleSectionDelete(section.id)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
         </section>
 
         <ConfirmModal
@@ -725,8 +768,8 @@ export function SongEditor(props: SongEditorProps) {
               border: "none",
               borderRadius: 2,
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.22em",
+              fontSize: 12,
+              letterSpacing: "0.25em",
               textTransform: "uppercase",
               fontWeight: 600,
               cursor: saving || !isDirty ? "not-allowed" : "pointer",
@@ -742,8 +785,6 @@ export function SongEditor(props: SongEditorProps) {
 }
 
 // ───── PC editor pane ─────────────────────────────────────────────────
-
-const PC_PALETTE_TYPES: SectionType[] = ["intro", "a", "b", "chorus", "bridge", "solo", "interlude", "outro"];
 
 interface PcEditorPaneProps {
   id: string | null;
@@ -1060,7 +1101,7 @@ function PcEditorPane({
                 gap: 6,
               }}
             >
-              {PC_PALETTE_TYPES.map((type) => (
+              {PALETTE_TYPES.map((type) => (
                 <button
                   key={type}
                   type="button"

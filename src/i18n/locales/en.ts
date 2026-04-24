@@ -154,7 +154,7 @@ export const en: Translations = {
     section: "Section",
     of: "/",
     songOf: "Song {current}/{total}",
-    start: "Start perform",
+    start: "Perform",
     modeSelect: {
       manual: "Manual",
       auto: "Auto",
