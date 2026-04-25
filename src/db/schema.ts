@@ -74,7 +74,6 @@ export const setlistSongs = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.setlistId, table.songId] }),
     uniqueIndex("setlist_songs_setlist_sort_unique").on(table.setlistId, table.sortOrder),
-    index("setlist_songs_setlist_sort_idx").on(table.setlistId, table.sortOrder),
   ],
 );
 

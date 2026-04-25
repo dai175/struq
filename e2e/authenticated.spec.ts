@@ -38,10 +38,7 @@ async function createSetlistWithSong(page: Page, title: string, songTitle: strin
 
   const dialog = page.getByRole("dialog", { name: /add song/i });
   await expect(dialog).toBeVisible();
-  await dialog
-    .getByRole("button", { name: new RegExp(songTitle, "i") })
-    .first()
-    .click();
+  await dialog.getByRole("button", { name: songTitle, exact: false }).first().click();
   await dialog.getByRole("button", { name: /close/i }).click();
 
   await page

@@ -100,6 +100,10 @@ function nextSetlistSortOrder(): number {
 }
 
 function isSetlistSongSortConflict(error: unknown): boolean {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = String((error as { code?: unknown }).code ?? "");
+    if (code === "SQLITE_CONSTRAINT" || code === "SQLITE_CONSTRAINT_UNIQUE") return true;
+  }
   if (!(error instanceof Error)) return false;
   return (
     error.message.includes("setlist_songs.setlist_id, setlist_songs.sort_order") ||
@@ -344,9 +348,7 @@ export const createSetlistWithSongs = createServerFn({ method: "POST" })
 
     const setlistId = crypto.randomUUID();
 
-    // Executes as a single batched request (not a true ACID transaction —
-    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
-    // batch are not rolled back if a later one fails).
+    // D1 executes batched statements atomically and rolls back the batch on failure.
     const insertSongStatements = [];
     for (let i = 0; i < data.songIds.length; i += SETLIST_SONGS_INSERT_BATCH) {
       insertSongStatements.push(
@@ -360,26 +362,20 @@ export const createSetlistWithSongs = createServerFn({ method: "POST" })
       );
     }
 
-    try {
-      await db.batch([
-        db.insert(schema.setlists).values({
-          id: setlistId,
-          userId: user.userId,
-          title,
-          description: data.description?.trim() || null,
-          sessionDate: data.sessionDate?.trim() || null,
-          venue: data.venue?.trim() || null,
-          sortOrder,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        }),
-        ...insertSongStatements,
-      ] as Parameters<typeof db.batch>[0]);
-    } catch (error) {
-      // Best-effort cleanup for non-transactional D1 batch failures.
-      await db.delete(schema.setlists).where(eq(schema.setlists.id, setlistId));
-      throw error;
-    }
+    await db.batch([
+      db.insert(schema.setlists).values({
+        id: setlistId,
+        userId: user.userId,
+        title,
+        description: data.description?.trim() || null,
+        sessionDate: data.sessionDate?.trim() || null,
+        venue: data.venue?.trim() || null,
+        sortOrder,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }),
+      ...insertSongStatements,
+    ] as Parameters<typeof db.batch>[0]);
 
     return { id: setlistId };
   });
@@ -401,9 +397,7 @@ export const deleteSetlist = createServerFn({ method: "POST" })
     });
     if (!setlist) return;
 
-    // Executes as a single batched request (not a true ACID transaction —
-    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
-    // batch are not rolled back if a later one fails).
+    // D1 executes batched statements atomically and rolls back the batch on failure.
     await db.batch([
       db.update(schema.setlists).set({ deletedAt: now() }).where(eq(schema.setlists.id, data.id)),
       db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
@@ -446,7 +440,9 @@ export const addSongToSetlist = createServerFn({ method: "POST" })
             songId: data.songId,
             sortOrder,
           })
-          .onConflictDoNothing();
+          .onConflictDoNothing({
+            target: [schema.setlistSongs.setlistId, schema.setlistSongs.songId],
+          });
         return;
       } catch (error) {
         if (attempt === 1 || !isSetlistSongSortConflict(error)) throw error;
@@ -495,18 +491,7 @@ export const saveSetlistWithSongs = createServerFn({ method: "POST" })
       requireSetlistOwner(db, data.id, user.userId),
       verifySongsOwnership(db, data.songIds, user.userId),
     ]);
-    const previousSongs = await db
-      .select({
-        songId: schema.setlistSongs.songId,
-        sortOrder: schema.setlistSongs.sortOrder,
-      })
-      .from(schema.setlistSongs)
-      .where(eq(schema.setlistSongs.setlistId, data.id))
-      .orderBy(schema.setlistSongs.sortOrder);
-
-    // Executes as a single batched request (not a true ACID transaction —
-    // D1 does not support BEGIN/COMMIT semantics; prior statements in the
-    // batch are not rolled back if a later one fails).
+    // D1 executes batched statements atomically and rolls back the batch on failure.
     const insertStatements = [];
     for (let i = 0; i < data.songIds.length; i += SETLIST_SONGS_INSERT_BATCH) {
       insertStatements.push(
@@ -520,49 +505,26 @@ export const saveSetlistWithSongs = createServerFn({ method: "POST" })
       );
     }
 
-    try {
-      await db.batch([
-        db
-          .update(schema.setlists)
-          .set({
-            title: data.title,
-            description: data.description?.trim() || null,
-            sessionDate: data.sessionDate?.trim() || null,
-            venue: data.venue?.trim() || null,
-            updatedAt: timestamp,
-          })
-          .where(
-            and(
-              eq(schema.setlists.id, data.id),
-              eq(schema.setlists.userId, user.userId),
-              isNull(schema.setlists.deletedAt),
-            ),
+    await db.batch([
+      db
+        .update(schema.setlists)
+        .set({
+          title: data.title,
+          description: data.description?.trim() || null,
+          sessionDate: data.sessionDate?.trim() || null,
+          venue: data.venue?.trim() || null,
+          updatedAt: timestamp,
+        })
+        .where(
+          and(
+            eq(schema.setlists.id, data.id),
+            eq(schema.setlists.userId, user.userId),
+            isNull(schema.setlists.deletedAt),
           ),
-        db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
-        ...insertStatements,
-      ] as Parameters<typeof db.batch>[0]);
-    } catch (error) {
-      // Best-effort rollback for non-transactional D1 batch failures:
-      // restore original setlist songs ordering.
-      const restoreStatements = [];
-      for (let i = 0; i < previousSongs.length; i += SETLIST_SONGS_INSERT_BATCH) {
-        restoreStatements.push(
-          db.insert(schema.setlistSongs).values(
-            previousSongs.slice(i, i + SETLIST_SONGS_INSERT_BATCH).map((row) => ({
-              setlistId: data.id,
-              songId: row.songId,
-              sortOrder: row.sortOrder,
-            })),
-          ),
-        );
-      }
-
-      await db.batch([
-        db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
-        ...restoreStatements,
-      ] as Parameters<typeof db.batch>[0]);
-      throw error;
-    }
+        ),
+      db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
+      ...insertStatements,
+    ] as Parameters<typeof db.batch>[0]);
   });
 
 // ─── listSongsForPicker ──────────────────────────────
