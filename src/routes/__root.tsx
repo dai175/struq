@@ -3,7 +3,7 @@ import { getAuthUser } from "../auth/server-fns";
 import type { SessionUser } from "../auth/session";
 import { I18nProvider } from "../i18n/provider";
 import { DEFAULT_LOCALE } from "../i18n/types";
-import { THEME_PRE_PAINT_SCRIPT } from "../lib/theme";
+import { THEME_PRE_PAINT_SCRIPT, ThemeProvider } from "../lib/theme";
 import { ToastProvider } from "../lib/toast";
 import appCss from "../styles.css?url";
 import { BottomNav } from "../ui/bottom-nav";
@@ -62,13 +62,13 @@ function RootLayout() {
   const showNav = !!user && !isPerformView;
 
   return (
-    <>
+    <ThemeProvider>
       {showNav && <SideRail user={user} />}
       <div className={showNav ? "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-[76px]" : ""}>
         <Outlet />
       </div>
       {showNav && <BottomNav />}
-    </>
+    </ThemeProvider>
   );
 }
 

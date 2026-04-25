@@ -6,8 +6,7 @@ import type { SessionUser } from "@/auth/session";
 import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
-import { APPEARANCE_STORAGE_KEY, type Appearance, useThemeSync } from "@/lib/theme";
-import { usePersistedState } from "@/lib/use-persisted-state";
+import { type Appearance, useAppearance } from "@/lib/theme";
 import {
   CLICK_SOUNDS,
   type ClickSound,
@@ -38,9 +37,6 @@ const LOCALE_LABELS: Record<Locale, string> = {
 };
 
 const APPEARANCES: Appearance[] = ["DARK", "AUTO", "LIGHT"];
-
-const validateAppearance = (v: unknown): Appearance | null =>
-  typeof v === "string" && (APPEARANCES as readonly string[]).includes(v) ? (v as Appearance) : null;
 
 type PcNavId = "account" | "language" | "audio" | "appearance" | "shortcuts" | "about";
 
@@ -84,8 +80,7 @@ function SettingsPage() {
   const [preRollBars, setPreRollBars] = usePreRollBars();
   const [accentDownbeat, setAccentDownbeat] = useAccentDownbeat();
 
-  const [appearance, setAppearance] = usePersistedState<Appearance>(APPEARANCE_STORAGE_KEY, "DARK", validateAppearance);
-  useThemeSync(appearance);
+  const { appearance, setAppearance } = useAppearance();
 
   const [activeNav, setActiveNav] = useState<PcNavId>("account");
   const activeMeta = PC_NAV.find((n) => n.id === activeNav) ?? PC_NAV[0];

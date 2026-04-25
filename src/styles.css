@@ -84,7 +84,9 @@
 }
 
 body {
-	@apply m-0 bg-surface text-text-primary font-sans;
+	@apply m-0 font-sans;
+	background: var(--color-ink);
+	color: var(--color-text);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
@@ -95,15 +97,9 @@ code {
 
 /* Keyboard focus ring — visible only for keyboard nav, not mouse/touch */
 :focus-visible {
-	outline: 2px solid var(--color-text-primary);
+	outline: 2px solid var(--color-text-strong);
 	outline-offset: 2px;
 	border-radius: 4px;
-}
-
-@media (prefers-color-scheme: dark) {
-	:focus-visible {
-		outline-color: var(--color-text-on-dark);
-	}
 }
 
 /* Settings volume slider — the <input type="range"> overlay is opacity:0
