@@ -18,7 +18,7 @@ import { ConfirmModal } from "@/lib/confirm-modal";
 import { createSetlistWithSongsInputSchema, saveSetlistWithSongsInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-import type { SetlistSongItem } from "@/setlists/server-fns";
+import type { SetlistSongItem, SetlistSongSection } from "@/setlists/server-fns";
 import {
   createSetlistWithSongs,
   deleteSetlist,
@@ -30,6 +30,7 @@ import { ConsoleBtn } from "@/ui/console-btn";
 import { ConsoleField } from "@/ui/console-field";
 import { IconBack, IconDrag, IconPlay, IconPlus, IconSearch, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
+import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
 
 export const Route = createFileRoute("/setlists/$id")({
@@ -147,7 +148,10 @@ export function SetlistEditor(props: SetlistEditorProps) {
         songId: song.id,
         title: song.title,
         artist: song.artist,
+        bpm: null,
+        songKey: null,
         sortOrder: prev.length,
+        sections: [],
       },
     ]);
   }, []);
@@ -257,6 +261,23 @@ export function SetlistEditor(props: SetlistEditorProps) {
   );
   const isDirty = isNew || currentSnapshot !== savedSnapshotRef.current;
 
+  const { totalSongSections, totalMinutes } = useMemo(() => {
+    const sections: SetlistSongSection[] = [];
+    let totalSeconds = 0;
+    for (const song of songs) {
+      if (song.sections.length === 0) continue;
+      sections.push(...song.sections);
+      if (song.bpm && song.bpm > 0) {
+        const bars = song.sections.reduce((sum, s) => sum + s.bars, 0);
+        totalSeconds += (bars * 4 * 60) / song.bpm;
+      }
+    }
+    return { totalSongSections: sections, totalMinutes: Math.round(totalSeconds / 60) };
+  }, [songs]);
+
+  const songCountLabel = `${String(songs.length).padStart(2, "0")} ${t.nav.songs.toUpperCase()}`;
+  const subtitle = sessionDate ? `${sessionDate} · ${songCountLabel}` : songCountLabel;
+
   return (
     <div
       className="min-h-screen"
@@ -295,14 +316,45 @@ export function SetlistEditor(props: SetlistEditorProps) {
 
       <TopBar
         left={
-          <Link to="/setlists" aria-label={t.common.back} style={{ color: "var(--color-text)", padding: 6 }}>
-            <IconBack size={20} />
+          <Link
+            to="/setlists"
+            aria-label={t.common.back}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 4,
+              color: "#fff",
+              lineHeight: 1,
+            }}
+          >
+            <IconBack size={18} />
           </Link>
         }
         title={title.trim() || fallbackTitle}
-        subtitle={`${String(songs.length).padStart(2, "0")} ${t.nav.songs.toUpperCase()}`}
+        subtitle={subtitle}
         right={
-          <>
+          <div className="flex items-center gap-1">
+            {!isNew && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                aria-label={t.common.delete}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 4,
+                  color: "var(--color-dim)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  lineHeight: 1,
+                }}
+              >
+                <IconTrash size={16} />
+              </button>
+            )}
             {!isNew && editSetlistId && songs.length > 0 && (
               <Link
                 to="/songs/$id/perform"
@@ -310,40 +362,28 @@ export function SetlistEditor(props: SetlistEditorProps) {
                 search={{ setlistId: editSetlistId }}
                 aria-label={t.perform.start}
                 style={{
-                  width: 36,
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "var(--color-accent)",
+                  background: "var(--color-accent)",
+                  color: "#111",
                   border: "1px solid var(--color-accent)",
+                  padding: "9px 14px",
                   borderRadius: 2,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  lineHeight: 1,
+                  textDecoration: "none",
                 }}
               >
-                <IconPlay size={14} />
+                <IconPlay size={10} />
+                {t.perform.start.toUpperCase()}
               </Link>
             )}
-            {!isNew && (
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                aria-label={t.common.delete}
-                style={{
-                  width: 36,
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "var(--color-section-solo)",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                <IconTrash size={16} />
-              </button>
-            )}
-          </>
+          </div>
         }
       />
 
@@ -417,9 +457,21 @@ export function SetlistEditor(props: SetlistEditorProps) {
           </div>
         </section>
 
+        {totalSongSections.length > 0 && (
+          <section className="mt-10">
+            <div className="flex items-center justify-between pb-3">
+              <MetaTag>02 · TOTAL STRUCTURE · {String(totalSongSections.length).padStart(2, "0")} SECTIONS</MetaTag>
+              {totalMinutes > 0 && <MetaTag>≈ {totalMinutes} MIN</MetaTag>}
+            </div>
+            <StructureBar sections={totalSongSections} height={6} gap={1} />
+          </section>
+        )}
+
         <section className="mt-10">
           <div className="flex items-center justify-between pb-4">
-            <MetaTag>02 · SONGS · {String(songs.length).padStart(2, "0")} TOTAL</MetaTag>
+            <MetaTag>
+              {totalSongSections.length > 0 ? "03" : "02"} · SONGS · {String(songs.length).padStart(2, "0")} TOTAL
+            </MetaTag>
           </div>
 
           {songs.length === 0 ? (
@@ -541,94 +593,110 @@ function SortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; ind
   const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.songId });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+  const meta = [
+    song.artist?.toUpperCase(),
+    song.bpm != null ? `${song.bpm} BPM` : null,
+    song.songKey ? song.songKey.toUpperCase() : null,
+    song.sections.length > 0 ? `${String(song.sections.length).padStart(2, "0")} SEC` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <li ref={setNodeRef} style={style} className="grid items-center gap-3">
-      <div
+    <li
+      ref={setNodeRef}
+      className="flex items-start"
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        gap: 12,
+        padding: "14px 4px",
+        borderBottom: "1px solid var(--color-line)",
+      }}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={t.common.reorder}
         style={{
-          display: "grid",
-          gridTemplateColumns: "24px 36px 1fr 32px",
+          width: 24,
+          height: 24,
+          display: "flex",
           alignItems: "center",
-          gap: 10,
-          padding: "14px 4px",
-          borderBottom: "1px solid var(--color-line)",
+          justifyContent: "center",
+          color: "var(--color-dim-2)",
+          background: "transparent",
+          border: "none",
+          cursor: "grab",
+          touchAction: "none",
+          flexShrink: 0,
         }}
       >
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label={t.common.reorder}
-          style={{
-            width: 24,
-            height: 24,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--color-dim-2)",
-            background: "transparent",
-            border: "none",
-            cursor: "grab",
-            touchAction: "none",
-          }}
-        >
-          <IconDrag size={14} />
-        </button>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--color-dim-2)",
-            letterSpacing: "0.08em",
-          }}
-        >
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <div className="min-w-0">
-          <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
-            {song.title}
-          </div>
-          {song.artist && (
-            <div
-              className="truncate"
-              style={{
-                marginTop: 3,
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.18em",
-                color: "var(--color-dim-2)",
-                textTransform: "uppercase",
-              }}
-            >
-              {song.artist}
-            </div>
-          )}
+        <IconDrag size={14} />
+      </button>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          fontWeight: 500,
+          color: "var(--color-dim)",
+          letterSpacing: "0.2em",
+          width: 28,
+          paddingTop: 4,
+          flexShrink: 0,
+        }}
+      >
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>
+          {song.title}
         </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label={t.setlist.removeSong}
-          style={{
-            width: 32,
-            height: 32,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--color-dim-2)",
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          <IconTrash size={14} />
-        </button>
+        {meta && (
+          <div
+            className="truncate"
+            style={{
+              marginTop: 3,
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.15em",
+              color: "var(--color-dim)",
+              textTransform: "uppercase",
+            }}
+          >
+            {meta}
+          </div>
+        )}
       </div>
+      {song.sections.length > 0 && (
+        <StructureBar
+          sections={song.sections.slice(0, 6)}
+          height={3}
+          gap={1}
+          style={{ width: 40, flexShrink: 0, marginTop: 8 }}
+        />
+      )}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={t.setlist.removeSong}
+        style={{
+          width: 24,
+          height: 24,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--color-dim-2)",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          flexShrink: 0,
+        }}
+      >
+        <IconTrash size={14} />
+      </button>
     </li>
   );
 }
