@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
 import { msPerBeat } from "@/songs/perform-utils";
+import { useTickdown } from "@/songs/use-tickdown";
 import { MetaTag } from "@/ui/meta-tag";
+
+const COUNT_BEATS = 4;
 
 interface CountInOverlayProps {
   /** BPM to space the count ticks at. */
@@ -9,29 +11,8 @@ interface CountInOverlayProps {
   onComplete: () => void;
 }
 
-const COUNT_BEATS = 4;
-
 export function CountInOverlay({ bpm, onComplete }: CountInOverlayProps) {
-  const [count, setCount] = useState(COUNT_BEATS);
-
-  // Ref so a parent re-render (which rebuilds onComplete) does not reset the
-  // setInterval mid-count-in and shift beats.
-  const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
-
-  useEffect(() => {
-    let remaining = COUNT_BEATS;
-    const id = setInterval(() => {
-      remaining -= 1;
-      if (remaining <= 0) {
-        clearInterval(id);
-        onCompleteRef.current();
-      } else {
-        setCount(remaining);
-      }
-    }, msPerBeat(bpm));
-    return () => clearInterval(id);
-  }, [bpm]);
+  const count = useTickdown(COUNT_BEATS, msPerBeat(bpm), onComplete);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center" style={{ background: "var(--color-ink)" }}>

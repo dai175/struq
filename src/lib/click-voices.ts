@@ -31,14 +31,18 @@ function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
   return buffer;
 }
 
+function applyClickEnvelope(gain: GainNode, when: number, peak: number, attackSec: number, decaySec: number): void {
+  gain.gain.setValueAtTime(0, when);
+  gain.gain.linearRampToValueAtTime(peak, when + attackSec);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + decaySec);
+}
+
 const scheduleTick: VoiceScheduler = (ctx, when, strong, peakGain) => {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = "sine";
   osc.frequency.value = strong ? 1800 : 1000;
-  gain.gain.setValueAtTime(0, when);
-  gain.gain.linearRampToValueAtTime(peakGain, when + 0.001);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
+  applyClickEnvelope(gain, when, peakGain, 0.001, 0.05);
   osc.connect(gain).connect(ctx.destination);
   osc.start(when);
   osc.stop(when + 0.06);
@@ -50,9 +54,7 @@ const scheduleBeep: VoiceScheduler = (ctx, when, strong, peakGain) => {
   const gain = ctx.createGain();
   osc.type = "triangle";
   osc.frequency.value = strong ? 2600 : 1800;
-  gain.gain.setValueAtTime(0, when);
-  gain.gain.linearRampToValueAtTime(peakGain, when + 0.0008);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.07);
+  applyClickEnvelope(gain, when, peakGain, 0.0008, 0.07);
   osc.connect(gain).connect(ctx.destination);
   osc.start(when);
   osc.stop(when + 0.08);
@@ -67,9 +69,7 @@ const scheduleSnap: VoiceScheduler = (ctx, when, strong, peakGain) => {
   filter.frequency.value = strong ? 3500 : 2500;
   filter.Q.value = 4;
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0, when);
-  gain.gain.linearRampToValueAtTime(peakGain * 1.4, when + 0.001);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.04);
+  applyClickEnvelope(gain, when, peakGain * 1.4, 0.001, 0.04);
   noise.connect(filter).connect(gain).connect(ctx.destination);
   noise.start(when);
   noise.stop(when + 0.05);
@@ -84,18 +84,14 @@ const scheduleRim: VoiceScheduler = (ctx, when, strong, peakGain) => {
   noiseFilter.frequency.value = strong ? 1600 : 1100;
   noiseFilter.Q.value = 2.5;
   const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(0, when);
-  noiseGain.gain.linearRampToValueAtTime(peakGain * 0.95, when + 0.001);
-  noiseGain.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
+  applyClickEnvelope(noiseGain, when, peakGain * 0.95, 0.001, 0.05);
   noise.connect(noiseFilter).connect(noiseGain).connect(ctx.destination);
 
   const body = ctx.createOscillator();
   body.type = "sine";
   body.frequency.value = strong ? 280 : 210;
   const bodyGain = ctx.createGain();
-  bodyGain.gain.setValueAtTime(0, when);
-  bodyGain.gain.linearRampToValueAtTime(peakGain * 0.55, when + 0.002);
-  bodyGain.gain.exponentialRampToValueAtTime(0.0001, when + 0.06);
+  applyClickEnvelope(bodyGain, when, peakGain * 0.55, 0.002, 0.06);
   body.connect(bodyGain).connect(ctx.destination);
 
   noise.start(when);
