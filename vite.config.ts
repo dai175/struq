@@ -31,8 +31,7 @@ const releasedDate = (() => {
 
 const config = defineConfig(({ mode }) => {
   const isTest = mode === "test";
-  const isDevelopment = mode === "development";
-  const enableDevtools = isDevelopment && !process.env.CI;
+  const enableDevtools = mode === "development" && !process.env.CI && process.env.VITE_ENABLE_DEVTOOLS === "1";
 
   return {
     define: {
