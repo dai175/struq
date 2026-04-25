@@ -862,7 +862,7 @@ function PcEditorPane({
               {t.common.delete.toUpperCase()}
             </ConsoleBtn>
           )}
-          <ConsoleBtn tone="white" onClick={onSave} disabled={saving || !isDirty}>
+          <ConsoleBtn tone="inverse" onClick={onSave} disabled={saving || !isDirty}>
             {saving
               ? t.common.loading
               : saved

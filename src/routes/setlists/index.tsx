@@ -150,7 +150,7 @@ function SetlistsPage() {
           subtitle={`${String(setlists.length).padStart(2, "0")} ${isSearching ? t.setlist.shown : t.setlist.total}`}
           left={<Logomark size={28} />}
           right={
-            <ConsoleBtn tone="white" onClick={handleCreate}>
+            <ConsoleBtn tone="inverse" onClick={handleCreate}>
               <IconPlus size={10} />
               {t.common.new.toUpperCase()}
             </ConsoleBtn>

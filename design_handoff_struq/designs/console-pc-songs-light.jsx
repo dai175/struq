@@ -1,6 +1,8 @@
 // Light-mode PC version of the Songs screen.
 // Mirrors SongsPC structure but rebuilds tokens, primitives, and section colors
 // for a warm-paper aesthetic. Standalone — does not depend on console-kit's dark C.
+// NOTE: `CL` and `SEC_LIGHT` mirror the canonical light tokens defined in
+// `src/styles.css` under `[data-theme="light"]`. Update both in lockstep.
 
 const monoL = { fontFamily:"'JetBrains Mono', ui-monospace, monospace" };
 const sansL = { fontFamily:"Inter, sans-serif" };

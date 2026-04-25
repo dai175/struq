@@ -118,7 +118,7 @@ function SetlistsPcListColumn() {
             </MetaTag>
           </div>
         </div>
-        <ConsoleBtn tone="white" onClick={handleCreate}>
+        <ConsoleBtn tone="inverse" onClick={handleCreate}>
           <IconPlus size={10} />
           {t.common.new.toUpperCase()}
         </ConsoleBtn>
