@@ -36,6 +36,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap",
       },
       { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.json" },
