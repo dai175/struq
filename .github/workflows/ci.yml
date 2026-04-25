@@ -8,6 +8,12 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    env:
+      E2E_TEST: "1"
+      SESSION_SECRET: "test-session-secret-01234567890123456789"
+      GOOGLE_CLIENT_ID: "test-google-client-id"
+      GOOGLE_CLIENT_SECRET: "test-google-client-secret"
+      GEMINI_API_KEY: "test-gemini-api-key"
     steps:
       - uses: actions/checkout@v6
 
@@ -27,3 +33,7 @@ jobs:
       - run: pnpm lint
 
       - run: pnpm test
+
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm test:e2e
