@@ -556,11 +556,11 @@ function PcSubNav({ active, onChange }: { active: PcNavId; onChange: (id: PcNavI
         width: 260,
         flexShrink: 0,
         borderRight: "1px solid var(--color-line)",
-        padding: "18px 0",
+        padding: "14px 0",
         fontFamily: "var(--font-sans)",
       }}
     >
-      <div style={{ padding: "0 22px 18px", borderBottom: "1px solid var(--color-line)" }}>
+      <div style={{ padding: "0 22px 14px", borderBottom: "1px solid var(--color-line)" }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t.settings.title}</div>
         <div style={{ marginTop: 3 }}>
           <MetaTag size={9}>SYSTEM &amp; PREFERENCES</MetaTag>
