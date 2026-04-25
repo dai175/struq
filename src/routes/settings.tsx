@@ -289,7 +289,7 @@ function SettingsPage() {
 
         {/* 02 AUDIO & CLICK */}
         <Section number="02" title="AUDIO & CLICK">
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-2.5">
             <SettingRow
               label="CLICK TRACK"
               description={t.settings.desc.clickTrack}
@@ -423,9 +423,9 @@ function SettingRow({
   return (
     <div
       style={{
-        padding: "14px 16px",
+        padding: "14px",
         border: "1px solid var(--color-line)",
-        marginBottom: -1,
+        borderRadius: 1,
       }}
     >
       <div className="flex items-start justify-between gap-4">
