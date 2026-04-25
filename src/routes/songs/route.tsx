@@ -33,7 +33,7 @@ function SongsLayout() {
   return (
     <div className="lg:flex lg:min-h-screen" style={{ background: "var(--color-ink)", color: "var(--color-text)" }}>
       <SongsPcLibraryColumn />
-      <main className="min-w-0 lg:flex-1">
+      <main className="min-w-0 lg:flex-1" style={{ background: "var(--color-ink)" }}>
         <Outlet />
       </main>
     </div>
@@ -106,6 +106,7 @@ function SongsPcLibraryColumn() {
       style={{
         width: 360,
         flexShrink: 0,
+        background: "var(--color-ink)",
         borderRight: "1px solid var(--color-line)",
         fontFamily: "var(--font-sans)",
       }}
@@ -223,7 +224,7 @@ function SongsPcLibraryRow({
           display: "block",
           padding: "12px 22px",
           borderBottom: "1px solid var(--color-line)",
-          background: active ? "rgba(255,255,255,0.04)" : "transparent",
+          background: active ? "var(--color-bg-elevated-hover)" : "transparent",
           borderLeft: active ? "2px solid var(--color-accent)" : "2px solid transparent",
           marginLeft: active ? -2 : 0,
           color: "var(--color-text)",

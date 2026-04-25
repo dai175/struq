@@ -141,7 +141,7 @@ export function BarsPopover({ section, color, onChange }: BarsPopoverProps) {
                 height: 30,
                 border: "1px solid var(--color-line)",
                 background: "transparent",
-                color: "#fff",
+                color: "var(--color-text-strong)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 13,
                 textAlign: "center",

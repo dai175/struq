@@ -24,7 +24,7 @@ const TONE_STYLES: Record<
   },
   accent: {
     background: "var(--color-accent)",
-    color: "#111",
+    color: "var(--color-text-on-accent)",
     border: "1px solid var(--color-accent)",
   },
   coral: {
@@ -33,9 +33,9 @@ const TONE_STYLES: Record<
     border: "1px solid var(--color-section-solo)",
   },
   white: {
-    background: "#fff",
-    color: "#111",
-    border: "1px solid #fff",
+    background: "var(--color-text-strong)",
+    color: "var(--color-ink)",
+    border: "1px solid var(--color-text-strong)",
   },
 };
 

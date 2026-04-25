@@ -3,6 +3,7 @@ import { getAuthUser } from "../auth/server-fns";
 import type { SessionUser } from "../auth/session";
 import { I18nProvider } from "../i18n/provider";
 import { DEFAULT_LOCALE } from "../i18n/types";
+import { THEME_PRE_PAINT_SCRIPT } from "../lib/theme";
 import { ToastProvider } from "../lib/toast";
 import appCss from "../styles.css?url";
 import { BottomNav } from "../ui/bottom-nav";
@@ -41,6 +42,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.json" },
     ],
+    // Inline pre-paint script: resolves theme before first paint to avoid FOUC.
+    // Trusted constant — see src/lib/theme.ts.
+    scripts: [{ children: THEME_PRE_PAINT_SCRIPT }],
   }),
   beforeLoad: async () => {
     const user = await getAuthUser();

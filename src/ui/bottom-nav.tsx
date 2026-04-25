@@ -36,7 +36,7 @@ export function BottomNav() {
             className="flex flex-1 flex-col items-center gap-1.5 px-2 pt-3 pb-3"
             aria-current={isActive ? "page" : undefined}
             style={{
-              color: isActive ? "#fff" : "var(--color-dim-2)",
+              color: isActive ? "var(--color-text-strong)" : "var(--color-dim-2)",
               borderTop: isActive ? "2px solid var(--color-accent)" : "2px solid transparent",
               marginTop: isActive ? -1 : 0,
             }}

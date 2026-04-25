@@ -378,7 +378,7 @@ function PerformView({
           </div>
 
           <div style={{ marginTop: 22 }}>
-            <div className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>
+            <div className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text-strong)" }}>
               {song.title}
             </div>
             {metaParts.length > 0 && (
@@ -403,8 +403,8 @@ function PerformView({
                     padding: "10px 2px 10px 6px",
                     borderBottom: "1px solid var(--color-line)",
                     borderLeft: active ? `3px solid ${SECTION_COLORS[sec.type]}` : "3px solid transparent",
-                    background: active ? "rgba(255,255,255,0.04)" : "transparent",
-                    color: active ? "#fff" : past ? "var(--color-dim)" : "var(--color-dim-2)",
+                    background: active ? "var(--color-bg-elevated-hover)" : "transparent",
+                    color: active ? "var(--color-text-strong)" : past ? "var(--color-dim)" : "var(--color-dim-2)",
                   }}
                 >
                   <span
@@ -460,7 +460,7 @@ function PerformView({
                   fontFamily: "var(--font-mono)",
                   fontSize: 22,
                   fontWeight: 600,
-                  color: "#fff",
+                  color: "var(--color-text-strong)",
                   letterSpacing: "0.02em",
                   marginTop: 2,
                 }}
@@ -475,7 +475,7 @@ function PerformView({
                   fontFamily: "var(--font-mono)",
                   fontSize: 22,
                   fontWeight: 600,
-                  color: "#fff",
+                  color: "var(--color-text-strong)",
                   letterSpacing: "0.02em",
                   marginTop: 2,
                 }}
@@ -506,7 +506,7 @@ function PerformView({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#fff",
+              color: "var(--color-text-strong)",
               background: "transparent",
               border: "none",
               cursor: "pointer",
@@ -515,7 +515,7 @@ function PerformView({
             <IconBack size={20} />
           </button>
           <div className="min-w-0 flex-1 text-center">
-            <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+            <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text-strong)" }}>
               {song.title}
             </div>
             {metaParts.length > 0 && (
@@ -734,7 +734,7 @@ function PerformView({
                               fontSize: 24,
                               fontWeight: 600,
                               letterSpacing: "0.22em",
-                              color: "#fff",
+                              color: "var(--color-text-strong)",
                               wordBreak: "break-word",
                             }}
                           >
@@ -762,7 +762,7 @@ function PerformView({
                               style={{
                                 fontSize: 22,
                                 fontWeight: 700,
-                                color: "rgba(255,255,255,0.85)",
+                                color: "var(--color-text-strong)",
                               }}
                             >
                               {sectionLabel(next, locale)}
@@ -788,7 +788,7 @@ function PerformView({
                               style={{
                                 fontSize: 18,
                                 fontWeight: 700,
-                                color: "rgba(255,255,255,0.85)",
+                                color: "var(--color-text-strong)",
                               }}
                               className="truncate"
                             >
@@ -908,7 +908,7 @@ function StageCard({
     <div
       style={{
         border: "1px solid var(--color-line)",
-        background: tone === "dim" ? "transparent" : "rgba(255,255,255,0.02)",
+        background: tone === "dim" ? "transparent" : "var(--color-bg-elevated)",
         padding: "12px 14px",
       }}
     >
