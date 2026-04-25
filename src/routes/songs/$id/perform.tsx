@@ -164,14 +164,14 @@ function PerformView({
   }, [mode, clickEnabled, clickVolume, clickSound, accentDownbeat, current, song.bpm, currentIndex]);
 
   useEffect(() => {
-    if (mode !== "countin" || !song.bpm) return;
+    if (mode !== "countin" || !clickEnabled || !song.bpm) return;
     const handle = scheduleClicks(song.bpm, 4, {
       volumePercent: clickVolume,
       sound: clickSound,
       accentDownbeat,
     });
     return () => handle.cancel();
-  }, [mode, song.bpm, clickVolume, clickSound, accentDownbeat]);
+  }, [mode, clickEnabled, song.bpm, clickVolume, clickSound, accentDownbeat]);
 
   function navigateToSong(target: SetlistSongItem) {
     navigate({
@@ -291,6 +291,8 @@ function PerformView({
 
   const handlersRef = useRef({ handlePrimaryAction, handleBack, handleReset, goExit });
   handlersRef.current = { handlePrimaryAction, handleBack, handleReset, goExit };
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -307,6 +309,7 @@ function PerformView({
         case "r":
         case "R":
           if (e.metaKey || e.ctrlKey || e.altKey) return;
+          if (modeRef.current === "selecting") return;
           e.preventDefault();
           handlersRef.current.handleReset();
           break;
