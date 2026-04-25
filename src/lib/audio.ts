@@ -31,6 +31,12 @@ interface ScheduleClicksOptions {
   startOffsetSeconds?: number;
   /** Every Nth beat (0-indexed) is rendered as a strong (higher-pitch) click. Default 4. */
   strongBeatEvery?: number;
+  /**
+   * Milliseconds already elapsed in the section's playback timeline. Beats whose
+   * timeline position is in the past are skipped; remaining beats keep their
+   * absolute index so the strong/weak phase stays aligned across pause/resume.
+   */
+  elapsedMsAtStart?: number;
 }
 
 const STRONG_FREQ = 1800;
@@ -52,11 +58,14 @@ export function scheduleClicks(
 
   const strongBeatEvery = options.strongBeatEvery ?? 4;
   const interval = 60 / bpm;
+  const elapsedSec = (options.elapsedMsAtStart ?? 0) / 1000;
   const startAt = c.currentTime + (options.startOffsetSeconds ?? 0);
   const oscillators: OscillatorNode[] = [];
 
   for (let i = 0; i < beatCount; i++) {
-    const when = startAt + i * interval;
+    const beatTimelineSec = i * interval;
+    if (beatTimelineSec < elapsedSec - 1e-6) continue;
+    const when = startAt + (beatTimelineSec - elapsedSec);
     const strong = i % strongBeatEvery === 0;
     const osc = c.createOscillator();
     const gain = c.createGain();

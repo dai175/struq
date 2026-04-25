@@ -119,17 +119,29 @@ function PerformView({
   });
 
   const clickHandleRef = useRef<ClickScheduleHandle | null>(null);
+  const clickElapsedMsRef = useRef(0);
+  const clickSectionIdRef = useRef(currentIndex);
   useEffect(() => {
     clickHandleRef.current?.cancel();
     clickHandleRef.current = null;
-    if (mode === "auto" && clickEnabled && current && song.bpm) {
-      clickHandleRef.current = scheduleClicks(song.bpm, sectionBeats(current));
+
+    if (clickSectionIdRef.current !== currentIndex) {
+      clickSectionIdRef.current = currentIndex;
+      clickElapsedMsRef.current = 0;
     }
+
+    if (mode !== "auto" || !clickEnabled || !current || !song.bpm) return;
+
+    const startedAt = performance.now();
+    clickHandleRef.current = scheduleClicks(song.bpm, sectionBeats(current), {
+      elapsedMsAtStart: clickElapsedMsRef.current,
+    });
     return () => {
       clickHandleRef.current?.cancel();
       clickHandleRef.current = null;
+      clickElapsedMsRef.current += performance.now() - startedAt;
     };
-  }, [mode, clickEnabled, current, song.bpm]);
+  }, [mode, clickEnabled, current, song.bpm, currentIndex]);
 
   useEffect(() => {
     if (mode !== "countin" || !song.bpm) return;
