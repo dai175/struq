@@ -113,7 +113,7 @@ function SongsPage() {
           subtitle={`${String(songs.length).padStart(2, "0")} ${isSearching ? t.song.shown : t.song.total}`}
           left={<Logomark size={28} />}
           right={
-            <ConsoleBtn tone="white" onClick={handleCreate}>
+            <ConsoleBtn tone="inverse" onClick={handleCreate}>
               <IconPlus size={10} />
               {t.common.new.toUpperCase()}
             </ConsoleBtn>

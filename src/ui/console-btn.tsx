@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type Tone = "neutral" | "accent" | "coral" | "white";
+type Tone = "neutral" | "accent" | "coral" | "inverse";
 
 interface ConsoleBtnProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   tone?: Tone;
@@ -32,7 +32,7 @@ const TONE_STYLES: Record<
     color: "var(--color-section-solo)",
     border: "1px solid var(--color-section-solo)",
   },
-  white: {
+  inverse: {
     background: "var(--color-text-strong)",
     color: "var(--color-ink)",
     border: "1px solid var(--color-text-strong)",
