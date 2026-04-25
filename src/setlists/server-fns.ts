@@ -26,11 +26,21 @@ export type SetlistWithSongCount = SetlistRow & {
   songStructure: SectionType[];
 };
 
+export type SetlistSongSection = {
+  id: string;
+  type: SectionType;
+  bars: number;
+  sortOrder: number;
+};
+
 export type SetlistSongItem = {
   songId: string;
   title: string;
   artist: string | null;
+  bpm: number | null;
+  songKey: string | null;
   sortOrder: number;
+  sections: SetlistSongSection[];
 };
 
 // ─── Helpers ────────────────────────────────────────────
@@ -200,11 +210,13 @@ export const getSetlist = createServerFn({ method: "GET" })
 
       if (!setlist) return null;
 
-      const songs = await db
+      const songRows = await db
         .select({
           songId: schema.setlistSongs.songId,
           title: schema.songs.title,
           artist: schema.songs.artist,
+          bpm: schema.songs.bpm,
+          songKey: schema.songs.key,
           sortOrder: schema.setlistSongs.sortOrder,
         })
         .from(schema.setlistSongs)
@@ -212,9 +224,57 @@ export const getSetlist = createServerFn({ method: "GET" })
         .where(and(eq(schema.setlistSongs.setlistId, data.setlistId), isNull(schema.songs.deletedAt)))
         .orderBy(schema.setlistSongs.sortOrder);
 
+      const sectionsBySongId = await loadSongSections(
+        db,
+        songRows.map((s) => s.songId),
+      );
+      const songs: SetlistSongItem[] = songRows.map((s) => ({
+        ...s,
+        sections: sectionsBySongId.get(s.songId) ?? [],
+      }));
+
       return { setlist, songs };
     },
   );
+
+// D1's 100-param limit covers `inArray(songIds)` fine for typical setlists, but
+// we chunk at 90 to keep headroom for the additional WHERE bindings.
+const SECTIONS_FETCH_BATCH = 90;
+
+async function loadSongSections(db: Database, songIds: string[]): Promise<Map<string, SetlistSongSection[]>> {
+  const map = new Map<string, SetlistSongSection[]>();
+  if (songIds.length === 0) return map;
+
+  const chunks: string[][] = [];
+  for (let i = 0; i < songIds.length; i += SECTIONS_FETCH_BATCH) {
+    chunks.push(songIds.slice(i, i + SECTIONS_FETCH_BATCH));
+  }
+
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      db
+        .select({
+          id: schema.sections.id,
+          songId: schema.sections.songId,
+          type: schema.sections.type,
+          bars: schema.sections.bars,
+          sortOrder: schema.sections.sortOrder,
+        })
+        .from(schema.sections)
+        .where(and(inArray(schema.sections.songId, chunk), isNull(schema.sections.deletedAt)))
+        .orderBy(schema.sections.songId, schema.sections.sortOrder),
+    ),
+  );
+
+  for (const rows of results) {
+    for (const row of rows) {
+      const arr = map.get(row.songId) ?? [];
+      arr.push({ id: row.id, type: row.type, bars: row.bars, sortOrder: row.sortOrder });
+      map.set(row.songId, arr);
+    }
+  }
+  return map;
+}
 
 // ─── createSetlist ─────────────────────────────────────
 
