@@ -12,6 +12,7 @@ import { ConsoleBtn } from "@/ui/console-btn";
 import { MetaTag } from "@/ui/meta-tag";
 import { Toggle } from "@/ui/toggle";
 import { TopBar } from "@/ui/top-bar";
+import { VolumeSlider } from "@/ui/volume-slider";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: requireAuth,
@@ -382,7 +383,17 @@ function SettingsPage() {
                 <MetaTag size={11} style={{ letterSpacing: "0.2em", color: "var(--color-dim)" }}>
                   {k}
                 </MetaTag>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#fff" }}>{v}</span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    letterSpacing: "0.04em",
+                    color: "#fff",
+                  }}
+                >
+                  {v}
+                </span>
               </div>
             ))}
           </div>
@@ -505,75 +516,6 @@ function ChoiceCard({
     >
       {label}
     </button>
-  );
-}
-
-/**
- * Mobile click-volume slider — keeps a native <input type="range"> beneath
- * a custom track/fill/handle for keyboard + screen reader support, while the
- * visual matches the broadcast-console handoff (4px track, accent fill,
- * 2×12 white handle).
- */
-function VolumeSlider({
-  value,
-  onChange,
-  ariaLabel,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <div style={{ position: "relative", height: 12, display: "flex", alignItems: "center" }}>
-      <div
-        style={{
-          width: "100%",
-          height: 4,
-          background: "rgba(255,255,255,0.08)",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: `${value}%`,
-            background: "var(--color-accent)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            left: `${value}%`,
-            top: -4,
-            width: 2,
-            height: 12,
-            background: "#fff",
-            transform: "translateX(-1px)",
-            pointerEvents: "none",
-          }}
-        />
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={ariaLabel}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          opacity: 0,
-          cursor: "pointer",
-          margin: 0,
-          padding: 0,
-        }}
-      />
-    </div>
   );
 }
 
@@ -807,11 +749,6 @@ function PcPreRollChip({ value, active, onClick }: { value: number; active: bool
   );
 }
 
-/**
- * PC volume slider — keeps a native <input type="range"> beneath a custom
- * track/fill/handle for keyboard + screen reader support, while the visual
- * matches the broadcast-console handoff (4px track, accent fill, 2×14 handle).
- */
 function PcVolumeSlider({
   value,
   onChange,
@@ -824,58 +761,8 @@ function PcVolumeSlider({
   return (
     <div>
       <div className="flex items-center" style={{ gap: 16 }}>
-        <div
-          className="pc-volume-slider"
-          style={{ position: "relative", flex: 1, height: 14, display: "flex", alignItems: "center" }}
-        >
-          <div
-            style={{
-              width: "100%",
-              height: 4,
-              background: "rgba(255,255,255,0.08)",
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: `${value}%`,
-                background: "var(--color-accent)",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: `${value}%`,
-                top: -5,
-                width: 2,
-                height: 14,
-                background: "#fff",
-                transform: "translateX(-1px)",
-                pointerEvents: "none",
-              }}
-            />
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            aria-label={ariaLabel}
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              opacity: 0,
-              cursor: "pointer",
-              margin: 0,
-              padding: 0,
-            }}
-          />
+        <div style={{ flex: 1 }}>
+          <VolumeSlider value={value} onChange={onChange} ariaLabel={ariaLabel} handleHeight={14} />
         </div>
         <div
           style={{
@@ -1247,10 +1134,10 @@ function PcAboutSection() {
     >
       <PcSettingRow label="BUILD" desc={t.settings.desc.build} span={2}>
         <div className="flex flex-col">
-          <AboutRow label="VERSION" value="2.0.0" />
-          <AboutRow label="RELEASED" value="2026.04.22" />
-          <AboutRow label="CHANNEL" value="STABLE" />
-          <AboutRow label="MADE BY" value="FOCUSWAVE" />
+          <AboutRow label="VERSION" value={__APP_VERSION__} />
+          <AboutRow label="RELEASED" value={__APP_RELEASED__} />
+          <AboutRow label="CHANNEL" value="Beta" />
+          <AboutRow label="MADE BY" value="focuswave" />
         </div>
       </PcSettingRow>
     </div>
