@@ -307,10 +307,10 @@ function SettingsPage() {
                 <span
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 16,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: "var(--color-accent)",
-                    letterSpacing: "0.04em",
+                    letterSpacing: "0.15em",
                   }}
                 >
                   {String(clickVolume).padStart(3, "0")}
@@ -320,19 +320,17 @@ function SettingsPage() {
               <div className="mt-3">
                 <VolumeSlider value={clickVolume} onChange={setClickVolume} ariaLabel={t.settings.aria.clickVolume} />
                 <div
-                  className="mt-2 flex justify-between"
+                  className="mt-1.5 flex justify-between"
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 9,
-                    letterSpacing: "0.22em",
+                    letterSpacing: "0.18em",
                     color: "var(--color-dim-2)",
-                    textTransform: "uppercase",
                     fontWeight: 500,
                   }}
                 >
-                  <span>MUTE</span>
-                  <span>050</span>
-                  <span>MAX</span>
+                  <span>000</span>
+                  <span>100</span>
                 </div>
               </div>
             </SettingRow>
@@ -497,6 +495,12 @@ function ChoiceCard({
   );
 }
 
+/**
+ * Mobile click-volume slider — keeps a native <input type="range"> beneath
+ * a custom track/fill/handle for keyboard + screen reader support, while the
+ * visual matches the broadcast-console handoff (4px track, accent fill,
+ * 2×12 white handle).
+ */
 function VolumeSlider({
   value,
   onChange,
@@ -507,18 +511,56 @@ function VolumeSlider({
   ariaLabel: string;
 }) {
   return (
-    <input
-      type="range"
-      min={0}
-      max={100}
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      aria-label={ariaLabel}
-      style={{
-        width: "100%",
-        accentColor: "var(--color-accent)",
-      }}
-    />
+    <div style={{ position: "relative", height: 12, display: "flex", alignItems: "center" }}>
+      <div
+        style={{
+          width: "100%",
+          height: 4,
+          background: "rgba(255,255,255,0.08)",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: `${value}%`,
+            background: "var(--color-accent)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: `${value}%`,
+            top: -4,
+            width: 2,
+            height: 12,
+            background: "#fff",
+            transform: "translateX(-1px)",
+            pointerEvents: "none",
+          }}
+        />
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={ariaLabel}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          opacity: 0,
+          cursor: "pointer",
+          margin: 0,
+          padding: 0,
+        }}
+      />
+    </div>
   );
 }
 
