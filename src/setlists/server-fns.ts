@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, eq, inArray, isNull, max, or, sql } from "drizzle-orm";
 import type { Database } from "@/db";
 import { getDb, schema } from "@/db";
+import type { SectionType } from "@/i18n/types";
 import {
   createSetlistInputSchema,
   createSetlistWithSongsInputSchema,
@@ -20,7 +21,10 @@ import { now, requireUser } from "@/server/helpers";
 
 export type SetlistRow = Omit<typeof schema.setlists.$inferSelect, "userId" | "deletedAt">;
 
-export type SetlistWithSongCount = SetlistRow & { songCount: number };
+export type SetlistWithSongCount = SetlistRow & {
+  songCount: number;
+  songStructure: SectionType[];
+};
 
 export type SetlistSongItem = {
   songId: string;
@@ -106,13 +110,7 @@ export const listSetlists = createServerFn({ method: "GET" })
       : baseWhere;
 
     const rows = await db
-      .select({
-        ...setlistColumns,
-        songCount: sql<number>`(
-            SELECT COUNT(*) FROM setlist_songs
-            WHERE setlist_songs.setlist_id = ${schema.setlists.id}
-          )`.as("song_count"),
-      })
+      .select(setlistColumns)
       .from(schema.setlists)
       .where(whereClause)
       .orderBy(schema.setlists.sortOrder)
@@ -120,8 +118,59 @@ export const listSetlists = createServerFn({ method: "GET" })
       .offset(offset);
 
     const hasMore = rows.length > LIST_SETLISTS_LIMIT;
-    return { items: hasMore ? rows.slice(0, LIST_SETLISTS_LIMIT) : rows, hasMore };
+    const page = hasMore ? rows.slice(0, LIST_SETLISTS_LIMIT) : rows;
+
+    const structureMap = await loadSetlistSongStructures(
+      db,
+      page.map((r) => r.id),
+    );
+    const items: SetlistWithSongCount[] = page.map((r) => {
+      const songStructure = structureMap.get(r.id) ?? [];
+      return { ...r, songCount: songStructure.length, songStructure };
+    });
+
+    return { items, hasMore };
   });
+
+/**
+ * Each entry in the returned array is the first section's type of the song at
+ * that position, defaulting to "intro" when the song has no sections yet.
+ * Soft-deleted songs are excluded so the length equals the setlist's live
+ * song count.
+ */
+async function loadSetlistSongStructures(db: Database, setlistIds: string[]): Promise<Map<string, SectionType[]>> {
+  const map = new Map<string, SectionType[]>();
+  if (setlistIds.length === 0) return map;
+
+  const rows = await db
+    .select({
+      setlistId: schema.setlistSongs.setlistId,
+      sortOrder: schema.setlistSongs.sortOrder,
+      type: schema.sections.type,
+    })
+    .from(schema.setlistSongs)
+    .innerJoin(schema.songs, and(eq(schema.songs.id, schema.setlistSongs.songId), isNull(schema.songs.deletedAt)))
+    .leftJoin(
+      schema.sections,
+      and(
+        eq(schema.sections.songId, schema.setlistSongs.songId),
+        isNull(schema.sections.deletedAt),
+        sql`${schema.sections.sortOrder} = (
+          SELECT MIN(sort_order) FROM sections
+          WHERE song_id = ${schema.setlistSongs.songId} AND deleted_at IS NULL
+        )`,
+      ),
+    )
+    .where(inArray(schema.setlistSongs.setlistId, setlistIds))
+    .orderBy(schema.setlistSongs.setlistId, schema.setlistSongs.sortOrder);
+
+  for (const row of rows) {
+    const arr = map.get(row.setlistId) ?? [];
+    arr.push((row.type as SectionType | null) ?? "intro");
+    map.set(row.setlistId, arr);
+  }
+  return map;
+}
 
 // ─── getSetlist ────────────────────────────────────────
 
