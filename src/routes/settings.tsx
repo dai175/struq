@@ -369,10 +369,23 @@ function SettingsPage() {
 
         {/* 04 ABOUT */}
         <Section number="04" title="ABOUT" last>
-          <AboutRow label="VERSION" value="2.0.0" />
-          <AboutRow label="RELEASED" value="2026.04.22" />
-          <AboutRow label="CHANNEL" value="STABLE" />
-          <AboutRow label="MADE BY" value="FOCUSWAVE" />
+          <div className="flex flex-col" style={{ gap: 12 }}>
+            {(
+              [
+                ["VERSION", __APP_VERSION__],
+                ["RELEASED", "2026.04.22"],
+                ["CHANNEL", "Stable"],
+                ["MADE BY", "focuswave"],
+              ] as const
+            ).map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between">
+                <MetaTag size={11} style={{ letterSpacing: "0.2em", color: "var(--color-dim)" }}>
+                  {k}
+                </MetaTag>
+                <span style={{ fontSize: 13, fontWeight: 500, color: "#fff" }}>{v}</span>
+              </div>
+            ))}
+          </div>
         </Section>
       </div>
     </div>
