@@ -1,8 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { msPerBeat } from "@/songs/perform-utils";
+import { msPerBar } from "@/songs/perform-utils";
+import { useTickdown } from "@/songs/use-tickdown";
 import { MetaTag } from "@/ui/meta-tag";
-
-const BEATS_PER_BAR = 4;
 
 interface PreRollOverlayProps {
   /** BPM to space the bar ticks at. */
@@ -14,24 +12,7 @@ interface PreRollOverlayProps {
 }
 
 export function PreRollOverlay({ bpm, bars, onComplete }: PreRollOverlayProps) {
-  const [remaining, setRemaining] = useState(bars);
-
-  const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
-
-  useEffect(() => {
-    let left = bars;
-    const id = setInterval(() => {
-      left -= 1;
-      if (left <= 0) {
-        clearInterval(id);
-        onCompleteRef.current();
-      } else {
-        setRemaining(left);
-      }
-    }, msPerBeat(bpm) * BEATS_PER_BAR);
-    return () => clearInterval(id);
-  }, [bpm, bars]);
+  const remaining = useTickdown(bars, msPerBar(bpm), onComplete);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center" style={{ background: "var(--color-ink)" }}>

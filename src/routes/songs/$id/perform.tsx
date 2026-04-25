@@ -68,6 +68,10 @@ const SAFE_AREA_STYLE = {
 
 type Mode = "selecting" | "manual" | "preroll" | "countin" | "auto" | "paused";
 
+function isRunningMode(mode: Mode): boolean {
+  return mode === "auto" || mode === "countin" || mode === "preroll";
+}
+
 function PerformView({
   song,
   sections,
@@ -193,14 +197,14 @@ function PerformView({
   function handleBack() {
     if (currentIndex <= 0) return;
     setCurrentIndex((i) => i - 1);
-    if (mode === "auto" || mode === "countin" || mode === "preroll") {
+    if (isRunningMode(mode)) {
       setMode("paused");
     }
   }
 
   function handleReset() {
     setCurrentIndex(0);
-    if (mode === "auto" || mode === "countin" || mode === "preroll") {
+    if (isRunningMode(mode)) {
       setMode("paused");
     }
   }
