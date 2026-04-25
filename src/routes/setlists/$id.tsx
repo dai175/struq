@@ -33,6 +33,8 @@ import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
 
+const ROW_STRUCTURE_PREVIEW_MAX = 6;
+
 export const Route = createFileRoute("/setlists/$id")({
   beforeLoad: requireAuth,
   loader: async ({ params }) => {
@@ -672,7 +674,7 @@ function SortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; ind
       </div>
       {song.sections.length > 0 && (
         <StructureBar
-          sections={song.sections.slice(0, 6)}
+          sections={song.sections.slice(0, ROW_STRUCTURE_PREVIEW_MAX)}
           height={3}
           gap={1}
           style={{ width: 40, flexShrink: 0, marginTop: 8 }}

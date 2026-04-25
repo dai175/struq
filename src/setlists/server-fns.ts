@@ -165,9 +165,11 @@ async function loadSetlistSongStructures(db: Database, setlistIds: string[]): Pr
       and(
         eq(schema.sections.songId, schema.setlistSongs.songId),
         isNull(schema.sections.deletedAt),
-        sql`${schema.sections.sortOrder} = (
-          SELECT MIN(sort_order) FROM sections
+        sql`${schema.sections.id} = (
+          SELECT id FROM sections
           WHERE song_id = ${schema.setlistSongs.songId} AND deleted_at IS NULL
+          ORDER BY sort_order ASC, id ASC
+          LIMIT 1
         )`,
       ),
     )
