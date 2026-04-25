@@ -43,6 +43,8 @@ interface ScheduleClicksOptions {
   volumePercent?: number;
   /** Voice variant to synthesize each beat with. Defaults to "TICK". */
   sound?: ClickSound;
+  /** When false, every beat plays as a weak click. Defaults to true. */
+  accentDownbeat?: boolean;
 }
 
 const CLICK_PEAK_GAIN = 0.3;
@@ -76,13 +78,14 @@ export function scheduleClicks(
   const peakGain = clickVolumeToGain(options.volumePercent ?? 100);
   if (peakGain <= 0) return { cancel: () => {} };
   const voice = VOICES[options.sound ?? "TICK"];
+  const accentDownbeat = options.accentDownbeat ?? true;
   const sources: AudioScheduledSourceNode[] = [];
 
   for (let i = 0; i < beatCount; i++) {
     const beatTimelineSec = i * interval;
     if (beatTimelineSec < elapsedSec - 1e-6) continue;
     const when = startAt + (beatTimelineSec - elapsedSec);
-    const strong = i % strongBeatEvery === 0;
+    const strong = accentDownbeat && i % strongBeatEvery === 0;
     sources.push(...voice(c, when, strong, peakGain));
   }
 

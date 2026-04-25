@@ -10,9 +10,14 @@ import { usePersistedState } from "@/lib/use-persisted-state";
 import {
   CLICK_SOUNDS,
   type ClickSound,
+  PRE_ROLL_OPTIONS,
+  type PreRollBars,
+  useAccentDownbeat,
   useClickPreference,
   useClickSound,
   useClickVolume,
+  useCountIn,
+  usePreRollBars,
 } from "@/songs/click-preference";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { Logomark } from "@/ui/icons";
@@ -32,14 +37,9 @@ const LOCALE_LABELS: Record<Locale, string> = {
 };
 
 type Appearance = "DARK" | "AUTO" | "LIGHT";
-type PreRoll = 0 | 1 | 2 | 4;
 
 const APPEARANCES: Appearance[] = ["DARK", "AUTO", "LIGHT"];
-const PRE_ROLL_OPTIONS: PreRoll[] = [0, 1, 2, 4];
 
-const validateBool = (v: unknown): boolean | null => (typeof v === "boolean" ? v : null);
-const validatePreRoll = (v: unknown): PreRoll | null =>
-  (PRE_ROLL_OPTIONS as readonly number[]).includes(v as number) ? (v as PreRoll) : null;
 const validateAppearance = (v: unknown): Appearance | null =>
   typeof v === "string" && (APPEARANCES as readonly string[]).includes(v) ? (v as Appearance) : null;
 
@@ -81,10 +81,10 @@ function SettingsPage() {
   const [clickEnabled, setClickEnabled] = useClickPreference();
   const [clickVolume, setClickVolume] = useClickVolume();
   const [clickSound, setClickSound] = useClickSound();
+  const [countIn, setCountIn] = useCountIn();
+  const [preRollBars, setPreRollBars] = usePreRollBars();
+  const [accentDownbeat, setAccentDownbeat] = useAccentDownbeat();
 
-  const [countIn, setCountIn] = usePersistedState("struq.settings.countIn", false, validateBool);
-  const [accentDownbeat, setAccentDownbeat] = usePersistedState("struq.settings.accentDownbeat", true, validateBool);
-  const [preRollBars, setPreRollBars] = usePersistedState<PreRoll>("struq.settings.preRollBars", 0, validatePreRoll);
   const [appearance, setAppearance] = usePersistedState<Appearance>(
     "struq.settings.appearance",
     "DARK",
@@ -296,8 +296,7 @@ function SettingsPage() {
             <SettingRow
               label="COUNT-IN"
               description={t.settings.desc.countIn}
-              disabled
-              control={<Toggle on={countIn} onChange={setCountIn} ariaLabel={t.settings.aria.countIn} disabled />}
+              control={<Toggle on={countIn} onChange={setCountIn} ariaLabel={t.settings.aria.countIn} />}
             />
             <SettingRow
               label="CLICK VOLUME"
@@ -343,26 +342,14 @@ function SettingsPage() {
             <SettingRow
               label="ACCENT DOWNBEAT"
               description={t.settings.desc.accentDownbeat}
-              disabled
               control={
-                <Toggle
-                  on={accentDownbeat}
-                  onChange={setAccentDownbeat}
-                  ariaLabel={t.settings.aria.accentDownbeat}
-                  disabled
-                />
+                <Toggle on={accentDownbeat} onChange={setAccentDownbeat} ariaLabel={t.settings.aria.accentDownbeat} />
               }
             />
-            <SettingRow label="PRE-ROLL BARS" description={t.settings.desc.preRoll} disabled>
+            <SettingRow label="PRE-ROLL BARS" description={t.settings.desc.preRoll}>
               <div className="mt-3 grid grid-cols-4 gap-2">
                 {PRE_ROLL_OPTIONS.map((n) => (
-                  <ChoiceCard
-                    key={n}
-                    label={String(n)}
-                    active={preRollBars === n}
-                    onClick={() => setPreRollBars(n)}
-                    disabled
-                  />
+                  <ChoiceCard key={n} label={String(n)} active={preRollBars === n} onClick={() => setPreRollBars(n)} />
                 ))}
               </div>
             </SettingRow>
@@ -1004,8 +991,8 @@ function PcAudioSection({
   onClickSound: (v: ClickSound) => void;
   accentDownbeat: boolean;
   onAccentDownbeat: (v: boolean) => void;
-  preRollBars: PreRoll;
-  onPreRollBars: (v: PreRoll) => void;
+  preRollBars: PreRollBars;
+  onPreRollBars: (v: PreRollBars) => void;
 }) {
   const { t } = useI18n();
   const clickSoundDescs: Record<ClickSound, string> = {
@@ -1026,8 +1013,8 @@ function PcAudioSection({
       <PcSettingRow label="CLICK TRACK" desc={t.settings.desc.clickTrack}>
         <Toggle on={clickEnabled} onChange={onClickEnabled} ariaLabel={t.settings.aria.clickTrack} />
       </PcSettingRow>
-      <PcSettingRow label="COUNT-IN" desc={t.settings.desc.countIn} disabled>
-        <Toggle on={countIn} onChange={onCountIn} ariaLabel={t.settings.aria.countIn} disabled />
+      <PcSettingRow label="COUNT-IN" desc={t.settings.desc.countIn}>
+        <Toggle on={countIn} onChange={onCountIn} ariaLabel={t.settings.aria.countIn} />
       </PcSettingRow>
       <PcSettingRow label="CLICK VOLUME" desc={t.settings.desc.clickVolume} span={2}>
         <PcVolumeSlider value={clickVolume} onChange={onClickVolume} ariaLabel={t.settings.aria.clickVolume} />
@@ -1045,13 +1032,13 @@ function PcAudioSection({
           ))}
         </div>
       </PcSettingRow>
-      <PcSettingRow label="ACCENT DOWNBEAT" desc={t.settings.desc.accentDownbeat} disabled>
-        <Toggle on={accentDownbeat} onChange={onAccentDownbeat} ariaLabel={t.settings.aria.accentDownbeat} disabled />
+      <PcSettingRow label="ACCENT DOWNBEAT" desc={t.settings.desc.accentDownbeat}>
+        <Toggle on={accentDownbeat} onChange={onAccentDownbeat} ariaLabel={t.settings.aria.accentDownbeat} />
       </PcSettingRow>
-      <PcSettingRow label="PRE-ROLL BARS" desc={t.settings.desc.preRoll} disabled>
+      <PcSettingRow label="PRE-ROLL BARS" desc={t.settings.desc.preRoll}>
         <div style={{ display: "flex", gap: 4 }}>
           {PRE_ROLL_OPTIONS.map((n) => (
-            <PcPreRollChip key={n} value={n} active={preRollBars === n} onClick={() => onPreRollBars(n)} disabled />
+            <PcPreRollChip key={n} value={n} active={preRollBars === n} onClick={() => onPreRollBars(n)} />
           ))}
         </div>
       </PcSettingRow>
