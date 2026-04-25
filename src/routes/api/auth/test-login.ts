@@ -14,8 +14,14 @@ import { now } from "@/server/helpers";
 export const Route = createFileRoute("/api/auth/test-login")({
   server: {
     handlers: {
-      GET: async () => {
+      GET: async ({ request }) => {
+        const { hostname } = new URL(request.url);
+        const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+
         if (!("E2E_TEST" in env) || env.E2E_TEST !== "1") {
+          return new Response("Not found", { status: 404 });
+        }
+        if (!isLocalHost) {
           return new Response("Not found", { status: 404 });
         }
 
