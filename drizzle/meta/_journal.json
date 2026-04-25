@@ -36,6 +36,13 @@
       "when": 1776128612513,
       "tag": "0004_fluffy_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1777091848000,
+      "tag": "0005_resolute_gatekeeper",
+      "breakpoints": true
     }
   ]
 }

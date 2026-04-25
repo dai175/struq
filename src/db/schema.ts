@@ -1,4 +1,4 @@
-import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { LOCALES, SECTION_TYPES } from "../i18n/types";
 
 // ─── Users ──────────────────────────────────────────────
@@ -30,7 +30,10 @@ export const songs = sqliteTable(
     updatedAt: integer("updated_at", { mode: "number" }).notNull(),
     deletedAt: integer("deleted_at", { mode: "number" }),
   },
-  (table) => [index("songs_user_id_idx").on(table.userId)],
+  (table) => [
+    index("songs_user_id_idx").on(table.userId),
+    index("songs_user_deleted_updated_idx").on(table.userId, table.deletedAt, table.updatedAt),
+  ],
 );
 
 // ─── Setlists ───────────────────────────────────────────
@@ -50,7 +53,10 @@ export const setlists = sqliteTable(
     updatedAt: integer("updated_at", { mode: "number" }).notNull(),
     deletedAt: integer("deleted_at", { mode: "number" }),
   },
-  (table) => [index("setlists_user_id_idx").on(table.userId)],
+  (table) => [
+    index("setlists_user_id_idx").on(table.userId),
+    index("setlists_user_deleted_sort_idx").on(table.userId, table.deletedAt, table.sortOrder),
+  ],
 );
 
 // ─── SetlistSongs (junction) ────────────────────────────
@@ -65,7 +71,11 @@ export const setlistSongs = sqliteTable(
       .references(() => songs.id, { onDelete: "cascade" }),
     sortOrder: integer("sort_order").notNull(),
   },
-  (table) => [primaryKey({ columns: [table.setlistId, table.songId] })],
+  (table) => [
+    primaryKey({ columns: [table.setlistId, table.songId] }),
+    uniqueIndex("setlist_songs_setlist_sort_unique").on(table.setlistId, table.sortOrder),
+    index("setlist_songs_setlist_sort_idx").on(table.setlistId, table.sortOrder),
+  ],
 );
 
 // ─── AI Rate Limits ─────────────────────────────────────
@@ -93,5 +103,8 @@ export const sections = sqliteTable(
     sortOrder: integer("sort_order").notNull(),
     deletedAt: integer("deleted_at", { mode: "number" }),
   },
-  (table) => [index("sections_song_id_idx").on(table.songId)],
+  (table) => [
+    index("sections_song_id_idx").on(table.songId),
+    index("sections_song_deleted_sort_idx").on(table.songId, table.deletedAt, table.sortOrder),
+  ],
 );
