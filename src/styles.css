@@ -48,10 +48,7 @@
     Monaco, Consolas, "Courier New", monospace;
 }
 
-/* ─── Light theme overrides ───
-   Applied via `<html data-theme="light">`. The pre-paint script in __root.tsx
-   resolves AUTO → dark|light against `prefers-color-scheme` before first paint,
-   so this selector only ever sees concrete `dark` (default, no attr) or `light`. */
+/* ─── Light theme overrides ─── */
 [data-theme="light"] {
   /* Surfaces — warm paper palette */
   --color-ink: #f4f1ea;
