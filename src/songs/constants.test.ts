@@ -63,4 +63,8 @@ describe("PALETTE_TYPES", () => {
       expect(PALETTE_TYPES).toContain(type);
     }
   });
+
+  it("preserves the intended palette order", () => {
+    expect([...PALETTE_TYPES]).toEqual(["intro", "a", "b", "chorus", "bridge", "solo", "interlude", "outro"]);
+  });
 });

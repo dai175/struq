@@ -55,6 +55,7 @@ export const en: Translations = {
     bpm: "BPM",
     key: "Key",
     referenceUrl: "Reference URL",
+    openReferenceUrl: "Open reference URL",
     aiGenerate: "AI Generate",
     addSection: "Add Section",
     noSections: "No sections yet",

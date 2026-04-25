@@ -542,7 +542,7 @@ export function SongEditor(props: SongEditorProps) {
               href={referenceUrlOpenable ? trimmedReferenceUrl : undefined}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Open reference"
+              aria-label={t.song.openReferenceUrl}
               aria-disabled={!referenceUrlOpenable}
               tabIndex={referenceUrlOpenable ? 0 : -1}
               style={{

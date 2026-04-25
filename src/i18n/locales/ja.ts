@@ -55,6 +55,7 @@ export const ja: Translations = {
     bpm: "BPM",
     key: "キー",
     referenceUrl: "参考URL",
+    openReferenceUrl: "参考URLを開く",
     aiGenerate: "AI生成",
     addSection: "セクション追加",
     noSections: "セクションがありません",
