@@ -300,6 +300,12 @@ function PerformView({
           e.preventDefault();
           handlersRef.current.handleBack();
           break;
+        case "r":
+        case "R":
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          e.preventDefault();
+          handlersRef.current.handleReset();
+          break;
         case "Escape":
           handlersRef.current.goExit();
           break;
