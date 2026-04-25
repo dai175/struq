@@ -256,14 +256,14 @@ function SettingsPage() {
                   onClick={() => handleLocaleChange(l)}
                   disabled={localeUpdating}
                   style={{
-                    padding: "16px 14px",
-                    border: active ? "1px solid #fff" : "1px solid var(--color-line)",
-                    background: active ? "rgba(255,255,255,0.04)" : "transparent",
+                    padding: "14px",
+                    border: active ? "1px solid var(--color-text)" : "1px solid var(--color-line)",
+                    background: active ? "rgba(255,255,255,0.05)" : "transparent",
                     color: active ? "#fff" : "var(--color-text)",
                     cursor: localeUpdating ? "not-allowed" : "pointer",
                     opacity: localeUpdating ? 0.5 : 1,
                     textAlign: "left",
-                    borderRadius: 2,
+                    borderRadius: 1,
                   }}
                 >
                   <div
@@ -271,15 +271,16 @@ function SettingsPage() {
                       fontFamily: "var(--font-mono)",
                       fontSize: 10,
                       letterSpacing: "0.22em",
-                      color: active ? "var(--color-accent)" : "var(--color-dim-2)",
+                      color: active ? "var(--color-accent)" : "var(--color-dim)",
                       textTransform: "uppercase",
                       fontWeight: 600,
-                      marginBottom: 6,
+                      marginBottom: 4,
                     }}
                   >
                     {l.toUpperCase()}
+                    {active && " · ACTIVE"}
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>{LOCALE_LABELS[l]}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{LOCALE_LABELS[l]}</div>
                 </button>
               );
             })}
