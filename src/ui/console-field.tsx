@@ -28,7 +28,7 @@ export function ConsoleField({
 }: ConsoleFieldProps) {
   const hasValue = value.length > 0;
   const fieldStyle = {
-    background: "rgba(255,255,255,0.02)",
+    background: "var(--color-bg-elevated)",
     border: "1px solid var(--color-line)",
     borderLeft: hasValue ? "2px solid var(--color-accent)" : "1px solid var(--color-line)",
     padding: "12px 14px",
@@ -36,7 +36,7 @@ export function ConsoleField({
     fontSize: 14,
     fontWeight: mono ? 500 : 400,
     letterSpacing: mono ? "0.08em" : 0,
-    color: hasValue ? "#fff" : "rgba(255,255,255,0.3)",
+    color: hasValue ? "var(--color-text-strong)" : "var(--color-dim-2)",
     width: "100%",
     outline: "none",
     borderRadius: 0,

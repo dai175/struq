@@ -34,7 +34,7 @@ export function SideRail({ user }: SideRailProps) {
     <aside
       className="fixed top-0 bottom-0 left-0 z-50 hidden w-[76px] flex-col border-r lg:flex"
       style={{
-        background: "var(--color-ink)",
+        background: "var(--color-ink-2)",
         borderColor: "var(--color-line)",
       }}
     >
@@ -60,7 +60,7 @@ export function SideRail({ user }: SideRailProps) {
               style={{
                 padding: "18px 0 16px",
                 gap: 6,
-                color: isActive ? "#fff" : "var(--color-dim-2)",
+                color: isActive ? "var(--color-text-strong)" : "var(--color-dim-2)",
                 borderLeft: isActive ? "2px solid var(--color-accent)" : "2px solid transparent",
               }}
             >
@@ -94,7 +94,7 @@ export function SideRail({ user }: SideRailProps) {
             width: 32,
             height: 32,
             background: "var(--color-accent)",
-            color: "#000",
+            color: "var(--color-text-on-accent)",
             fontFamily: "var(--font-sans)",
             fontSize: 13,
             fontWeight: 700,

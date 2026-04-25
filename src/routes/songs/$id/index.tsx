@@ -423,7 +423,7 @@ export function SongEditor(props: SongEditorProps) {
               alignItems: "center",
               justifyContent: "center",
               padding: 4,
-              color: "#fff",
+              color: "var(--color-text-strong)",
               lineHeight: 1,
             }}
           >
@@ -461,7 +461,7 @@ export function SongEditor(props: SongEditorProps) {
                 aria-label={t.perform.start}
                 style={{
                   background: "var(--color-accent)",
-                  color: "#111",
+                  color: "var(--color-text-on-accent)",
                   border: "1px solid var(--color-accent)",
                   padding: "9px 14px",
                   borderRadius: 2,
@@ -596,7 +596,7 @@ export function SongEditor(props: SongEditorProps) {
               padding: 12,
               border: "1px solid var(--color-line-2)",
               background: "transparent",
-              color: "#fff",
+              color: "var(--color-text-strong)",
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               letterSpacing: "0.22em",
@@ -732,8 +732,8 @@ export function SongEditor(props: SongEditorProps) {
             style={{
               width: "100%",
               padding: "14px",
-              background: "#fff",
-              color: "#111",
+              background: "var(--color-text-strong)",
+              color: "var(--color-ink)",
               border: "none",
               borderRadius: 2,
               fontFamily: "var(--font-mono)",
@@ -844,7 +844,7 @@ function PcEditorPane({
               fontSize: 20,
               fontWeight: 700,
               letterSpacing: "-0.01em",
-              color: "#fff",
+              color: "var(--color-text-strong)",
             }}
           >
             {title.trim() || fallbackTitle}
@@ -877,7 +877,7 @@ function PcEditorPane({
               params={{ id }}
               style={{
                 background: "var(--color-accent)",
-                color: "#111",
+                color: "var(--color-text-on-accent)",
                 padding: "9px 14px",
                 borderRadius: 2,
                 fontFamily: "var(--font-mono)",
@@ -999,7 +999,7 @@ function PcEditorPane({
               padding: "12px",
               border: "1px solid var(--color-line-2)",
               background: "transparent",
-              color: "#fff",
+              color: "var(--color-text-strong)",
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               letterSpacing: "0.22em",
@@ -1079,7 +1079,7 @@ function PcEditorPane({
                     padding: "10px 4px",
                     border: "1px solid var(--color-line)",
                     borderRadius: 1,
-                    background: "rgba(255,255,255,0.02)",
+                    background: "var(--color-bg-elevated)",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",

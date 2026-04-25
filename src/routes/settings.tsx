@@ -6,6 +6,7 @@ import type { SessionUser } from "@/auth/session";
 import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
+import { APPEARANCE_STORAGE_KEY, type Appearance, useThemeSync } from "@/lib/theme";
 import { usePersistedState } from "@/lib/use-persisted-state";
 import {
   CLICK_SOUNDS,
@@ -35,8 +36,6 @@ const LOCALE_LABELS: Record<Locale, string> = {
   ja: "日本語",
   en: "English",
 };
-
-type Appearance = "DARK" | "AUTO" | "LIGHT";
 
 const APPEARANCES: Appearance[] = ["DARK", "AUTO", "LIGHT"];
 
@@ -85,11 +84,8 @@ function SettingsPage() {
   const [preRollBars, setPreRollBars] = usePreRollBars();
   const [accentDownbeat, setAccentDownbeat] = useAccentDownbeat();
 
-  const [appearance, setAppearance] = usePersistedState<Appearance>(
-    "struq.settings.appearance",
-    "DARK",
-    validateAppearance,
-  );
+  const [appearance, setAppearance] = usePersistedState<Appearance>(APPEARANCE_STORAGE_KEY, "DARK", validateAppearance);
+  useThemeSync(appearance);
 
   const [activeNav, setActiveNav] = useState<PcNavId>("account");
   const activeMeta = PC_NAV.find((n) => n.id === activeNav) ?? PC_NAV[0];
@@ -192,7 +188,7 @@ function SettingsPage() {
               width: 48,
               height: 48,
               background: "var(--color-accent)",
-              color: "#000",
+              color: "var(--color-text-on-accent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -204,7 +200,7 @@ function SettingsPage() {
             {initials(user?.name)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+            <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text-strong)" }}>
               {user?.name ?? "—"}
             </div>
             <div
@@ -256,8 +252,8 @@ function SettingsPage() {
                   style={{
                     padding: "14px",
                     border: active ? "1px solid var(--color-text)" : "1px solid var(--color-line)",
-                    background: active ? "rgba(255,255,255,0.05)" : "transparent",
-                    color: active ? "#fff" : "var(--color-text)",
+                    background: active ? "var(--color-bg-elevated-hover)" : "transparent",
+                    color: active ? "var(--color-text-strong)" : "var(--color-text)",
                     cursor: localeUpdating ? "not-allowed" : "pointer",
                     opacity: localeUpdating ? 0.5 : 1,
                     textAlign: "left",
@@ -278,7 +274,9 @@ function SettingsPage() {
                     {l.toUpperCase()}
                     {active && " · ACTIVE"}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{LOCALE_LABELS[l]}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-strong)" }}>
+                    {LOCALE_LABELS[l]}
+                  </div>
                 </button>
               );
             })}
@@ -360,14 +358,7 @@ function SettingsPage() {
         <Section number="03" title="APPEARANCE">
           <div className="grid grid-cols-3 gap-2">
             {APPEARANCES.map((a) => (
-              <ChoiceCard
-                key={a}
-                label={a}
-                active={appearance === a}
-                onClick={() => setAppearance(a)}
-                size="large"
-                disabled={a !== "DARK"}
-              />
+              <ChoiceCard key={a} label={a} active={appearance === a} onClick={() => setAppearance(a)} size="large" />
             ))}
           </div>
         </Section>
@@ -393,7 +384,7 @@ function SettingsPage() {
                     fontSize: 13,
                     fontWeight: 600,
                     letterSpacing: "0.04em",
-                    color: "#fff",
+                    color: "var(--color-text-strong)",
                   }}
                 >
                   {v}
@@ -466,7 +457,7 @@ function SettingRow({
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               letterSpacing: "0.22em",
-              color: "#fff",
+              color: "var(--color-text-strong)",
               textTransform: "uppercase",
               fontWeight: 600,
             }}
@@ -515,9 +506,9 @@ function ChoiceCard({
       onClick={onClick}
       style={{
         padding: size === "large" ? "18px 12px" : "12px 10px",
-        background: active ? "rgba(255,255,255,0.04)" : "transparent",
-        border: active ? "1px solid #fff" : "1px solid var(--color-line)",
-        color: active ? "#fff" : "var(--color-dim)",
+        background: active ? "var(--color-bg-elevated-hover)" : "transparent",
+        border: active ? "1px solid var(--color-text-strong)" : "1px solid var(--color-line)",
+        color: active ? "var(--color-text-strong)" : "var(--color-dim)",
         fontFamily: "var(--font-mono)",
         fontSize: size === "large" ? 12 : 11,
         letterSpacing: "0.22em",
@@ -547,7 +538,7 @@ function AboutRow({ label, value }: { label: string; value: string }) {
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 13,
-          color: "#fff",
+          color: "var(--color-text-strong)",
           letterSpacing: "0.04em",
           fontWeight: 600,
         }}
@@ -574,7 +565,7 @@ function PcSubNav({ active, onChange }: { active: PcNavId; onChange: (id: PcNavI
       }}
     >
       <div style={{ padding: "0 22px 14px", borderBottom: "1px solid var(--color-line)" }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t.settings.title}</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text-strong)" }}>{t.settings.title}</div>
         <div style={{ marginTop: 3 }}>
           <MetaTag size={9}>SYSTEM &amp; PREFERENCES</MetaTag>
         </div>
@@ -598,8 +589,8 @@ function PcSubNavItem({ item, active, onClick }: { item: PcNavItem; active: bool
         width: "100%",
         textAlign: "left",
         padding: "12px 22px",
-        background: active ? "rgba(255,255,255,0.04)" : "transparent",
-        color: active ? "#fff" : "var(--color-dim)",
+        background: active ? "var(--color-bg-elevated-hover)" : "transparent",
+        color: active ? "var(--color-text-strong)" : "var(--color-dim)",
         fontFamily: "var(--font-mono)",
         fontSize: 11,
         letterSpacing: "0.22em",
@@ -641,7 +632,7 @@ function PcTopRail({ title, subtitle }: { title: string; subtitle: string }) {
             fontSize: 20,
             fontWeight: 700,
             letterSpacing: "-0.01em",
-            color: "#fff",
+            color: "var(--color-text-strong)",
             fontFamily: "var(--font-sans)",
           }}
         >
@@ -675,7 +666,7 @@ function PcSettingRow({
         gridColumn: span === 2 ? "span 2" : undefined,
         padding: "20px 22px",
         border: "1px solid var(--color-line)",
-        background: "rgba(255,255,255,0.015)",
+        background: "var(--color-bg-elevated)",
         opacity: disabled ? 0.4 : 1,
         pointerEvents: disabled ? "none" : undefined,
       }}
@@ -687,7 +678,7 @@ function PcSettingRow({
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               letterSpacing: "0.22em",
-              color: "#fff",
+              color: "var(--color-text-strong)",
               fontWeight: 600,
               textTransform: "uppercase",
             }}
@@ -726,7 +717,7 @@ function PcSoundCard({
         padding: "14px 14px",
         textAlign: "left",
         border: active ? "1px solid var(--color-text)" : "1px solid var(--color-line)",
-        background: "rgba(255,255,255,0.02)",
+        background: "var(--color-bg-elevated)",
         cursor: disabled ? "not-allowed" : "pointer",
         borderRadius: 1,
       }}
@@ -769,7 +760,7 @@ function PcPreRollChip({
       style={{
         padding: "10px 14px",
         border: active ? "1px solid var(--color-text)" : "1px solid var(--color-line)",
-        background: active ? "rgba(255,255,255,0.05)" : "transparent",
+        background: active ? "var(--color-bg-elevated-hover)" : "transparent",
         fontFamily: "var(--font-mono)",
         fontSize: 12,
         letterSpacing: "0.08em",
@@ -862,7 +853,7 @@ function PcAccountSection({
               width: 64,
               height: 64,
               background: "var(--color-accent)",
-              color: "#0b0b0b",
+              color: "var(--color-text-on-accent)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -876,7 +867,7 @@ function PcAccountSection({
             {initials(user?.name)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate" style={{ fontSize: 18, fontWeight: 600, color: "#fff" }}>
+            <div className="truncate" style={{ fontSize: 18, fontWeight: 600, color: "var(--color-text-strong)" }}>
               {user?.name ?? "—"}
             </div>
             <div
@@ -936,9 +927,9 @@ function PcLanguageSection({
                 style={{
                   padding: "16px 14px",
                   textAlign: "left",
-                  border: active ? "1px solid #fff" : "1px solid var(--color-line)",
-                  background: active ? "rgba(255,255,255,0.04)" : "transparent",
-                  color: active ? "#fff" : "var(--color-text)",
+                  border: active ? "1px solid var(--color-text-strong)" : "1px solid var(--color-line)",
+                  background: active ? "var(--color-bg-elevated-hover)" : "transparent",
+                  color: active ? "var(--color-text-strong)" : "var(--color-text)",
                   cursor: updating ? "not-allowed" : "pointer",
                   opacity: updating ? 0.5 : 1,
                   borderRadius: 2,
@@ -1067,27 +1058,23 @@ function PcAppearanceSection({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
           {APPEARANCES.map((a) => {
             const active = appearance === a;
-            const isDisabled = a !== "DARK";
             return (
               <button
                 key={a}
                 type="button"
                 aria-pressed={active}
-                aria-disabled={isDisabled || undefined}
-                disabled={isDisabled}
                 onClick={() => onAppearance(a)}
                 style={{
                   padding: "18px 12px",
-                  background: active ? "rgba(255,255,255,0.04)" : "transparent",
-                  border: active ? "1px solid #fff" : "1px solid var(--color-line)",
-                  color: active ? "#fff" : "var(--color-dim)",
+                  background: active ? "var(--color-bg-elevated-hover)" : "transparent",
+                  border: active ? "1px solid var(--color-text-strong)" : "1px solid var(--color-line)",
+                  color: active ? "var(--color-text-strong)" : "var(--color-dim)",
                   fontFamily: "var(--font-mono)",
                   fontSize: 12,
                   letterSpacing: "0.22em",
                   textTransform: "uppercase",
                   fontWeight: 600,
-                  cursor: isDisabled ? "not-allowed" : "pointer",
-                  opacity: isDisabled ? 0.4 : 1,
+                  cursor: "pointer",
                   borderRadius: 2,
                 }}
               >
@@ -1147,7 +1134,7 @@ function PcShortcutsSection() {
                   fontFamily: "var(--font-mono)",
                   fontSize: 12,
                   fontWeight: 600,
-                  color: "#fff",
+                  color: "var(--color-text-strong)",
                   letterSpacing: "0.08em",
                   padding: "4px 10px",
                   border: "1px solid var(--color-line-2)",

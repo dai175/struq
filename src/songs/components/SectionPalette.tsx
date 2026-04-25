@@ -28,7 +28,7 @@ export function SectionPalette({ onAdd }: SectionPaletteProps) {
               padding: "10px 4px",
               border: "1px solid var(--color-line)",
               borderRadius: 1,
-              background: "rgba(255,255,255,0.02)",
+              background: "var(--color-bg-elevated)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",

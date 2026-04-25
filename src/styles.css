@@ -9,13 +9,18 @@
   --color-text-secondary: #6b7280;
   --color-text-on-dark: #e5e5e5;
 
-  /* ─── Broadcast Console surfaces ─── */
+  /* ─── Broadcast Console surfaces (defaults = dark theme) ───
+     Light theme overrides live in the `[data-theme="light"]` block below. */
   --color-ink: #080808;
   --color-ink-2: #0d0d0e;
   --color-ink-3: #161618;
   --color-line: rgba(255, 255, 255, 0.08);
   --color-line-2: rgba(255, 255, 255, 0.14);
   --color-text: #e8e6e0;
+  --color-text-strong: #ffffff;
+  --color-text-on-accent: #111111;
+  --color-bg-elevated: rgba(255, 255, 255, 0.02);
+  --color-bg-elevated-hover: rgba(255, 255, 255, 0.04);
   --color-dim: rgba(255, 255, 255, 0.55);
   --color-dim-2: rgba(255, 255, 255, 0.35);
   --color-dim-3: rgba(255, 255, 255, 0.2);
@@ -41,6 +46,44 @@
     "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Fira Mono", Menlo,
     Monaco, Consolas, "Courier New", monospace;
+}
+
+/* ─── Light theme overrides ───
+   Applied via `<html data-theme="light">`. The pre-paint script in __root.tsx
+   resolves AUTO → dark|light against `prefers-color-scheme` before first paint,
+   so this selector only ever sees concrete `dark` (default, no attr) or `light`. */
+[data-theme="light"] {
+  /* Surfaces — warm paper palette */
+  --color-ink: #f4f1ea;
+  --color-ink-2: #ece8df;
+  --color-ink-3: #e3ddd0;
+  --color-line: rgba(20, 19, 18, 0.10);
+  --color-line-2: rgba(20, 19, 18, 0.18);
+
+  /* Text */
+  --color-text: #2a2825;
+  --color-text-strong: #141312;
+  --color-text-on-accent: #fbf9f4;
+  --color-dim: rgba(20, 19, 18, 0.55);
+  --color-dim-2: rgba(20, 19, 18, 0.38);
+  --color-dim-3: rgba(20, 19, 18, 0.20);
+
+  /* Elevated cards — slightly lifted from the paper bg */
+  --color-bg-elevated: #fbf9f4;
+  --color-bg-elevated-hover: rgba(20, 19, 18, 0.045);
+
+  /* Section palette — same hues as dark, lower L + slightly higher C
+     so they remain distinguishable on warm paper. */
+  --color-section-intro: oklch(0.55 0.04 250);
+  --color-section-a: oklch(0.50 0.15 250);
+  --color-section-b: oklch(0.50 0.16 295);
+  --color-section-chorus: oklch(0.62 0.16 65);
+  --color-section-bridge: oklch(0.52 0.13 160);
+  --color-section-solo: oklch(0.55 0.18 25);
+  --color-section-outro: oklch(0.55 0.04 250);
+  --color-section-interlude: oklch(0.55 0.12 195);
+  --color-section-custom: oklch(0.55 0.16 340);
+  --color-accent: oklch(0.48 0.16 250);
 }
 
 body {

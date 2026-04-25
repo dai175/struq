@@ -76,7 +76,7 @@ export function SectionRow({
       style={{
         border: "1px solid var(--color-line)",
         borderLeft: `3px solid ${color}`,
-        background: "rgba(255,255,255,0.02)",
+        background: "var(--color-bg-elevated)",
         borderRadius: 1,
       }}
     >
@@ -138,12 +138,12 @@ export function SectionRow({
                 outline: "none",
                 fontSize: 15,
                 fontWeight: 600,
-                color: "#fff",
+                color: "var(--color-text-strong)",
                 padding: 0,
               }}
             />
           ) : (
-            <span className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+            <span className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text-strong)" }}>
               {displayLabel}
             </span>
           )}
