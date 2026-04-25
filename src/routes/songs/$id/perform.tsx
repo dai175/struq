@@ -5,9 +5,17 @@ import { getSectionLabel, useI18n } from "@/i18n";
 import type { Locale } from "@/i18n/types";
 import { type ClickScheduleHandle, scheduleClicks, unlockAudio } from "@/lib/audio";
 import { getSetlist, type SetlistSongItem } from "@/setlists/server-fns";
-import { useClickPreference, useClickSound, useClickVolume } from "@/songs/click-preference";
+import {
+  useAccentDownbeat,
+  useClickPreference,
+  useClickSound,
+  useClickVolume,
+  useCountIn,
+  usePreRollBars,
+} from "@/songs/click-preference";
 import { CountInOverlay } from "@/songs/components/count-in-overlay";
 import { ModeSelectOverlay } from "@/songs/components/mode-select-overlay";
+import { PreRollOverlay } from "@/songs/components/pre-roll-overlay";
 import { SECTION_COLORS } from "@/songs/constants";
 import { calculateSectionDurationMs, msPerBeat, sectionBeats } from "@/songs/perform-utils";
 import { getSongWithSections, type SectionRow, type SongRow } from "@/songs/server-fns";
@@ -58,7 +66,7 @@ const SAFE_AREA_STYLE = {
   paddingRight: "env(safe-area-inset-right)",
 } as const;
 
-type Mode = "selecting" | "manual" | "countin" | "auto" | "paused";
+type Mode = "selecting" | "manual" | "preroll" | "countin" | "auto" | "paused";
 
 function PerformView({
   song,
@@ -81,6 +89,9 @@ function PerformView({
   const [clickEnabled] = useClickPreference();
   const [clickVolume] = useClickVolume();
   const [clickSound] = useClickSound();
+  const [countIn] = useCountIn();
+  const [preRollBars] = usePreRollBars();
+  const [accentDownbeat] = useAccentDownbeat();
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipedRef = useRef(false);
@@ -139,19 +150,24 @@ function PerformView({
       elapsedMsAtStart: clickElapsedMsRef.current,
       volumePercent: clickVolume,
       sound: clickSound,
+      accentDownbeat,
     });
     return () => {
       clickHandleRef.current?.cancel();
       clickHandleRef.current = null;
       clickElapsedMsRef.current += performance.now() - startedAt;
     };
-  }, [mode, clickEnabled, clickVolume, clickSound, current, song.bpm, currentIndex]);
+  }, [mode, clickEnabled, clickVolume, clickSound, accentDownbeat, current, song.bpm, currentIndex]);
 
   useEffect(() => {
     if (mode !== "countin" || !song.bpm) return;
-    const handle = scheduleClicks(song.bpm, 4, { volumePercent: clickVolume, sound: clickSound });
+    const handle = scheduleClicks(song.bpm, 4, {
+      volumePercent: clickVolume,
+      sound: clickSound,
+      accentDownbeat,
+    });
     return () => handle.cancel();
-  }, [mode, song.bpm, clickVolume, clickSound]);
+  }, [mode, song.bpm, clickVolume, clickSound, accentDownbeat]);
 
   function navigateToSong(target: SetlistSongItem) {
     navigate({
@@ -177,14 +193,14 @@ function PerformView({
   function handleBack() {
     if (currentIndex <= 0) return;
     setCurrentIndex((i) => i - 1);
-    if (mode === "auto" || mode === "countin") {
+    if (mode === "auto" || mode === "countin" || mode === "preroll") {
       setMode("paused");
     }
   }
 
   function handleReset() {
     setCurrentIndex(0);
-    if (mode === "auto" || mode === "countin") {
+    if (mode === "auto" || mode === "countin" || mode === "preroll") {
       setMode("paused");
     }
   }
@@ -203,7 +219,17 @@ function PerformView({
 
   function handleSelectAuto() {
     unlockAudio();
-    setMode("countin");
+    if (preRollBars > 0) {
+      setMode("preroll");
+    } else if (countIn) {
+      setMode("countin");
+    } else {
+      setMode("auto");
+    }
+  }
+
+  function handlePreRollComplete() {
+    setMode(countIn ? "countin" : "auto");
   }
 
   function handleCountInComplete() {
@@ -221,6 +247,7 @@ function PerformView({
       case "manual":
         advanceSection();
         return;
+      case "preroll":
       case "countin":
       case "auto":
         setMode("paused");
@@ -513,6 +540,8 @@ function PerformView({
 
         {mode === "selecting" ? (
           <ModeSelectOverlay bpm={song.bpm} onSelectManual={handleSelectManual} onSelectAuto={handleSelectAuto} />
+        ) : mode === "preroll" && song.bpm ? (
+          <PreRollOverlay bpm={song.bpm} bars={preRollBars} onComplete={handlePreRollComplete} />
         ) : mode === "countin" && song.bpm ? (
           <CountInOverlay bpm={song.bpm} onComplete={handleCountInComplete} />
         ) : (
