@@ -93,7 +93,7 @@ export function SectionRow({
           type="button"
           {...dragAttributes}
           {...dragListeners}
-          aria-label="Reorder"
+          aria-label={t.common.reorder}
           style={{
             width: 18,
             height: 18,

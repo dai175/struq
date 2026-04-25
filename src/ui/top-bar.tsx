@@ -9,8 +9,9 @@ interface TopBarProps {
 
 /**
  * TopBar — mobile screen header. 3-column grid (left action · title+subtitle ·
- * right actions). Title renders left-aligned and truncates on overflow; pass a
- * `<MetaTag>` as `subtitle` for the JBM meta row beneath the title.
+ * right actions). Title renders centered and truncates on overflow; `subtitle`
+ * is rendered as a JBM uppercase meta row beneath the title — pass a plain
+ * string (not a `<MetaTag>`) to avoid double styling.
  */
 export function TopBar({ title, subtitle, left, right }: TopBarProps) {
   return (
@@ -25,7 +26,7 @@ export function TopBar({ title, subtitle, left, right }: TopBarProps) {
       <div style={{ minWidth: 32 }}>{left}</div>
       <div style={{ minWidth: 0, textAlign: "center" }}>
         {typeof title === "string" ? (
-          <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>
+          <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>
             {title}
           </div>
         ) : (
@@ -40,7 +41,7 @@ export function TopBar({ title, subtitle, left, right }: TopBarProps) {
               fontWeight: 500,
               letterSpacing: "0.22em",
               lineHeight: 1,
-              color: "rgba(255,255,255,0.4)",
+              color: "var(--color-dim-2)",
               textTransform: "uppercase",
             }}
           >

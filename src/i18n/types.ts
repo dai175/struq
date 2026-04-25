@@ -53,6 +53,7 @@ export interface Translations {
     bpm: string;
     key: string;
     referenceUrl: string;
+    openReferenceUrl: string;
     aiGenerate: string;
     addSection: string;
     noSections: string;

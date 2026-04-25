@@ -300,7 +300,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
           </Link>
         }
         title={title.trim() || fallbackTitle}
-        subtitle={`${String(songs.length).padStart(2, "0")} SONGS`}
+        subtitle={`${String(songs.length).padStart(2, "0")} ${t.nav.songs.toUpperCase()}`}
         right={
           <>
             {!isNew && editSetlistId && songs.length > 0 && (

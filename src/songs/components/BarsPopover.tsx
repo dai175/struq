@@ -5,6 +5,7 @@ import type { SectionData } from "./SectionRow";
 
 const BAR_PRESETS = [1, 2, 4, 8, 16];
 const EXTRA_BEATS_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
+const MAX_BARS = 512;
 
 function chipStyle(active: boolean, color: string, width: number, height: number, fontSize: number) {
   return {
@@ -33,23 +34,37 @@ interface BarsPopoverProps {
 export function BarsPopover({ section, color, onChange }: BarsPopoverProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [barsInput, setBarsInput] = useState(String(section.bars));
   const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setBarsInput(String(section.bars));
+  }, [section.bars]);
 
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
-    function handleClick(e: MouseEvent) {
+    function handlePointer(e: PointerEvent) {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("keydown", handleKey);
-    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("pointerdown", handlePointer);
     return () => {
       document.removeEventListener("keydown", handleKey);
-      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("pointerdown", handlePointer);
     };
   }, [open]);
+
+  const commitBars = () => {
+    const v = Number.parseInt(barsInput, 10);
+    if (Number.isFinite(v) && v >= 1 && v <= MAX_BARS) {
+      if (v !== section.bars) onChange({ ...section, bars: v });
+    } else {
+      setBarsInput(String(section.bars));
+    }
+  };
 
   return (
     <div ref={rootRef} style={{ position: "relative", textAlign: "right" }}>
@@ -110,10 +125,15 @@ export function BarsPopover({ section, color, onChange }: BarsPopoverProps) {
             <input
               type="number"
               min={1}
-              value={section.bars}
-              onChange={(e) => {
-                const v = Number.parseInt(e.target.value, 10);
-                if (v > 0) onChange({ ...section, bars: v });
+              max={MAX_BARS}
+              value={barsInput}
+              onChange={(e) => setBarsInput(e.target.value)}
+              onBlur={commitBars}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  commitBars();
+                  e.currentTarget.blur();
+                }
               }}
               aria-label={t.common.bars}
               style={{
