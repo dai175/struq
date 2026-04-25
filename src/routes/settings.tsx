@@ -7,7 +7,13 @@ import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
 import { usePersistedState } from "@/lib/use-persisted-state";
-import { useClickPreference, useClickVolume } from "@/songs/click-preference";
+import {
+  CLICK_SOUNDS,
+  type ClickSound,
+  useClickPreference,
+  useClickSound,
+  useClickVolume,
+} from "@/songs/click-preference";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { Logomark } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
@@ -25,17 +31,13 @@ const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",
 };
 
-type ClickSound = "TICK" | "BEEP" | "SNAP" | "RIM";
 type Appearance = "DARK" | "AUTO" | "LIGHT";
 type PreRoll = 0 | 1 | 2 | 4;
 
-const CLICK_SOUNDS: ClickSound[] = ["TICK", "BEEP", "SNAP", "RIM"];
 const APPEARANCES: Appearance[] = ["DARK", "AUTO", "LIGHT"];
 const PRE_ROLL_OPTIONS: PreRoll[] = [0, 1, 2, 4];
 
 const validateBool = (v: unknown): boolean | null => (typeof v === "boolean" ? v : null);
-const validateClickSound = (v: unknown): ClickSound | null =>
-  typeof v === "string" && (CLICK_SOUNDS as readonly string[]).includes(v) ? (v as ClickSound) : null;
 const validatePreRoll = (v: unknown): PreRoll | null =>
   (PRE_ROLL_OPTIONS as readonly number[]).includes(v as number) ? (v as PreRoll) : null;
 const validateAppearance = (v: unknown): Appearance | null =>
@@ -78,13 +80,9 @@ function SettingsPage() {
   const [localeUpdating, setLocaleUpdating] = useState(false);
   const [clickEnabled, setClickEnabled] = useClickPreference();
   const [clickVolume, setClickVolume] = useClickVolume();
+  const [clickSound, setClickSound] = useClickSound();
 
   const [countIn, setCountIn] = usePersistedState("struq.settings.countIn", false, validateBool);
-  const [clickSound, setClickSound] = usePersistedState<ClickSound>(
-    "struq.settings.clickSound",
-    "TICK",
-    validateClickSound,
-  );
   const [accentDownbeat, setAccentDownbeat] = usePersistedState("struq.settings.accentDownbeat", true, validateBool);
   const [preRollBars, setPreRollBars] = usePersistedState<PreRoll>("struq.settings.preRollBars", 0, validatePreRoll);
   const [appearance, setAppearance] = usePersistedState<Appearance>(
@@ -335,10 +333,10 @@ function SettingsPage() {
                 </div>
               </div>
             </SettingRow>
-            <SettingRow label="CLICK SOUND" description={t.settings.desc.clickSoundChar} disabled>
+            <SettingRow label="CLICK SOUND" description={t.settings.desc.clickSoundChar}>
               <div className="mt-3 grid grid-cols-4 gap-2">
                 {CLICK_SOUNDS.map((s) => (
-                  <ChoiceCard key={s} label={s} active={clickSound === s} onClick={() => setClickSound(s)} disabled />
+                  <ChoiceCard key={s} label={s} active={clickSound === s} onClick={() => setClickSound(s)} />
                 ))}
               </div>
             </SettingRow>
@@ -1034,7 +1032,7 @@ function PcAudioSection({
       <PcSettingRow label="CLICK VOLUME" desc={t.settings.desc.clickVolume} span={2}>
         <PcVolumeSlider value={clickVolume} onChange={onClickVolume} ariaLabel={t.settings.aria.clickVolume} />
       </PcSettingRow>
-      <PcSettingRow label="CLICK SOUND" desc={t.settings.desc.clickSoundChar} span={2} disabled>
+      <PcSettingRow label="CLICK SOUND" desc={t.settings.desc.clickSoundChar} span={2}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
           {CLICK_SOUNDS.map((s) => (
             <PcSoundCard
@@ -1043,7 +1041,6 @@ function PcAudioSection({
               desc={clickSoundDescs[s]}
               active={clickSound === s}
               onClick={() => onClickSound(s)}
-              disabled
             />
           ))}
         </div>

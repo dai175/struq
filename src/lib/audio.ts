@@ -4,6 +4,8 @@
 // handler (tap/keypress). Callers must call `unlockAudio()` from such a handler
 // before relying on sound — otherwise scheduled oscillators will be silent.
 
+import { type ClickSound, VOICES } from "./click-voices";
+
 let ctx: AudioContext | null = null;
 
 function getContext(): AudioContext | null {
@@ -39,11 +41,10 @@ interface ScheduleClicksOptions {
   elapsedMsAtStart?: number;
   /** User-facing click volume on a 0..100 scale. Defaults to 100 (full). */
   volumePercent?: number;
+  /** Voice variant to synthesize each beat with. Defaults to "TICK". */
+  sound?: ClickSound;
 }
 
-const STRONG_FREQ = 1800;
-const WEAK_FREQ = 1000;
-const CLICK_DURATION = 0.05;
 const CLICK_PEAK_GAIN = 0.3;
 
 /**
@@ -74,30 +75,22 @@ export function scheduleClicks(
   const startAt = c.currentTime + (options.startOffsetSeconds ?? 0);
   const peakGain = clickVolumeToGain(options.volumePercent ?? 100);
   if (peakGain <= 0) return { cancel: () => {} };
-  const oscillators: OscillatorNode[] = [];
+  const voice = VOICES[options.sound ?? "TICK"];
+  const sources: AudioScheduledSourceNode[] = [];
 
   for (let i = 0; i < beatCount; i++) {
     const beatTimelineSec = i * interval;
     if (beatTimelineSec < elapsedSec - 1e-6) continue;
     const when = startAt + (beatTimelineSec - elapsedSec);
     const strong = i % strongBeatEvery === 0;
-    const osc = c.createOscillator();
-    const gain = c.createGain();
-    osc.frequency.value = strong ? STRONG_FREQ : WEAK_FREQ;
-    gain.gain.setValueAtTime(0, when);
-    gain.gain.linearRampToValueAtTime(peakGain, when + 0.001);
-    gain.gain.exponentialRampToValueAtTime(0.0001, when + CLICK_DURATION);
-    osc.connect(gain).connect(c.destination);
-    osc.start(when);
-    osc.stop(when + CLICK_DURATION + 0.01);
-    oscillators.push(osc);
+    sources.push(...voice(c, when, strong, peakGain));
   }
 
   return {
     cancel() {
-      for (const osc of oscillators) {
+      for (const src of sources) {
         try {
-          osc.stop();
+          src.stop();
         } catch {
           // already stopped or still scheduled past cancellation window
         }
