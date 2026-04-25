@@ -10,6 +10,8 @@ import { deleteSetlist, listSetlists, type SetlistWithSongCount } from "@/setlis
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconCal, IconPin, IconPlus, IconSearch, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
+import { StructureBar } from "@/ui/structure-bar";
+import { TopBar } from "@/ui/top-bar";
 
 export const Route = createFileRoute("/setlists/")({
   component: SetlistsPage,
@@ -135,41 +137,34 @@ function SetlistsPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-8 lg:hidden">
-        <header className="flex items-end justify-between gap-3 pb-5">
-          <div>
-            <h1
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                letterSpacing: "-0.01em",
-                color: "var(--color-text)",
-              }}
-            >
-              {t.nav.setlists}
-            </h1>
-            <div className="mt-1.5">
-              <MetaTag>
-                {String(setlists.length).padStart(2, "0")} {isSearching ? t.setlist.shown : t.setlist.total}
-              </MetaTag>
-            </div>
-          </div>
-          <ConsoleBtn tone="white" onClick={handleCreate}>
-            <IconPlus size={10} />
-            {t.common.new.toUpperCase()}
-          </ConsoleBtn>
-        </header>
+      <div
+        className="mx-auto flex min-h-screen max-w-2xl flex-col lg:hidden"
+        style={{
+          background: "var(--color-ink)",
+          color: "var(--color-text)",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        <TopBar
+          title={t.nav.setlists}
+          subtitle={`${String(setlists.length).padStart(2, "0")} ${isSearching ? t.setlist.shown : t.setlist.total}`}
+          left={<MetaTag>STRUQ</MetaTag>}
+          right={
+            <ConsoleBtn tone="white" onClick={handleCreate}>
+              <IconPlus size={10} />
+              {t.common.new.toUpperCase()}
+            </ConsoleBtn>
+          }
+        />
 
         <div
-          className="flex items-center gap-2"
+          className="flex items-center gap-3"
           style={{
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid var(--color-line)",
-            padding: "10px 12px",
-            marginBottom: 20,
+            padding: "12px 18px",
+            borderBottom: "1px solid var(--color-line)",
           }}
         >
-          <IconSearch size={14} />
+          <IconSearch size={14} style={{ color: "var(--color-dim)" }} />
           <input
             type="text"
             value={input}
@@ -185,7 +180,7 @@ function SetlistsPage() {
               fontFamily: "var(--font-sans)",
             }}
           />
-          {input && (
+          {input ? (
             <button
               type="button"
               onClick={handleClearSearch}
@@ -201,11 +196,13 @@ function SetlistsPage() {
             >
               ×
             </button>
+          ) : (
+            <MetaTag>A–Z</MetaTag>
           )}
         </div>
 
         {setlists.length === 0 ? (
-          <div className="flex flex-col items-center py-20 text-center" style={{ gap: 14 }}>
+          <div className="flex flex-col items-center gap-3 px-5 py-20 text-center">
             <MetaTag>{isSearching ? t.setlist.noMatches : t.setlist.noSetlists}</MetaTag>
             {isSearching && <p style={{ color: "var(--color-dim)", fontSize: 14 }}>{t.setlist.searchNoResults}</p>}
             {!isSearching && (
@@ -219,7 +216,7 @@ function SetlistsPage() {
           </div>
         ) : (
           <>
-            <ul style={{ borderTop: "1px solid var(--color-line)" }}>
+            <ul>
               {setlists.map((setlist, index) => (
                 <SetlistRow
                   key={setlist.id}
@@ -267,72 +264,91 @@ function SetlistRow({
   const { t } = useI18n();
   return (
     <li
-      className="grid items-center gap-3"
+      className="flex items-start"
       style={{
-        gridTemplateColumns: "36px 1fr auto 32px",
-        padding: "16px 4px",
+        gap: 14,
+        padding: "16px 18px",
         borderBottom: "1px solid var(--color-line)",
       }}
     >
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          fontWeight: 600,
-          color: "var(--color-dim-2)",
-          letterSpacing: "0.08em",
-        }}
-      >
-        {String(index + 1).padStart(2, "0")}
-      </span>
       <Link to="/setlists/$id" params={{ id: setlist.id }} className="min-w-0 flex-1">
-        <p className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
-          {setlist.title}
-        </p>
-        <div
-          className="mt-1.5 flex flex-wrap items-center"
-          style={{
-            gap: "4px 12px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            color: "var(--color-dim-2)",
-            textTransform: "uppercase",
-            fontWeight: 500,
-          }}
-        >
-          <span>{String(setlist.songCount).padStart(2, "0")} SONGS</span>
-          {setlist.sessionDate && (
-            <span className="flex items-center gap-1">
-              <IconCal size={11} />
-              {setlist.sessionDate}
-            </span>
-          )}
-          {setlist.venue && (
-            <span className="flex items-center gap-1 truncate">
-              <IconPin size={11} />
-              {setlist.venue}
-            </span>
-          )}
+        <div className="flex items-start" style={{ gap: 14 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              fontWeight: 500,
+              color: "var(--color-dim-2)",
+              letterSpacing: "0.18em",
+              paddingTop: 4,
+              width: 22,
+              flexShrink: 0,
+            }}
+          >
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>
+              {setlist.title}
+            </p>
+            {(setlist.sessionDate || setlist.venue) && (
+              <div
+                className="flex flex-wrap items-center"
+                style={{
+                  gap: "4px 14px",
+                  marginTop: 6,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.15em",
+                  color: "var(--color-dim)",
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                }}
+              >
+                {setlist.sessionDate && (
+                  <span className="flex items-center gap-1">
+                    <IconCal size={11} />
+                    {setlist.sessionDate}
+                  </span>
+                )}
+                {setlist.venue && (
+                  <span className="flex min-w-0 items-center gap-1">
+                    <IconPin size={11} />
+                    <span className="truncate">{setlist.venue}</span>
+                  </span>
+                )}
+              </div>
+            )}
+            {setlist.songStructure.length > 0 && (
+              <StructureBar
+                sections={setlist.songStructure.map((type, i) => ({ id: `${setlist.id}-${i}`, type, bars: 1 }))}
+                height={4}
+                gap={2}
+                style={{ marginTop: 10 }}
+              />
+            )}
+            <MetaTag size={9} style={{ display: "block", marginTop: 6 }}>
+              {String(setlist.songCount).padStart(2, "0")} SONGS
+            </MetaTag>
+          </div>
         </div>
       </Link>
-      <MetaTag size={9}>{String(setlist.songCount).padStart(2, "0")}</MetaTag>
       <button
         type="button"
         onClick={onDelete}
         disabled={deleting}
         aria-label={t.common.delete}
         style={{
-          width: 32,
-          height: 32,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          padding: 4,
           color: "var(--color-dim-2)",
           background: "transparent",
           border: "none",
           cursor: deleting ? "not-allowed" : "pointer",
           opacity: deleting ? 0.4 : 1,
+          flexShrink: 0,
         }}
       >
         <IconTrash size={16} />
