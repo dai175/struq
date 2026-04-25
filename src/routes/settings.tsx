@@ -373,8 +373,8 @@ function SettingsPage() {
             {(
               [
                 ["VERSION", __APP_VERSION__],
-                ["RELEASED", "2026.04.22"],
-                ["CHANNEL", "Stable"],
+                ["RELEASED", __APP_RELEASED__],
+                ["CHANNEL", "Beta"],
                 ["MADE BY", "focuswave"],
               ] as const
             ).map(([k, v]) => (
