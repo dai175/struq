@@ -10,3 +10,5 @@ declare namespace Cloudflare {
 declare module "cloudflare:workers" {
   const env: Cloudflare.Env;
 }
+
+declare const __APP_VERSION__: string;
