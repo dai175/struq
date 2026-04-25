@@ -164,7 +164,7 @@ function LoginLeftPane() {
             Struq
           </div>
         </div>
-        <MetaTag>V 2.0 · FOCUSWAVE</MetaTag>
+        <MetaTag>V {__APP_SEMVER__}</MetaTag>
       </div>
 
       <div>
@@ -287,7 +287,7 @@ function LoginMobileHeader() {
         <Logomark size={22} />
         <div style={{ fontSize: 16, fontWeight: 700 }}>Struq</div>
       </div>
-      <MetaTag size={9}>V 2.0</MetaTag>
+      <MetaTag size={9}>V {__APP_SEMVER__}</MetaTag>
     </div>
   );
 }
