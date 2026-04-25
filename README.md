@@ -6,7 +6,7 @@
 
 ## 主な機能
 
-- **曲構成マッピング** — イントロ / A / B / コーラス / ブリッジ / ソロ / アウトロ / カスタムのセクションを並べて曲の流れを可視化
+- **曲構成マッピング** — イントロ / A / B / コーラス / ブリッジ / ソロ / 間奏 / アウトロ / カスタムのセクションを並べて曲の流れを可視化
 - **AI 生成** — Google Gemini Flash API でタイトル・アーティスト名から曲構成を自動生成
 - **パフォーマンスビュー** — iPad ランドスケープに最適化したフルスクリーン黒背景のライブ参照画面
 - **セットリスト管理** — 日付・会場つきのセットリストに曲を並べて管理
@@ -32,9 +32,8 @@
 
 ### 前提条件
 
-- Node.js 20+
-- pnpm
-- Wrangler CLI (`pnpm add -g wrangler`)
+- Node.js 22+ (CI も 22 を使用)
+- pnpm 10+ (リポジトリは `pnpm@10.30.3` を `packageManager` で固定)
 
 ### インストール
 
@@ -95,8 +94,8 @@ src/
 ├── setlists/        # セットリスト CRUD サーバー関数
 ├── i18n/            # 翻訳キー + I18nProvider (ja / en)
 ├── server/          # 共通サーバーヘルパー (requireUser, now)
-├── ui/              # 共通 UI プリミティブ (top-bar, bottom-nav, side-rail, console-btn/field, structure-bar, toggle, tokens)
-└── lib/             # ユーティリティ (logger など)
+├── ui/              # 共通 UI プリミティブ (top-bar, bottom-nav, side-rail, console-*, structure-bar, toggle, tokens, icons など)
+└── lib/             # 横断ユーティリティ (logger, rate-limit, schemas, confirm-modal, use-persisted-state など)
 ```
 
 ## Routes
