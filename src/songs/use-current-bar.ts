@@ -1,25 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { msPerBar } from "./perform-utils";
 
-// Tracks the 1-indexed current bar within a running section, preserving
+// Tracks the 0-indexed current bar within a running section, preserving
 // progress across pause/resume. Polling (vs per-bar setTimeouts) keeps the
 // display robust if BPM changes or the tab is backgrounded.
 
 export interface UseCurrentBarOptions {
-  /** Null when the song has no BPM; hook stays at bar 1 in that case. */
+  /** Null when the song has no BPM; hook stays at bar 0 in that case. */
   bpm: number | null;
   /** Total full bars in the section. extraBeats are not counted as a dot. */
   totalBars: number;
   /** True while counting; false pauses and preserves elapsed. */
   isRunning: boolean;
-  /** Reset trigger — any change restarts from bar 1. */
+  /** Reset trigger — any change restarts from bar 0. */
   sectionId: string | number;
 }
 
 const TICK_MS = 100;
 
 export function useCurrentBar({ bpm, totalBars, isRunning, sectionId }: UseCurrentBarOptions): number {
-  const [currentBar, setCurrentBar] = useState(1);
+  const [currentBar, setCurrentBar] = useState(0);
 
   const startedAtRef = useRef<number | null>(null);
   const elapsedMsRef = useRef(0);
@@ -30,7 +30,7 @@ export function useCurrentBar({ bpm, totalBars, isRunning, sectionId }: UseCurre
       prevSectionIdRef.current = sectionId;
       elapsedMsRef.current = 0;
       startedAtRef.current = null;
-      setCurrentBar(1);
+      setCurrentBar(0);
     }
 
     if (!isRunning || !bpm || totalBars <= 0) {
@@ -47,7 +47,7 @@ export function useCurrentBar({ bpm, totalBars, isRunning, sectionId }: UseCurre
 
     const tick = () => {
       const elapsed = elapsedMsRef.current + (performance.now() - startedAt);
-      const bar = Math.min(totalBars, Math.floor(elapsed / barMs) + 1);
+      const bar = Math.min(totalBars - 1, Math.floor(elapsed / barMs));
       setCurrentBar((prev) => (prev === bar ? prev : bar));
     };
 
