@@ -31,6 +31,8 @@ const releasedDate = (() => {
 
 const config = defineConfig(({ mode }) => {
   const isTest = mode === "test";
+  const isDevelopment = mode === "development";
+  const enableDevtools = isDevelopment && !process.env.CI;
 
   return {
     define: {
@@ -42,7 +44,7 @@ const config = defineConfig(({ mode }) => {
       exclude: ["**/node_modules/**", "**/dist/**", "**/e2e/**"],
     },
     plugins: [
-      devtools(),
+      ...(enableDevtools ? [devtools()] : []),
       ...(isTest ? [] : [cloudflare({ viteEnvironment: { name: "ssr" } })]),
       tsconfigPaths({ projects: ["./tsconfig.json"] }),
       tailwindcss(),
