@@ -5,7 +5,7 @@ import { getSectionLabel, useI18n } from "@/i18n";
 import type { Locale } from "@/i18n/types";
 import { type ClickScheduleHandle, scheduleClicks, unlockAudio } from "@/lib/audio";
 import { getSetlist, type SetlistSongItem } from "@/setlists/server-fns";
-import { useClickPreference } from "@/songs/click-preference";
+import { useClickPreference, useClickVolume } from "@/songs/click-preference";
 import { CountInOverlay } from "@/songs/components/count-in-overlay";
 import { ModeSelectOverlay } from "@/songs/components/mode-select-overlay";
 import { SECTION_COLORS } from "@/songs/constants";
@@ -79,6 +79,7 @@ function PerformView({
   const [mode, setMode] = useState<Mode>("selecting");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [clickEnabled] = useClickPreference();
+  const [clickVolume] = useClickVolume();
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipedRef = useRef(false);
@@ -135,19 +136,20 @@ function PerformView({
     const startedAt = performance.now();
     clickHandleRef.current = scheduleClicks(song.bpm, sectionBeats(current), {
       elapsedMsAtStart: clickElapsedMsRef.current,
+      volumePercent: clickVolume,
     });
     return () => {
       clickHandleRef.current?.cancel();
       clickHandleRef.current = null;
       clickElapsedMsRef.current += performance.now() - startedAt;
     };
-  }, [mode, clickEnabled, current, song.bpm, currentIndex]);
+  }, [mode, clickEnabled, clickVolume, current, song.bpm, currentIndex]);
 
   useEffect(() => {
     if (mode !== "countin" || !song.bpm) return;
-    const handle = scheduleClicks(song.bpm, 4);
+    const handle = scheduleClicks(song.bpm, 4, { volumePercent: clickVolume });
     return () => handle.cancel();
-  }, [mode, song.bpm]);
+  }, [mode, song.bpm, clickVolume]);
 
   function navigateToSong(target: SetlistSongItem) {
     navigate({
