@@ -1106,7 +1106,7 @@ function PcShortcutsSection() {
   const shortcuts = [
     { keys: "SPACE", label: t.settings.shortcut.advance, implemented: true },
     { keys: "◁", label: t.settings.shortcut.previous, implemented: true },
-    { keys: "R", label: t.settings.shortcut.reset, implemented: false },
+    { keys: "R", label: t.settings.shortcut.reset, implemented: true },
     { keys: "ESC", label: t.settings.shortcut.exit, implemented: true },
   ];
   return (
