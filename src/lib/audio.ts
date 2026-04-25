@@ -37,12 +37,24 @@ interface ScheduleClicksOptions {
    * absolute index so the strong/weak phase stays aligned across pause/resume.
    */
   elapsedMsAtStart?: number;
+  /** User-facing click volume on a 0..100 scale. Defaults to 100 (full). */
+  volumePercent?: number;
 }
 
 const STRONG_FREQ = 1800;
 const WEAK_FREQ = 1000;
 const CLICK_DURATION = 0.05;
 const CLICK_PEAK_GAIN = 0.3;
+
+/**
+ * Map a 0..100 user-facing volume percent to a 0..CLICK_PEAK_GAIN gain coefficient.
+ * Uses a squared curve so the lower half of the slider stays gentle and the
+ * upper half scales more aggressively, matching how loudness is perceived.
+ */
+export function clickVolumeToGain(percent: number): number {
+  const clamped = Math.max(0, Math.min(100, percent)) / 100;
+  return CLICK_PEAK_GAIN * clamped * clamped;
+}
 
 /**
  * Schedule `beatCount` clicks at `bpm` tempo starting `startOffsetSeconds` into the future.
@@ -60,6 +72,8 @@ export function scheduleClicks(
   const interval = 60 / bpm;
   const elapsedSec = (options.elapsedMsAtStart ?? 0) / 1000;
   const startAt = c.currentTime + (options.startOffsetSeconds ?? 0);
+  const peakGain = clickVolumeToGain(options.volumePercent ?? 100);
+  if (peakGain <= 0) return { cancel: () => {} };
   const oscillators: OscillatorNode[] = [];
 
   for (let i = 0; i < beatCount; i++) {
@@ -71,7 +85,7 @@ export function scheduleClicks(
     const gain = c.createGain();
     osc.frequency.value = strong ? STRONG_FREQ : WEAK_FREQ;
     gain.gain.setValueAtTime(0, when);
-    gain.gain.linearRampToValueAtTime(CLICK_PEAK_GAIN, when + 0.001);
+    gain.gain.linearRampToValueAtTime(peakGain, when + 0.001);
     gain.gain.exponentialRampToValueAtTime(0.0001, when + CLICK_DURATION);
     osc.connect(gain).connect(c.destination);
     osc.start(when);
