@@ -1,21 +1,22 @@
 import { env } from "cloudflare:workers";
 import { createFileRoute } from "@tanstack/react-router";
-import { updateSession } from "@tanstack/react-start/server";
+import { getRequestUrl, updateSession } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 import { type AppSessionData, getSessionConfig, type SessionUser } from "@/auth/session";
 import { getDb, schema } from "@/db";
 import { now } from "@/server/helpers";
 
 /**
- * Test-only endpoint for E2E authentication.
- * Guarded by E2E_TEST env var — never set in production.
- * To enable locally, add E2E_TEST=1 to .dev.vars before running E2E tests.
+ * Test-only auth bypass for E2E. Triple-guarded so any single misconfig
+ * (build / network / env) cannot leak this endpoint into production.
  */
+const LOOPBACK_HOSTS = ["localhost", "127.0.0.1", "::1"];
+
 export const Route = createFileRoute("/api/auth/test-login")({
   server: {
     handlers: {
       GET: async () => {
-        if (!("E2E_TEST" in env) || env.E2E_TEST !== "1") {
+        if (import.meta.env.PROD || !LOOPBACK_HOSTS.includes(getRequestUrl().hostname) || env.E2E_TEST !== "1") {
           return new Response("Not found", { status: 404 });
         }
 
