@@ -20,8 +20,6 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
-const APP_SEMVER = __APP_VERSION__.split(" · ")[0];
-
 const LOCALE_LABELS: Record<Locale, string> = {
   ja: "日本語",
   en: "English",
@@ -181,7 +179,7 @@ function SettingsPage() {
           title={t.nav.settings}
           subtitle="ACCOUNT · PREFERENCES · ABOUT"
           left={<Logomark size={28} />}
-          right={<MetaTag>V {APP_SEMVER}</MetaTag>}
+          right={<MetaTag>V {__APP_SEMVER__}</MetaTag>}
         />
 
         {/* Identity row */}

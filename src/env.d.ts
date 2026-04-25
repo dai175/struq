@@ -11,5 +11,6 @@ declare module "cloudflare:workers" {
   const env: Cloudflare.Env;
 }
 
+declare const __APP_SEMVER__: string;
 declare const __APP_VERSION__: string;
 declare const __APP_RELEASED__: string;

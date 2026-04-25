@@ -10,6 +10,7 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 const pkg = JSON.parse(readFileSync("./package.json", "utf-8")) as { version?: string };
+const semver = pkg.version ?? "0.0.0";
 
 // GitHub Actions exposes a monotonic per-repo build number and the run's
 // start timestamp; both surface on the ABOUT screen. Local builds get a
@@ -33,7 +34,8 @@ const config = defineConfig(({ mode }) => {
 
   return {
     define: {
-      __APP_VERSION__: JSON.stringify(`${pkg.version ?? "0.0.0"} · build ${buildNumber}`),
+      __APP_SEMVER__: JSON.stringify(semver),
+      __APP_VERSION__: JSON.stringify(`${semver} · build ${buildNumber}`),
       __APP_RELEASED__: JSON.stringify(releasedDate),
     },
     test: {
