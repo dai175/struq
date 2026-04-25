@@ -44,7 +44,7 @@ const config = defineConfig(({ mode }) => {
     },
     plugins: [
       ...(enableDevtools ? [devtools()] : []),
-      ...(isTest ? [] : [cloudflare({ viteEnvironment: { name: "ssr" } })]),
+      ...(isTest ? [] : [cloudflare({ viteEnvironment: { name: "ssr" }, inspectorPort: false })]),
       tsconfigPaths({ projects: ["./tsconfig.json"] }),
       tailwindcss(),
       tanstackStart(),
