@@ -11,6 +11,7 @@ import { useClickPreference } from "@/songs/click-preference";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { MetaTag } from "@/ui/meta-tag";
 import { Toggle } from "@/ui/toggle";
+import { TopBar } from "@/ui/top-bar";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: requireAuth,
@@ -171,29 +172,20 @@ function SettingsPage() {
       </div>
 
       {/* Mobile layout (<lg) */}
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-10 lg:hidden">
-        <header className="pb-6">
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: "-0.01em",
-              color: "#fff",
-            }}
-          >
-            {t.nav.settings}
-          </h1>
-          <div className="mt-1.5">
-            <MetaTag>ACCOUNT · PREFERENCES · ABOUT</MetaTag>
-          </div>
-        </header>
+      <div className="mx-auto max-w-2xl lg:hidden">
+        <TopBar
+          title={t.nav.settings}
+          subtitle="ACCOUNT · PREFERENCES · ABOUT"
+          left={<MetaTag>STRUQ</MetaTag>}
+          right={<MetaTag>V 2.0</MetaTag>}
+        />
 
         {/* Identity row */}
         <div
           className="flex items-center gap-4"
           style={{
-            padding: "18px",
-            border: "1px solid var(--color-line)",
+            padding: "20px 18px",
+            borderBottom: "1px solid var(--color-line)",
           }}
         >
           <div
@@ -378,7 +370,7 @@ function SettingsPage() {
         </Section>
 
         {/* 04 ABOUT */}
-        <Section number="04" title="ABOUT">
+        <Section number="04" title="ABOUT" last>
           <AboutRow label="VERSION" value="2.0.0" />
           <AboutRow label="RELEASED" value="2026.04.22" />
           <AboutRow label="CHANNEL" value="STABLE" />
@@ -389,13 +381,28 @@ function SettingsPage() {
   );
 }
 
-function Section({ number, title, children }: { number: string; title: string; children: ReactNode }) {
+function Section({
+  number,
+  title,
+  children,
+  last = false,
+}: {
+  number: string;
+  title: string;
+  children: ReactNode;
+  last?: boolean;
+}) {
   return (
-    <section className="mt-10">
+    <section
+      style={{
+        padding: "18px",
+        borderBottom: last ? undefined : "1px solid var(--color-line)",
+      }}
+    >
       <MetaTag>
         {number} · {title}
       </MetaTag>
-      <div className="mt-3">{children}</div>
+      <div style={{ marginTop: 12 }}>{children}</div>
     </section>
   );
 }
