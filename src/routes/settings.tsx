@@ -194,14 +194,13 @@ function SettingsPage() {
               width: 48,
               height: 48,
               background: "var(--color-accent)",
-              color: "#0b0b0b",
+              color: "#000",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: 14,
+              fontSize: 20,
               fontWeight: 700,
-              letterSpacing: "0.04em",
+              letterSpacing: "-0.02em",
             }}
           >
             {initials(user?.name)}
@@ -217,7 +216,7 @@ function SettingsPage() {
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: "0.18em",
-                color: "var(--color-dim-2)",
+                color: "var(--color-dim)",
                 textTransform: "uppercase",
               }}
             >
@@ -229,7 +228,7 @@ function SettingsPage() {
             onClick={handleLogout}
             style={{
               background: "transparent",
-              border: "1px solid var(--color-section-solo)",
+              border: "1px solid var(--color-line-2)",
               color: "var(--color-section-solo)",
               fontFamily: "var(--font-mono)",
               fontSize: 10,
