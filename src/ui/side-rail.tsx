@@ -17,7 +17,8 @@ function initials(name: string): string {
 /**
  * SideRail — 76px-wide fixed PC navigation (≥ lg breakpoint).
  * Layout: logo section + border → flex-1 nav with tabs at flex-start → avatar
- * section + border. Active tab has a 2px accent left border and `color: #fff`.
+ * section + border. Active tab has a 2px accent left border and the strong-text
+ * token color (white on dark, near-black on light).
  */
 export function SideRail({ user }: SideRailProps) {
   const { t } = useI18n();
