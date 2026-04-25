@@ -9,6 +9,7 @@ import { clientLogger } from "@/lib/client-logger";
 import { usePersistedState } from "@/lib/use-persisted-state";
 import { useClickPreference } from "@/songs/click-preference";
 import { ConsoleBtn } from "@/ui/console-btn";
+import { Logomark } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { Toggle } from "@/ui/toggle";
 import { TopBar } from "@/ui/top-bar";
@@ -177,7 +178,7 @@ function SettingsPage() {
         <TopBar
           title={t.nav.settings}
           subtitle="ACCOUNT · PREFERENCES · ABOUT"
-          left={<MetaTag>STRUQ</MetaTag>}
+          left={<Logomark size={28} />}
           right={<MetaTag>V 2.0</MetaTag>}
         />
 

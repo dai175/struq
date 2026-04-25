@@ -8,7 +8,7 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useLoadMore } from "@/lib/use-load-more";
 import { deleteSetlist, listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
-import { IconCal, IconPin, IconPlus, IconSearch, IconTrash } from "@/ui/icons";
+import { IconCal, IconPin, IconPlus, IconSearch, IconTrash, Logomark } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
@@ -148,7 +148,7 @@ function SetlistsPage() {
         <TopBar
           title={t.nav.setlists}
           subtitle={`${String(setlists.length).padStart(2, "0")} ${isSearching ? t.setlist.shown : t.setlist.total}`}
-          left={<MetaTag>STRUQ</MetaTag>}
+          left={<Logomark size={28} />}
           right={
             <ConsoleBtn tone="white" onClick={handleCreate}>
               <IconPlus size={10} />

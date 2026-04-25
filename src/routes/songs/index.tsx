@@ -7,7 +7,7 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useLoadMore } from "@/lib/use-load-more";
 import { listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
-import { IconPlus, IconSearch } from "@/ui/icons";
+import { IconPlus, IconSearch, Logomark } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
@@ -111,7 +111,7 @@ function SongsPage() {
         <TopBar
           title={t.nav.songs}
           subtitle={`${String(songs.length).padStart(2, "0")} ${isSearching ? t.song.shown : t.song.total}`}
-          left={<MetaTag>STRUQ</MetaTag>}
+          left={<Logomark size={28} />}
           right={
             <ConsoleBtn tone="white" onClick={handleCreate}>
               <IconPlus size={10} />
