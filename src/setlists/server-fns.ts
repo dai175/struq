@@ -94,6 +94,19 @@ async function verifySongsOwnership(db: Database, songIds: string[], userId: str
   }
 }
 
+function nextSetlistSortOrder(): number {
+  // Avoid max+1 race by generating a high-resolution sortable value.
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+}
+
+function isSetlistSongSortConflict(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.message.includes("setlist_songs.setlist_id, setlist_songs.sort_order") ||
+    error.message.includes("setlist_songs_setlist_sort_unique")
+  );
+}
+
 // ─── listSetlists ──────────────────────────────────────
 
 const LIST_SETLISTS_LIMIT = 30;
@@ -291,11 +304,7 @@ export const createSetlist = createServerFn({ method: "POST" })
     const title = data.title.trim();
     if (!title) throw new Error("Title is required");
 
-    const [result] = await db
-      .select({ maxOrder: max(schema.setlists.sortOrder) })
-      .from(schema.setlists)
-      .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt)));
-    const sortOrder = (result?.maxOrder ?? -1) + 1;
+    const sortOrder = nextSetlistSortOrder();
 
     const id = crypto.randomUUID();
     const timestamp = now();
@@ -330,15 +339,8 @@ export const createSetlistWithSongs = createServerFn({ method: "POST" })
     const title = data.title.trim();
     if (!title) throw new Error("Title is required");
 
-    const [, [maxOrderResult]] = await Promise.all([
-      verifySongsOwnership(db, data.songIds, user.userId),
-      db
-        .select({ maxOrder: max(schema.setlists.sortOrder) })
-        .from(schema.setlists)
-        .where(and(eq(schema.setlists.userId, user.userId), isNull(schema.setlists.deletedAt))),
-    ]);
-
-    const sortOrder = (maxOrderResult?.maxOrder ?? -1) + 1;
+    await verifySongsOwnership(db, data.songIds, user.userId);
+    const sortOrder = nextSetlistSortOrder();
 
     const setlistId = crypto.randomUUID();
 
@@ -358,20 +360,26 @@ export const createSetlistWithSongs = createServerFn({ method: "POST" })
       );
     }
 
-    await db.batch([
-      db.insert(schema.setlists).values({
-        id: setlistId,
-        userId: user.userId,
-        title,
-        description: data.description?.trim() || null,
-        sessionDate: data.sessionDate?.trim() || null,
-        venue: data.venue?.trim() || null,
-        sortOrder,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      }),
-      ...insertSongStatements,
-    ] as Parameters<typeof db.batch>[0]);
+    try {
+      await db.batch([
+        db.insert(schema.setlists).values({
+          id: setlistId,
+          userId: user.userId,
+          title,
+          description: data.description?.trim() || null,
+          sessionDate: data.sessionDate?.trim() || null,
+          venue: data.venue?.trim() || null,
+          sortOrder,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }),
+        ...insertSongStatements,
+      ] as Parameters<typeof db.batch>[0]);
+    } catch (error) {
+      // Best-effort cleanup for non-transactional D1 batch failures.
+      await db.delete(schema.setlists).where(eq(schema.setlists.id, setlistId));
+      throw error;
+    }
 
     return { id: setlistId };
   });
@@ -410,8 +418,7 @@ export const addSongToSetlist = createServerFn({ method: "POST" })
     const user = await requireUser();
     const db = getDb(env.DB);
 
-    // Verify ownership + get max sortOrder in parallel
-    const [, song, [sortResult]] = await Promise.all([
+    const [, song] = await Promise.all([
       requireSetlistOwner(db, data.setlistId, user.userId),
       db.query.songs.findFirst({
         where: and(
@@ -420,23 +427,31 @@ export const addSongToSetlist = createServerFn({ method: "POST" })
           isNull(schema.songs.deletedAt),
         ),
       }),
-      db
-        .select({ maxOrder: max(schema.setlistSongs.sortOrder) })
-        .from(schema.setlistSongs)
-        .where(eq(schema.setlistSongs.setlistId, data.setlistId)),
     ]);
     if (!song) throw new Error("Song not found");
 
-    const sortOrder = (sortResult?.maxOrder ?? -1) + 1;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const [sortResult] = await db
+        .select({ maxOrder: max(schema.setlistSongs.sortOrder) })
+        .from(schema.setlistSongs)
+        .where(eq(schema.setlistSongs.setlistId, data.setlistId));
 
-    await db
-      .insert(schema.setlistSongs)
-      .values({
-        setlistId: data.setlistId,
-        songId: data.songId,
-        sortOrder,
-      })
-      .onConflictDoNothing();
+      const sortOrder = (sortResult?.maxOrder ?? -1) + 1;
+
+      try {
+        await db
+          .insert(schema.setlistSongs)
+          .values({
+            setlistId: data.setlistId,
+            songId: data.songId,
+            sortOrder,
+          })
+          .onConflictDoNothing();
+        return;
+      } catch (error) {
+        if (attempt === 1 || !isSetlistSongSortConflict(error)) throw error;
+      }
+    }
   });
 
 // ─── removeSongFromSetlist ─────────────────────────────
@@ -480,6 +495,14 @@ export const saveSetlistWithSongs = createServerFn({ method: "POST" })
       requireSetlistOwner(db, data.id, user.userId),
       verifySongsOwnership(db, data.songIds, user.userId),
     ]);
+    const previousSongs = await db
+      .select({
+        songId: schema.setlistSongs.songId,
+        sortOrder: schema.setlistSongs.sortOrder,
+      })
+      .from(schema.setlistSongs)
+      .where(eq(schema.setlistSongs.setlistId, data.id))
+      .orderBy(schema.setlistSongs.sortOrder);
 
     // Executes as a single batched request (not a true ACID transaction —
     // D1 does not support BEGIN/COMMIT semantics; prior statements in the
@@ -497,26 +520,49 @@ export const saveSetlistWithSongs = createServerFn({ method: "POST" })
       );
     }
 
-    await db.batch([
-      db
-        .update(schema.setlists)
-        .set({
-          title: data.title,
-          description: data.description?.trim() || null,
-          sessionDate: data.sessionDate?.trim() || null,
-          venue: data.venue?.trim() || null,
-          updatedAt: timestamp,
-        })
-        .where(
-          and(
-            eq(schema.setlists.id, data.id),
-            eq(schema.setlists.userId, user.userId),
-            isNull(schema.setlists.deletedAt),
+    try {
+      await db.batch([
+        db
+          .update(schema.setlists)
+          .set({
+            title: data.title,
+            description: data.description?.trim() || null,
+            sessionDate: data.sessionDate?.trim() || null,
+            venue: data.venue?.trim() || null,
+            updatedAt: timestamp,
+          })
+          .where(
+            and(
+              eq(schema.setlists.id, data.id),
+              eq(schema.setlists.userId, user.userId),
+              isNull(schema.setlists.deletedAt),
+            ),
           ),
-        ),
-      db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
-      ...insertStatements,
-    ] as Parameters<typeof db.batch>[0]);
+        db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
+        ...insertStatements,
+      ] as Parameters<typeof db.batch>[0]);
+    } catch (error) {
+      // Best-effort rollback for non-transactional D1 batch failures:
+      // restore original setlist songs ordering.
+      const restoreStatements = [];
+      for (let i = 0; i < previousSongs.length; i += SETLIST_SONGS_INSERT_BATCH) {
+        restoreStatements.push(
+          db.insert(schema.setlistSongs).values(
+            previousSongs.slice(i, i + SETLIST_SONGS_INSERT_BATCH).map((row) => ({
+              setlistId: data.id,
+              songId: row.songId,
+              sortOrder: row.sortOrder,
+            })),
+          ),
+        );
+      }
+
+      await db.batch([
+        db.delete(schema.setlistSongs).where(eq(schema.setlistSongs.setlistId, data.id)),
+        ...restoreStatements,
+      ] as Parameters<typeof db.batch>[0]);
+      throw error;
+    }
   });
 
 // ─── listSongsForPicker ──────────────────────────────

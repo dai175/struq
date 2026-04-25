@@ -212,20 +212,27 @@ export const createSongWithSections = createServerFn({ method: "POST" })
     for (let i = 0; i < sectionRows.length; i += SECTION_INSERT_BATCH) {
       insertSectionStatements.push(db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH)));
     }
-    await db.batch([
-      db.insert(schema.songs).values({
-        id: songId,
-        userId: user.userId,
-        title,
-        artist: data.song.artist?.trim() || null,
-        bpm: data.song.bpm ?? null,
-        key: data.song.key?.trim() || null,
-        referenceUrl: referenceUrl && isValidUrl(referenceUrl) ? referenceUrl : null,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      }),
-      ...insertSectionStatements,
-    ] as Parameters<typeof db.batch>[0]);
+    try {
+      await db.batch([
+        db.insert(schema.songs).values({
+          id: songId,
+          userId: user.userId,
+          title,
+          artist: data.song.artist?.trim() || null,
+          bpm: data.song.bpm ?? null,
+          key: data.song.key?.trim() || null,
+          referenceUrl: referenceUrl && isValidUrl(referenceUrl) ? referenceUrl : null,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }),
+        ...insertSectionStatements,
+      ] as Parameters<typeof db.batch>[0]);
+    } catch (error) {
+      // Best-effort cleanup: if song insert succeeded before a later statement
+      // failed, remove the partially-created song and cascade its sections.
+      await db.delete(schema.songs).where(eq(schema.songs.id, songId));
+      throw error;
+    }
 
     return { id: songId };
   });
@@ -480,6 +487,12 @@ export const saveSongWithSections = createServerFn({ method: "POST" })
       memo: sec.memo?.trim() || null,
       sortOrder: sec.sortOrder,
     }));
+    const nextSectionIds = sectionRows.map((row) => row.id);
+    const previousSections = await db
+      .select({ id: schema.sections.id })
+      .from(schema.sections)
+      .where(and(eq(schema.sections.songId, data.song.id), isNull(schema.sections.deletedAt)));
+    const previousSectionIds = previousSections.map((row) => row.id);
 
     // Executes as a single batched request (not a true ACID transaction —
     // D1 does not support BEGIN/COMMIT semantics; prior statements in the
@@ -488,24 +501,43 @@ export const saveSongWithSections = createServerFn({ method: "POST" })
     for (let i = 0; i < sectionRows.length; i += SECTION_INSERT_BATCH) {
       insertStatements.push(db.insert(schema.sections).values(sectionRows.slice(i, i + SECTION_INSERT_BATCH)));
     }
-    await db.batch([
-      db
-        .update(schema.songs)
-        .set({
-          title,
-          artist: data.song.artist?.trim() || null,
-          bpm: data.song.bpm ?? null,
-          key: data.song.key?.trim() || null,
-          referenceUrl: referenceUrl && isValidUrl(referenceUrl) ? referenceUrl : null,
-          updatedAt: timestamp,
-        })
-        .where(
-          and(eq(schema.songs.id, data.song.id), eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt)),
-        ),
-      db
-        .update(schema.sections)
-        .set({ deletedAt: timestamp })
-        .where(and(eq(schema.sections.songId, data.song.id), isNull(schema.sections.deletedAt))),
-      ...insertStatements,
-    ] as Parameters<typeof db.batch>[0]);
+    try {
+      await db.batch([
+        db
+          .update(schema.songs)
+          .set({
+            title,
+            artist: data.song.artist?.trim() || null,
+            bpm: data.song.bpm ?? null,
+            key: data.song.key?.trim() || null,
+            referenceUrl: referenceUrl && isValidUrl(referenceUrl) ? referenceUrl : null,
+            updatedAt: timestamp,
+          })
+          .where(
+            and(
+              eq(schema.songs.id, data.song.id),
+              eq(schema.songs.userId, user.userId),
+              isNull(schema.songs.deletedAt),
+            ),
+          ),
+        db
+          .update(schema.sections)
+          .set({ deletedAt: timestamp })
+          .where(and(eq(schema.sections.songId, data.song.id), isNull(schema.sections.deletedAt))),
+        ...insertStatements,
+      ] as Parameters<typeof db.batch>[0]);
+    } catch (error) {
+      // Best-effort rollback for non-transactional D1 batches:
+      // remove newly inserted sections and restore old sections to live state.
+      if (nextSectionIds.length > 0) {
+        await db.delete(schema.sections).where(inArray(schema.sections.id, nextSectionIds));
+      }
+      if (previousSectionIds.length > 0) {
+        await db
+          .update(schema.sections)
+          .set({ deletedAt: null })
+          .where(and(inArray(schema.sections.id, previousSectionIds), eq(schema.sections.deletedAt, timestamp)));
+      }
+      throw error;
+    }
   });
