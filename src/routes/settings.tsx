@@ -300,11 +300,13 @@ function SettingsPage() {
             <SettingRow
               label="COUNT-IN"
               description={t.settings.desc.countIn}
-              control={<Toggle on={countIn} onChange={setCountIn} ariaLabel={t.settings.aria.countIn} />}
+              disabled
+              control={<Toggle on={countIn} onChange={setCountIn} ariaLabel={t.settings.aria.countIn} disabled />}
             />
             <SettingRow
               label="CLICK VOLUME"
               description={null}
+              disabled
               right={
                 <span
                   style={{
@@ -320,7 +322,12 @@ function SettingsPage() {
               }
             >
               <div className="mt-3">
-                <VolumeSlider value={clickVolume} onChange={setClickVolume} ariaLabel={t.settings.aria.clickVolume} />
+                <VolumeSlider
+                  value={clickVolume}
+                  onChange={setClickVolume}
+                  ariaLabel={t.settings.aria.clickVolume}
+                  disabled
+                />
                 <div
                   className="mt-1.5 flex justify-between"
                   style={{
@@ -336,24 +343,36 @@ function SettingsPage() {
                 </div>
               </div>
             </SettingRow>
-            <SettingRow label="CLICK SOUND" description={t.settings.desc.clickSoundChar}>
+            <SettingRow label="CLICK SOUND" description={t.settings.desc.clickSoundChar} disabled>
               <div className="mt-3 grid grid-cols-4 gap-2">
                 {CLICK_SOUNDS.map((s) => (
-                  <ChoiceCard key={s} label={s} active={clickSound === s} onClick={() => setClickSound(s)} />
+                  <ChoiceCard key={s} label={s} active={clickSound === s} onClick={() => setClickSound(s)} disabled />
                 ))}
               </div>
             </SettingRow>
             <SettingRow
               label="ACCENT DOWNBEAT"
               description={t.settings.desc.accentDownbeat}
+              disabled
               control={
-                <Toggle on={accentDownbeat} onChange={setAccentDownbeat} ariaLabel={t.settings.aria.accentDownbeat} />
+                <Toggle
+                  on={accentDownbeat}
+                  onChange={setAccentDownbeat}
+                  ariaLabel={t.settings.aria.accentDownbeat}
+                  disabled
+                />
               }
             />
-            <SettingRow label="PRE-ROLL BARS" description={t.settings.desc.preRoll}>
+            <SettingRow label="PRE-ROLL BARS" description={t.settings.desc.preRoll} disabled>
               <div className="mt-3 grid grid-cols-4 gap-2">
                 {PRE_ROLL_OPTIONS.map((n) => (
-                  <ChoiceCard key={n} label={String(n)} active={preRollBars === n} onClick={() => setPreRollBars(n)} />
+                  <ChoiceCard
+                    key={n}
+                    label={String(n)}
+                    active={preRollBars === n}
+                    onClick={() => setPreRollBars(n)}
+                    disabled
+                  />
                 ))}
               </div>
             </SettingRow>
@@ -364,7 +383,14 @@ function SettingsPage() {
         <Section number="03" title="APPEARANCE">
           <div className="grid grid-cols-3 gap-2">
             {APPEARANCES.map((a) => (
-              <ChoiceCard key={a} label={a} active={appearance === a} onClick={() => setAppearance(a)} size="large" />
+              <ChoiceCard
+                key={a}
+                label={a}
+                active={appearance === a}
+                onClick={() => setAppearance(a)}
+                size="large"
+                disabled={a !== "DARK"}
+              />
             ))}
           </div>
         </Section>
@@ -436,19 +462,24 @@ function SettingRow({
   control,
   right,
   children,
+  disabled = false,
 }: {
   label: string;
   description?: string | null;
   control?: ReactNode;
   right?: ReactNode;
   children?: ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <div
+      aria-disabled={disabled || undefined}
       style={{
         padding: "14px",
         border: "1px solid var(--color-line)",
         borderRadius: 1,
+        opacity: disabled ? 0.4 : 1,
+        pointerEvents: disabled ? "none" : undefined,
       }}
     >
       <div className="flex items-start justify-between gap-4">
@@ -490,16 +521,20 @@ function ChoiceCard({
   active,
   onClick,
   size = "small",
+  disabled = false,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
   size?: "small" | "large";
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-pressed={active}
+      aria-disabled={disabled || undefined}
+      disabled={disabled}
       onClick={onClick}
       style={{
         padding: size === "large" ? "18px 12px" : "12px 10px",
@@ -511,7 +546,8 @@ function ChoiceCard({
         letterSpacing: "0.22em",
         textTransform: "uppercase",
         fontWeight: 600,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.4 : 1,
         borderRadius: 2,
       }}
     >
@@ -647,19 +683,24 @@ function PcSettingRow({
   desc,
   span = 1,
   children,
+  disabled = false,
 }: {
   label: string;
   desc?: string;
   span?: 1 | 2;
   children?: ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <div
+      aria-disabled={disabled || undefined}
       style={{
         gridColumn: span === 2 ? "span 2" : undefined,
         padding: "20px 22px",
         border: "1px solid var(--color-line)",
         background: "rgba(255,255,255,0.015)",
+        opacity: disabled ? 0.4 : 1,
+        pointerEvents: disabled ? "none" : undefined,
       }}
     >
       <div className="flex items-start justify-between" style={{ gap: 20, marginBottom: 16 }}>
@@ -689,23 +730,27 @@ function PcSoundCard({
   desc,
   active,
   onClick,
+  disabled = false,
 }: {
   label: string;
   desc: string;
   active: boolean;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-pressed={active}
+      aria-disabled={disabled || undefined}
+      disabled={disabled}
       onClick={onClick}
       style={{
         padding: "14px 14px",
         textAlign: "left",
         border: active ? "1px solid var(--color-text)" : "1px solid var(--color-line)",
         background: "rgba(255,255,255,0.02)",
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
         borderRadius: 1,
       }}
     >
@@ -726,11 +771,23 @@ function PcSoundCard({
   );
 }
 
-function PcPreRollChip({ value, active, onClick }: { value: number; active: boolean; onClick: () => void }) {
+function PcPreRollChip({
+  value,
+  active,
+  onClick,
+  disabled = false,
+}: {
+  value: number;
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       aria-pressed={active}
+      aria-disabled={disabled || undefined}
+      disabled={disabled}
       onClick={onClick}
       style={{
         padding: "10px 14px",
@@ -741,7 +798,7 @@ function PcPreRollChip({ value, active, onClick }: { value: number; active: bool
         letterSpacing: "0.08em",
         fontWeight: 600,
         color: active ? "var(--color-accent)" : "var(--color-dim)",
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
         borderRadius: 1,
       }}
     >
@@ -754,16 +811,18 @@ function PcVolumeSlider({
   value,
   onChange,
   ariaLabel,
+  disabled = false,
 }: {
   value: number;
   onChange: (v: number) => void;
   ariaLabel: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
       <div className="flex items-center" style={{ gap: 16 }}>
         <div style={{ flex: 1 }}>
-          <VolumeSlider value={value} onChange={onChange} ariaLabel={ariaLabel} handleHeight={14} />
+          <VolumeSlider value={value} onChange={onChange} ariaLabel={ariaLabel} handleHeight={14} disabled={disabled} />
         </div>
         <div
           style={{
@@ -977,13 +1036,13 @@ function PcAudioSection({
       <PcSettingRow label="CLICK TRACK" desc={t.settings.desc.clickTrack}>
         <Toggle on={clickEnabled} onChange={onClickEnabled} ariaLabel={t.settings.aria.clickTrack} />
       </PcSettingRow>
-      <PcSettingRow label="COUNT-IN" desc={t.settings.desc.countIn}>
-        <Toggle on={countIn} onChange={onCountIn} ariaLabel={t.settings.aria.countIn} />
+      <PcSettingRow label="COUNT-IN" desc={t.settings.desc.countIn} disabled>
+        <Toggle on={countIn} onChange={onCountIn} ariaLabel={t.settings.aria.countIn} disabled />
       </PcSettingRow>
-      <PcSettingRow label="CLICK VOLUME" desc={t.settings.desc.clickVolume} span={2}>
-        <PcVolumeSlider value={clickVolume} onChange={onClickVolume} ariaLabel={t.settings.aria.clickVolume} />
+      <PcSettingRow label="CLICK VOLUME" desc={t.settings.desc.clickVolume} span={2} disabled>
+        <PcVolumeSlider value={clickVolume} onChange={onClickVolume} ariaLabel={t.settings.aria.clickVolume} disabled />
       </PcSettingRow>
-      <PcSettingRow label="CLICK SOUND" desc={t.settings.desc.clickSoundChar} span={2}>
+      <PcSettingRow label="CLICK SOUND" desc={t.settings.desc.clickSoundChar} span={2} disabled>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
           {CLICK_SOUNDS.map((s) => (
             <PcSoundCard
@@ -992,17 +1051,18 @@ function PcAudioSection({
               desc={clickSoundDescs[s]}
               active={clickSound === s}
               onClick={() => onClickSound(s)}
+              disabled
             />
           ))}
         </div>
       </PcSettingRow>
-      <PcSettingRow label="ACCENT DOWNBEAT" desc={t.settings.desc.accentDownbeat}>
-        <Toggle on={accentDownbeat} onChange={onAccentDownbeat} ariaLabel={t.settings.aria.accentDownbeat} />
+      <PcSettingRow label="ACCENT DOWNBEAT" desc={t.settings.desc.accentDownbeat} disabled>
+        <Toggle on={accentDownbeat} onChange={onAccentDownbeat} ariaLabel={t.settings.aria.accentDownbeat} disabled />
       </PcSettingRow>
-      <PcSettingRow label="PRE-ROLL BARS" desc={t.settings.desc.preRoll}>
+      <PcSettingRow label="PRE-ROLL BARS" desc={t.settings.desc.preRoll} disabled>
         <div style={{ display: "flex", gap: 4 }}>
           {PRE_ROLL_OPTIONS.map((n) => (
-            <PcPreRollChip key={n} value={n} active={preRollBars === n} onClick={() => onPreRollBars(n)} />
+            <PcPreRollChip key={n} value={n} active={preRollBars === n} onClick={() => onPreRollBars(n)} disabled />
           ))}
         </div>
       </PcSettingRow>
@@ -1031,11 +1091,14 @@ function PcAppearanceSection({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
           {APPEARANCES.map((a) => {
             const active = appearance === a;
+            const isDisabled = a !== "DARK";
             return (
               <button
                 key={a}
                 type="button"
                 aria-pressed={active}
+                aria-disabled={isDisabled || undefined}
+                disabled={isDisabled}
                 onClick={() => onAppearance(a)}
                 style={{
                   padding: "18px 12px",
@@ -1047,7 +1110,8 @@ function PcAppearanceSection({
                   letterSpacing: "0.22em",
                   textTransform: "uppercase",
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: isDisabled ? "not-allowed" : "pointer",
+                  opacity: isDisabled ? 0.4 : 1,
                   borderRadius: 2,
                 }}
               >
@@ -1064,10 +1128,10 @@ function PcAppearanceSection({
 function PcShortcutsSection() {
   const { t } = useI18n();
   const shortcuts = [
-    { keys: "SPACE", label: t.settings.shortcut.advance },
-    { keys: "◁", label: t.settings.shortcut.previous },
-    { keys: "R", label: t.settings.shortcut.reset },
-    { keys: "ESC", label: t.settings.shortcut.exit },
+    { keys: "SPACE", label: t.settings.shortcut.advance, implemented: true },
+    { keys: "◁", label: t.settings.shortcut.previous, implemented: true },
+    { keys: "R", label: t.settings.shortcut.reset, implemented: false },
+    { keys: "ESC", label: t.settings.shortcut.exit, implemented: true },
   ];
   return (
     <div
@@ -1083,10 +1147,12 @@ function PcShortcutsSection() {
           {shortcuts.map((s) => (
             <div
               key={s.keys}
+              aria-disabled={!s.implemented || undefined}
               className="flex items-center justify-between"
               style={{
                 padding: "10px 0",
                 borderBottom: "1px solid var(--color-line)",
+                opacity: s.implemented ? 1 : 0.4,
               }}
             >
               <span

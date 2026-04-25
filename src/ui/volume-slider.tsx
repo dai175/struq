@@ -4,6 +4,7 @@ interface VolumeSliderProps {
   ariaLabel: string;
   /** Handle pixel height. Track is always 4px. Default 12. */
   handleHeight?: number;
+  disabled?: boolean;
 }
 
 /**
@@ -13,7 +14,7 @@ interface VolumeSliderProps {
  * design handoff. The wrapper is 24px tall (WCAG 2.5.8 minimum target size)
  * and surfaces keyboard focus via `.volume-slider:focus-within` in styles.css.
  */
-export function VolumeSlider({ value, onChange, ariaLabel, handleHeight = 12 }: VolumeSliderProps) {
+export function VolumeSlider({ value, onChange, ariaLabel, handleHeight = 12, disabled = false }: VolumeSliderProps) {
   return (
     <div className="volume-slider" style={{ position: "relative", height: 24, display: "flex", alignItems: "center" }}>
       <div style={{ width: "100%", height: 4, background: "rgba(255,255,255,0.08)", position: "relative" }}>
@@ -47,13 +48,14 @@ export function VolumeSlider({ value, onChange, ariaLabel, handleHeight = 12 }: 
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={ariaLabel}
+        disabled={disabled}
         style={{
           position: "absolute",
           inset: 0,
           width: "100%",
           height: "100%",
           opacity: 0,
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
           margin: 0,
           padding: 0,
         }}
