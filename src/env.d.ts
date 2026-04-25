@@ -12,3 +12,4 @@ declare module "cloudflare:workers" {
 }
 
 declare const __APP_VERSION__: string;
+declare const __APP_RELEASED__: string;

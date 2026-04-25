@@ -11,12 +11,30 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 const pkg = JSON.parse(readFileSync("./package.json", "utf-8")) as { version?: string };
 
+// GitHub Actions exposes a monotonic per-repo build number and the run's
+// start timestamp; both surface on the ABOUT screen. Local builds get a
+// "dev" build label and today's date in JST so the UI never shows blanks.
+const buildNumber = process.env.GITHUB_RUN_NUMBER ?? "dev";
+const releasedDate = (() => {
+  const raw = process.env.GITHUB_RUN_STARTED_AT;
+  const d = raw ? new Date(raw) : new Date();
+  return d
+    .toLocaleDateString("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+    .replace(/\//g, ".");
+})();
+
 const config = defineConfig(({ mode }) => {
   const isTest = mode === "test";
 
   return {
     define: {
-      __APP_VERSION__: JSON.stringify(pkg.version ?? "0.0.0"),
+      __APP_VERSION__: JSON.stringify(`${pkg.version ?? "0.0.0"} · build ${buildNumber}`),
+      __APP_RELEASED__: JSON.stringify(releasedDate),
     },
     test: {
       exclude: ["**/node_modules/**", "**/dist/**", "**/e2e/**"],
