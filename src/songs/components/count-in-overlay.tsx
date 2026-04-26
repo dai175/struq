@@ -27,7 +27,7 @@ export function CountInOverlay({ bpm, onComplete }: CountInOverlayProps) {
           fontWeight: 700,
           color: "var(--color-accent)",
           letterSpacing: "-0.02em",
-          textShadow: "0 0 40px color-mix(in srgb, var(--color-accent) 35%, transparent)",
+          textShadow: "var(--glow-count)",
         }}
       >
         {count}

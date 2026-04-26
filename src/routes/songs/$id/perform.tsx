@@ -696,7 +696,7 @@ function PerformView({
                           lineHeight: 0.92,
                           letterSpacing: "-0.04em",
                           color: sectionColor,
-                          textShadow: `0 0 30px color-mix(in srgb, ${sectionColor} 28%, transparent)`,
+                          textShadow: "var(--glow-section)",
                           wordBreak: "break-word",
                         }}
                       >
@@ -957,7 +957,7 @@ function BeatRow({ currentBeat, bpm, color }: { currentBeat: number; bpm: number
   const beats = 4;
   const beatInBar = bpm && currentBeat >= 0 ? currentBeat % beats : -1;
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2" style={{ color }}>
       {Array.from({ length: beats }, (_, i) => {
         const active = i === beatInBar;
         const past = i < beatInBar;
@@ -968,10 +968,10 @@ function BeatRow({ currentBeat, bpm, color }: { currentBeat: number; bpm: number
             style={{
               width: 38,
               height: 38,
-              background: active ? color : "transparent",
-              border: `1px solid ${color}`,
+              background: active ? "currentColor" : "transparent",
+              border: "1px solid currentColor",
               opacity: active ? 1 : past ? 0.45 : 0.2,
-              boxShadow: active ? `0 0 14px color-mix(in srgb, ${color} 55%, transparent)` : undefined,
+              boxShadow: active ? "var(--glow-beat)" : undefined,
               animation: active && bpm ? `beat-pop 80ms ease-out` : undefined,
               animationDuration: active && bpm ? `${Math.min(msPerBeat(bpm) * 0.6, 180)}ms` : undefined,
             }}

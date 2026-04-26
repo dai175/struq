@@ -41,6 +41,13 @@
      The amber chorus color is reserved for the chorus section only. */
   --color-accent: var(--color-section-a);
 
+  /* Glow halos — additive effect for dark surfaces. Uses `currentColor` so
+     call sites inherit their own section/accent color. Disabled in light
+     theme below: any blurred section-color tint reads as a smudge on paper. */
+  --glow-section: 0 0 30px color-mix(in srgb, currentColor 28%, transparent);
+  --glow-count: 0 0 40px color-mix(in srgb, currentColor 35%, transparent);
+  --glow-beat: 0 0 14px color-mix(in srgb, currentColor 55%, transparent);
+
   /* ─── Fonts ─── */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
     "Helvetica Neue", Arial, sans-serif;
@@ -81,6 +88,10 @@
   --color-section-interlude: oklch(0.55 0.12 195);
   --color-section-custom: oklch(0.55 0.16 340);
   --color-accent: oklch(0.48 0.16 250);
+
+  --glow-section: none;
+  --glow-count: none;
+  --glow-beat: none;
 }
 
 body {
