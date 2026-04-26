@@ -58,6 +58,7 @@ export function SectionRow({
       aria-label={t.song.chordProgression}
       style={{
         width: "100%",
+        minWidth: 0,
         background: "transparent",
         border: "none",
         outline: "none",
@@ -83,7 +84,9 @@ export function SectionRow({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isPc ? "18px 36px 1fr 140px 90px 90px 28px" : "18px 28px 1fr auto 28px",
+          gridTemplateColumns: isPc
+            ? "18px 36px minmax(0, 1fr) minmax(0, 1.5fr) auto auto 28px"
+            : "18px 28px 1fr auto 28px",
           alignItems: "center",
           gap: 10,
           padding: "10px 14px",
