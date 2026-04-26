@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useLoaderData, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
@@ -202,6 +202,11 @@ function SetlistsPage() {
 }
 
 function SetlistRow({ setlist, index }: { setlist: SetlistWithSongCount; index: number }) {
+  const sections = useMemo(
+    () => setlist.songStructure.map((type, i) => ({ id: `${setlist.id}-${i}`, type, bars: 1 })),
+    [setlist],
+  );
+
   return (
     <li style={{ borderBottom: "1px solid var(--color-line)" }}>
       <Link
@@ -262,14 +267,7 @@ function SetlistRow({ setlist, index }: { setlist: SetlistWithSongCount; index: 
               )}
             </div>
           )}
-          {setlist.songStructure.length > 0 && (
-            <StructureBar
-              sections={setlist.songStructure.map((type, i) => ({ id: `${setlist.id}-${i}`, type, bars: 1 }))}
-              height={4}
-              gap={2}
-              style={{ marginTop: 10 }}
-            />
-          )}
+          {sections.length > 0 && <StructureBar sections={sections} height={4} gap={2} style={{ marginTop: 10 }} />}
           <MetaTag size={9} style={{ display: "block", marginTop: 6 }}>
             {String(setlist.songCount).padStart(2, "0")} SONGS
           </MetaTag>
