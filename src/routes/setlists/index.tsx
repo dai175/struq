@@ -1,14 +1,13 @@
-import { createFileRoute, Link, useLoaderData, useNavigate, useRouter, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link, useLoaderData, useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
-import { ConfirmModal } from "@/lib/confirm-modal";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useLoadMore } from "@/lib/use-load-more";
-import { deleteSetlist, listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
+import { listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
-import { IconCal, IconPin, IconPlus, IconSearch, IconTrash, Logomark } from "@/ui/icons";
+import { IconCal, IconPin, IconPlus, IconSearch, Logomark } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
@@ -22,11 +21,8 @@ function SetlistsPage() {
   const search = useSearch({ from: "/setlists" });
   const { t } = useI18n();
   const { toast } = useToast();
-  const router = useRouter();
   const navigate = useNavigate();
 
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [input, setInput] = useState(search.q ?? "");
   const debouncedInput = useDebouncedValue(input, 300);
 
@@ -34,30 +30,22 @@ function SetlistsPage() {
   // sidebar navigates — same boundKey pattern as Songs.
   const queryKey = search.q ?? "";
   const [boundKey, setBoundKey] = useState(queryKey);
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   if (boundKey !== queryKey) {
     setBoundKey(queryKey);
     setInput(queryKey);
-    setDeletedIds(new Set());
   }
 
   const {
-    items: fetched,
+    items: setlists,
     hasMore,
     loading: loadingMore,
     loadMore,
-    reset: resetLoadMore,
   } = useLoadMore({
     initialItems: initial.items,
     initialHasMore: initial.hasMore,
     resetKey: queryKey,
     fetchMore: (offset) => listSetlists({ data: { offset, query: search.q } }),
   });
-
-  const setlists = useMemo(
-    () => (deletedIds.size > 0 ? fetched.filter((it) => !deletedIds.has(it.id)) : fetched),
-    [fetched, deletedIds],
-  );
 
   useEffect(() => {
     const next = debouncedInput.trim() || undefined;
@@ -68,28 +56,6 @@ function SetlistsPage() {
 
   function handleCreate() {
     navigate({ to: "/setlists/new" });
-  }
-
-  async function executeDelete() {
-    const id = pendingDeleteId;
-    if (!id) return;
-    setPendingDeleteId(null);
-    setDeletingId(id);
-    try {
-      await deleteSetlist({ data: { id } });
-      resetLoadMore();
-      setDeletedIds((prev) => {
-        const next = new Set(prev);
-        next.add(id);
-        return next;
-      });
-      router.invalidate();
-    } catch (error) {
-      clientLogger.error("deleteSetlist", error);
-      toast.error(t.common.errorDeleteFailed);
-    } finally {
-      setDeletingId(null);
-    }
   }
 
   async function handleLoadMore() {
@@ -218,13 +184,7 @@ function SetlistsPage() {
           <>
             <ul>
               {setlists.map((setlist, index) => (
-                <SetlistRow
-                  key={setlist.id}
-                  setlist={setlist}
-                  index={index}
-                  deleting={deletingId === setlist.id}
-                  onDelete={() => setPendingDeleteId(setlist.id)}
-                />
+                <SetlistRow key={setlist.id} setlist={setlist} index={index} />
               ))}
             </ul>
             {hasMore && (
@@ -237,122 +197,84 @@ function SetlistsPage() {
           </>
         )}
       </div>
-
-      <ConfirmModal
-        open={pendingDeleteId !== null}
-        message={t.setlist.confirmDelete}
-        confirmLabel={t.common.delete}
-        cancelLabel={t.common.cancel}
-        onConfirm={executeDelete}
-        onCancel={() => setPendingDeleteId(null)}
-      />
     </div>
   );
 }
 
-function SetlistRow({
-  setlist,
-  index,
-  deleting,
-  onDelete,
-}: {
-  setlist: SetlistWithSongCount;
-  index: number;
-  deleting: boolean;
-  onDelete: () => void;
-}) {
-  const { t } = useI18n();
+function SetlistRow({ setlist, index }: { setlist: SetlistWithSongCount; index: number }) {
   return (
-    <li
-      className="flex items-start"
-      style={{
-        gap: 14,
-        padding: "16px 18px",
-        borderBottom: "1px solid var(--color-line)",
-      }}
-    >
-      <Link to="/setlists/$id" params={{ id: setlist.id }} className="min-w-0 flex-1">
-        <div className="flex items-start" style={{ gap: 14 }}>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              fontWeight: 500,
-              color: "var(--color-dim-2)",
-              letterSpacing: "0.18em",
-              paddingTop: 4,
-              width: 22,
-              flexShrink: 0,
-            }}
-          >
-            {String(index + 1).padStart(2, "0")}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>
-              {setlist.title}
-            </p>
-            {(setlist.sessionDate || setlist.venue) && (
-              <div
-                className="flex flex-wrap items-center"
-                style={{
-                  gap: "4px 14px",
-                  marginTop: 6,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.15em",
-                  color: "var(--color-dim)",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                {setlist.sessionDate && (
-                  <span className="flex items-center gap-1">
-                    <IconCal size={11} />
-                    {setlist.sessionDate}
-                  </span>
-                )}
-                {setlist.venue && (
-                  <span className="flex min-w-0 items-center gap-1">
-                    <IconPin size={11} />
-                    <span className="truncate">{setlist.venue}</span>
-                  </span>
-                )}
-              </div>
-            )}
-            {setlist.songStructure.length > 0 && (
-              <StructureBar
-                sections={setlist.songStructure.map((type, i) => ({ id: `${setlist.id}-${i}`, type, bars: 1 }))}
-                height={4}
-                gap={2}
-                style={{ marginTop: 10 }}
-              />
-            )}
-            <MetaTag size={9} style={{ display: "block", marginTop: 6 }}>
-              {String(setlist.songCount).padStart(2, "0")} SONGS
-            </MetaTag>
-          </div>
-        </div>
-      </Link>
-      <button
-        type="button"
-        onClick={onDelete}
-        disabled={deleting}
-        aria-label={t.common.delete}
+    <li style={{ borderBottom: "1px solid var(--color-line)" }}>
+      <Link
+        to="/setlists/$id"
+        params={{ id: setlist.id }}
         style={{
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 4,
-          color: "var(--color-dim-2)",
-          background: "transparent",
-          border: "none",
-          cursor: deleting ? "not-allowed" : "pointer",
-          opacity: deleting ? 0.4 : 1,
-          flexShrink: 0,
+          alignItems: "flex-start",
+          gap: 14,
+          padding: "16px 18px",
+          color: "var(--color-text)",
+          textDecoration: "none",
         }}
       >
-        <IconTrash size={16} />
-      </button>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 500,
+            color: "var(--color-dim-2)",
+            letterSpacing: "0.18em",
+            paddingTop: 4,
+            width: 22,
+            flexShrink: 0,
+          }}
+        >
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>
+            {setlist.title}
+          </p>
+          {(setlist.sessionDate || setlist.venue) && (
+            <div
+              className="flex flex-wrap items-center"
+              style={{
+                gap: "4px 14px",
+                marginTop: 6,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.15em",
+                color: "var(--color-dim)",
+                textTransform: "uppercase",
+                fontWeight: 500,
+              }}
+            >
+              {setlist.sessionDate && (
+                <span className="flex items-center gap-1">
+                  <IconCal size={11} />
+                  {setlist.sessionDate}
+                </span>
+              )}
+              {setlist.venue && (
+                <span className="flex min-w-0 items-center gap-1">
+                  <IconPin size={11} />
+                  <span className="truncate">{setlist.venue}</span>
+                </span>
+              )}
+            </div>
+          )}
+          {setlist.songStructure.length > 0 && (
+            <StructureBar
+              sections={setlist.songStructure.map((type, i) => ({ id: `${setlist.id}-${i}`, type, bars: 1 }))}
+              height={4}
+              gap={2}
+              style={{ marginTop: 10 }}
+            />
+          )}
+          <MetaTag size={9} style={{ display: "block", marginTop: 6 }}>
+            {String(setlist.songCount).padStart(2, "0")} SONGS
+          </MetaTag>
+        </div>
+      </Link>
     </li>
   );
 }
