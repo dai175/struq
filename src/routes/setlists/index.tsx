@@ -204,7 +204,7 @@ function SetlistsPage() {
 function SetlistRow({ setlist, index }: { setlist: SetlistWithSongCount; index: number }) {
   const sections = useMemo(
     () => setlist.songStructure.map((type, i) => ({ id: `${setlist.id}-${i}`, type, bars: 1 })),
-    [setlist],
+    [setlist.id, setlist.songStructure],
   );
 
   return (

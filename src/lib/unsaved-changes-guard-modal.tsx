@@ -8,7 +8,7 @@ const noop = () => {};
 export function UnsavedChangesGuardModal({ isDirty }: { isDirty: boolean }) {
   const { t } = useI18n();
   const shouldBlockFn = useCallback(() => isDirty, [isDirty]);
-  const blocker = useBlocker({ shouldBlockFn, withResolver: true });
+  const blocker = useBlocker({ shouldBlockFn, withResolver: true, enableBeforeUnload: true });
 
   return (
     <ConfirmModal

@@ -306,6 +306,7 @@ export function SongEditor(props: SongEditorProps) {
       setSaving(true);
       try {
         const result = await createSongWithSections({ data: parsed.data });
+        savedSnapshotRef.current = currentSnapshot;
         await router.invalidate();
         navigate({ to: "/songs/$id", params: { id: result.id }, search: {}, replace: true });
       } catch (error) {
