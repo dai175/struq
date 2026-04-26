@@ -40,6 +40,9 @@ export const en: Translations = {
     comingSoon: "Coming soon",
     confirm: "Confirm",
     reorder: "Reorder",
+    unsavedChangesTitle: "Unsaved changes",
+    unsavedChangesMessage: "Your changes have not been saved.",
+    discardAndLeave: "Discard and leave",
   },
   nav: {
     setlists: "Setlists",

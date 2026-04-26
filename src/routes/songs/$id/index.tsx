@@ -23,6 +23,7 @@ import {
   saveSongWithSectionsInputSchema,
 } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
+import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
 import { isValidUrl } from "@/lib/validation";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { type SectionData, SectionRow, type SectionRowVariant } from "@/songs/components/SectionRow";
@@ -365,7 +366,7 @@ export function SongEditor(props: SongEditorProps) {
       sections: sectionsList.map((s) => [s.type, s.label, s.bars, s.extraBeats, s.chordProgression, s.memo]),
     });
   }, [title, artist, bpm, key, referenceUrl, sectionsList]);
-  const isDirty = isNew || currentSnapshot !== savedSnapshotRef.current;
+  const isDirty = currentSnapshot !== savedSnapshotRef.current;
   const trimmedReferenceUrl = referenceUrl.trim();
   const referenceUrlOpenable = isValidUrl(trimmedReferenceUrl);
 
@@ -777,6 +778,8 @@ export function SongEditor(props: SongEditorProps) {
           </button>
         </div>
       </div>
+
+      <UnsavedChangesGuardModal isDirty={isDirty} />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { clientLogger } from "@/lib/client-logger";
 import { ConfirmModal } from "@/lib/confirm-modal";
 import { createSetlistWithSongsInputSchema, saveSetlistWithSongsInputSchema } from "@/lib/schemas";
 import { useToast } from "@/lib/toast";
+import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import type { SetlistSongItem, SetlistSongSection } from "@/setlists/server-fns";
 import {
@@ -265,7 +266,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
       }),
     [title, description, sessionDate, venue, songs],
   );
-  const isDirty = isNew || currentSnapshot !== savedSnapshotRef.current;
+  const isDirty = currentSnapshot !== savedSnapshotRef.current;
 
   const { totalSongSections, totalMinutes } = useMemo(() => {
     const sections: SetlistSongSection[] = [];
@@ -580,6 +581,8 @@ export function SetlistEditor(props: SetlistEditorProps) {
         onConfirm={executeDelete}
         onCancel={() => setShowDeleteConfirm(false)}
       />
+
+      <UnsavedChangesGuardModal isDirty={isDirty} />
 
       <SongPickerModal
         open={showPicker}
