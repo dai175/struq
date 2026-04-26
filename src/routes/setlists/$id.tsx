@@ -200,6 +200,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
       setSaving(true);
       try {
         const result = await createSetlistWithSongs({ data: parsed.data });
+        savedSnapshotRef.current = currentSnapshot;
         await router.invalidate();
         navigate({ to: "/setlists/$id", params: { id: result.id }, replace: true });
       } catch (error) {
