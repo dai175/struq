@@ -43,6 +43,8 @@ import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
 
+const AI_BETA_LABEL = "BETA";
+
 function toSectionData(s: SectionDbRow): SectionData {
   return {
     id: s.id,
@@ -611,7 +613,31 @@ export function SongEditor(props: SongEditorProps) {
           >
             <IconSparkles size={14} />
             {aiGenerating ? t.common.loading : t.song.aiGenerate}
+            <span
+              style={{
+                marginLeft: 4,
+                padding: "1px 5px",
+                border: "1px solid var(--color-line-2)",
+                color: "var(--color-dim)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.18em",
+                fontWeight: 600,
+              }}
+            >
+              {AI_BETA_LABEL}
+            </span>
           </button>
+          <p
+            style={{
+              marginTop: 6,
+              fontSize: 11,
+              color: "var(--color-dim)",
+              lineHeight: 1.5,
+            }}
+          >
+            {t.song.aiExperimentalNote}
+          </p>
           {aiRateLimited && (
             <div
               style={{
@@ -1014,7 +1040,31 @@ function PcEditorPane({
           >
             <IconSparkles size={14} />
             {aiGenerating ? t.common.loading : t.song.aiGenerate}
+            <span
+              style={{
+                marginLeft: 4,
+                padding: "1px 5px",
+                border: "1px solid var(--color-line-2)",
+                color: "var(--color-dim)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.18em",
+                fontWeight: 600,
+              }}
+            >
+              {AI_BETA_LABEL}
+            </span>
           </button>
+          <p
+            style={{
+              marginTop: 6,
+              fontSize: 11,
+              color: "var(--color-dim)",
+              lineHeight: 1.5,
+            }}
+          >
+            {t.song.aiExperimentalNote}
+          </p>
           {aiRateLimited && (
             <div
               style={{

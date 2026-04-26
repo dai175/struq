@@ -55,6 +55,7 @@ export interface Translations {
     referenceUrl: string;
     openReferenceUrl: string;
     aiGenerate: string;
+    aiExperimentalNote: string;
     addSection: string;
     noSections: string;
     noSongs: string;

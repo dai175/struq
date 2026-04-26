@@ -57,6 +57,7 @@ export const ja: Translations = {
     referenceUrl: "参考URL",
     openReferenceUrl: "参考URLを開く",
     aiGenerate: "AI Generate",
+    aiExperimentalNote: "実験的機能です。精度にばらつきがあるため、生成後に手動で調整してください。",
     addSection: "セクション追加",
     noSections: "セクションがありません",
     noSongs: "曲がありません",

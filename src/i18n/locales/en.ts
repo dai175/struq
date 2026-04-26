@@ -57,6 +57,7 @@ export const en: Translations = {
     referenceUrl: "Reference URL",
     openReferenceUrl: "Open reference URL",
     aiGenerate: "AI Generate",
+    aiExperimentalNote: "Experimental feature. Results vary in quality — please review and adjust manually.",
     addSection: "Add Section",
     noSections: "No sections yet",
     noSongs: "No songs yet",
