@@ -36,6 +36,9 @@ export interface Translations {
     comingSoon: string;
     confirm: string;
     reorder: string;
+    unsavedChangesTitle: string;
+    unsavedChangesMessage: string;
+    discardAndLeave: string;
   };
 
   nav: {

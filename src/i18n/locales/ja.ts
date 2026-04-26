@@ -40,6 +40,9 @@ export const ja: Translations = {
     comingSoon: "準備中",
     confirm: "確認",
     reorder: "Reorder",
+    unsavedChangesTitle: "未保存の変更",
+    unsavedChangesMessage: "変更が保存されていません。",
+    discardAndLeave: "破棄して離れる",
   },
   nav: {
     setlists: "セットリスト",
