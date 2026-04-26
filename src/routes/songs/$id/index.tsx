@@ -303,6 +303,7 @@ export function SongEditor(props: SongEditorProps) {
       setSaving(true);
       try {
         const result = await createSongWithSections({ data: parsed.data });
+        await router.invalidate();
         navigate({ to: "/songs/$id", params: { id: result.id }, search: {}, replace: true });
       } catch (error) {
         clientLogger.error("createSong", error);
@@ -342,6 +343,7 @@ export function SongEditor(props: SongEditorProps) {
     setShowDeleteConfirm(false);
     try {
       await deleteSong({ data: { id: editId } });
+      await router.invalidate();
       navigate({ to: "/songs" });
     } catch (error) {
       clientLogger.error("deleteSong", error);

@@ -9,7 +9,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requireAuth } from "@/auth/server-fns";
 import { useI18n } from "@/i18n";
@@ -79,6 +79,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
   const { t } = useI18n();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const router = useRouter();
 
   const [title, setTitle] = useState(data.setlist.title);
   const [description, setDescription] = useState(data.setlist.description ?? "");
@@ -198,6 +199,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
       setSaving(true);
       try {
         const result = await createSetlistWithSongs({ data: parsed.data });
+        await router.invalidate();
         navigate({ to: "/setlists/$id", params: { id: result.id }, replace: true });
       } catch (error) {
         clientLogger.error("createSetlist", error);
@@ -225,6 +227,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
       savedSnapshotRef.current = currentSnapshot;
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+      router.invalidate();
     } catch (error) {
       clientLogger.error("saveSetlistWithSongs", error);
       toast.error(t.common.errorSaveFailed);
@@ -238,6 +241,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
     setShowDeleteConfirm(false);
     try {
       await deleteSetlist({ data: { id: editSetlistId } });
+      await router.invalidate();
       navigate({ to: "/setlists" });
     } catch (error) {
       clientLogger.error("deleteSetlist", error);
