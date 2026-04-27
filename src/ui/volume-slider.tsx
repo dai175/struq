@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 interface VolumeSliderProps {
   value: number;
   onChange: (v: number) => void;
@@ -6,6 +8,46 @@ interface VolumeSliderProps {
   handleHeight?: number;
   disabled?: boolean;
 }
+
+const WRAPPER_STYLE: CSSProperties = {
+  position: "relative",
+  height: 24,
+  display: "flex",
+  alignItems: "center",
+};
+
+const TRACK_STYLE: CSSProperties = {
+  width: "100%",
+  height: 4,
+  background: "var(--color-line-2)",
+  position: "relative",
+};
+
+const FILL_STYLE: CSSProperties = {
+  position: "absolute",
+  left: 0,
+  top: 0,
+  bottom: 0,
+  background: "var(--color-accent)",
+};
+
+const HANDLE_STYLE: CSSProperties = {
+  position: "absolute",
+  width: 2,
+  background: "var(--color-text-strong)",
+  transform: "translateX(-1px)",
+  pointerEvents: "none",
+};
+
+const INPUT_BASE_STYLE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  width: "100%",
+  height: "100%",
+  opacity: 0,
+  margin: 0,
+  padding: 0,
+};
 
 /**
  * Broadcast-console volume slider — a transparent <input type="range"> sits on
@@ -16,28 +58,15 @@ interface VolumeSliderProps {
  */
 export function VolumeSlider({ value, onChange, ariaLabel, handleHeight = 12, disabled = false }: VolumeSliderProps) {
   return (
-    <div className="volume-slider" style={{ position: "relative", height: 24, display: "flex", alignItems: "center" }}>
-      <div style={{ width: "100%", height: 4, background: "rgba(255,255,255,0.08)", position: "relative" }}>
+    <div className="volume-slider" style={WRAPPER_STYLE}>
+      <div style={TRACK_STYLE}>
+        <div style={{ ...FILL_STYLE, width: `${value}%` }} />
         <div
           style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: `${value}%`,
-            background: "var(--color-accent)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
+            ...HANDLE_STYLE,
             left: `${value}%`,
             top: -((handleHeight - 4) / 2),
-            width: 2,
             height: handleHeight,
-            background: "#fff",
-            transform: "translateX(-1px)",
-            pointerEvents: "none",
           }}
         />
       </div>
@@ -49,16 +78,7 @@ export function VolumeSlider({ value, onChange, ariaLabel, handleHeight = 12, di
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={ariaLabel}
         disabled={disabled}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          opacity: 0,
-          cursor: disabled ? "not-allowed" : "pointer",
-          margin: 0,
-          padding: 0,
-        }}
+        style={{ ...INPUT_BASE_STYLE, cursor: disabled ? "not-allowed" : "pointer" }}
       />
     </div>
   );
