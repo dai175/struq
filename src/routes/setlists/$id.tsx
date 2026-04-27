@@ -35,6 +35,7 @@ import { StructureBar } from "@/ui/structure-bar";
 import { TopBar } from "@/ui/top-bar";
 
 const ROW_STRUCTURE_PREVIEW_MAX = 6;
+const PC_SONG_GRID_COLUMNS = "28px 42px 1fr 200px 100px";
 
 export const Route = createFileRoute("/setlists/$id")({
   beforeLoad: requireAuth,
@@ -1141,7 +1142,7 @@ function PcDetailPane({
               <div
                 className="grid"
                 style={{
-                  gridTemplateColumns: "28px 42px 1fr 200px 100px",
+                  gridTemplateColumns: PC_SONG_GRID_COLUMNS,
                   padding: "10px 4px",
                   borderBottom: "1px solid var(--color-line)",
                   fontFamily: "var(--font-mono)",
@@ -1237,7 +1238,7 @@ function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; i
         transition,
         opacity: isDragging ? 0.5 : 1,
         display: "grid",
-        gridTemplateColumns: "28px 42px 1fr 200px 100px",
+        gridTemplateColumns: PC_SONG_GRID_COLUMNS,
         padding: "14px 4px",
         borderBottom: "1px solid var(--color-line)",
         alignItems: "center",
@@ -1295,7 +1296,9 @@ function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; i
           </div>
         )}
       </div>
-      <div>{song.sections.length > 0 ? <StructureBar sections={song.sections} height={5} gap={2} /> : null}</div>
+      <div>
+        <StructureBar sections={song.sections} height={5} gap={2} />
+      </div>
       <div className="flex items-center justify-end">
         <button
           type="button"
