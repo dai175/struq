@@ -180,7 +180,7 @@ function LoginLeftPane() {
         >
           {t.auth.heroPc}
           <br />
-          <span style={{ color: "rgba(255,255,255,0.5)" }}>{t.auth.heroPcDim}</span>
+          <span style={{ color: "var(--color-dim)" }}>{t.auth.heroPcDim}</span>
         </div>
         <p
           style={{
@@ -312,7 +312,7 @@ function LoginMobileBody({ errorMessage }: { errorMessage: string | null }) {
         <br />
         {t.auth.heroMobile2}
         <br />
-        <span style={{ color: "rgba(255,255,255,0.55)" }}>{t.auth.heroMobileDim}</span>
+        <span style={{ color: "var(--color-dim)" }}>{t.auth.heroMobileDim}</span>
       </div>
 
       <div style={{ marginTop: 42 }}>

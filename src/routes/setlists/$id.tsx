@@ -335,7 +335,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
               alignItems: "center",
               justifyContent: "center",
               padding: 4,
-              color: "#fff",
+              color: "var(--color-text)",
               lineHeight: 1,
             }}
           >
@@ -374,7 +374,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
                 aria-label={t.perform.start}
                 style={{
                   background: "var(--color-accent)",
-                  color: "#111",
+                  color: "var(--color-text-on-accent)",
                   border: "1px solid var(--color-accent)",
                   padding: "9px 14px",
                   borderRadius: 2,
@@ -442,13 +442,13 @@ export function SetlistEditor(props: SetlistEditorProps) {
               rows={2}
               style={{
                 width: "100%",
-                background: "rgba(255,255,255,0.02)",
+                background: "var(--color-bg-elevated)",
                 border: "1px solid var(--color-line)",
                 borderLeft: description ? "2px solid var(--color-accent)" : "1px solid var(--color-line)",
                 padding: "12px 14px",
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
-                color: description ? "#fff" : "rgba(255,255,255,0.3)",
+                color: "var(--color-text)",
                 outline: "none",
                 borderRadius: 0,
                 resize: "vertical",
@@ -546,25 +546,12 @@ export function SetlistEditor(props: SetlistEditorProps) {
         }}
       >
         <div className="mx-auto max-w-2xl">
-          <button
+          <ConsoleBtn
             type="button"
+            tone="inverse"
             onClick={handleSave}
             disabled={saving || !isDirty}
-            style={{
-              width: "100%",
-              padding: "14px",
-              background: "#fff",
-              color: "#111",
-              border: "none",
-              borderRadius: 2,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-              cursor: saving || !isDirty ? "not-allowed" : "pointer",
-              opacity: saving || !isDirty ? 0.5 : 1,
-            }}
+            style={{ width: "100%", padding: "14px", fontSize: 11, justifyContent: "center" }}
           >
             {saving
               ? t.common.loading
@@ -573,7 +560,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
                 : isNew
                   ? t.setlist.createSetlist
                   : t.common.saveChanges}
-          </button>
+          </ConsoleBtn>
         </div>
       </div>
 
@@ -1008,7 +995,7 @@ function PcDetailPane({
               search={{ setlistId }}
               style={{
                 background: "var(--color-accent)",
-                color: "#111",
+                color: "var(--color-text-on-accent)",
                 padding: "9px 14px",
                 borderRadius: 2,
                 fontFamily: "var(--font-mono)",
@@ -1077,13 +1064,13 @@ function PcDetailPane({
                   rows={2}
                   style={{
                     width: "100%",
-                    background: "rgba(255,255,255,0.02)",
+                    background: "var(--color-bg-elevated)",
                     border: "1px solid var(--color-line)",
                     borderLeft: description ? "2px solid var(--color-accent)" : "1px solid var(--color-line)",
                     padding: "12px 14px",
                     fontFamily: "var(--font-sans)",
                     fontSize: 14,
-                    color: description ? "#fff" : "rgba(255,255,255,0.3)",
+                    color: "var(--color-text)",
                     outline: "none",
                     borderRadius: 0,
                     resize: "vertical",
