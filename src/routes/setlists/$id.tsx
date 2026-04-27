@@ -308,6 +308,8 @@ export function SetlistEditor(props: SetlistEditorProps) {
         isDirty={isDirty}
         setlistId={editSetlistId}
         isNew={isNew}
+        totalSongSections={totalSongSections}
+        totalMinutes={totalMinutes}
         onTitleChange={(v) => {
           setTitle(v);
           if (titleError) setTitleError(false);
@@ -903,6 +905,8 @@ function PcDetailPane({
   isDirty,
   setlistId,
   isNew,
+  totalSongSections,
+  totalMinutes,
   onTitleChange,
   onDescriptionChange,
   onSessionDateChange,
@@ -925,6 +929,8 @@ function PcDetailPane({
   isDirty: boolean;
   setlistId: string | null;
   isNew: boolean;
+  totalSongSections: SetlistSongSection[];
+  totalMinutes: number;
   onTitleChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onSessionDateChange: (v: string) => void;
@@ -1097,10 +1103,18 @@ function PcDetailPane({
 
         {/* 02 OVERVIEW */}
         <section style={{ marginTop: 32 }}>
-          <MetaTag>02 · OVERVIEW</MetaTag>
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <MetaTag>02 · OVERVIEW</MetaTag>
+            {totalMinutes > 0 && <MetaTag>≈ {totalMinutes} MIN</MetaTag>}
+          </div>
           <div style={{ marginTop: 14 }}>
             <OverviewStat label="SONGS" value={String(songs.length).padStart(2, "0")} />
           </div>
+          {totalSongSections.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <StructureBar sections={totalSongSections} height={6} gap={1} />
+            </div>
+          )}
         </section>
 
         {/* 03 SONGS */}
@@ -1127,7 +1141,7 @@ function PcDetailPane({
               <div
                 className="grid"
                 style={{
-                  gridTemplateColumns: "28px 42px 1fr 100px",
+                  gridTemplateColumns: "28px 42px 1fr 200px 100px",
                   padding: "10px 4px",
                   borderBottom: "1px solid var(--color-line)",
                   fontFamily: "var(--font-mono)",
@@ -1142,6 +1156,7 @@ function PcDetailPane({
                 <div />
                 <div>#</div>
                 <div>TITLE</div>
+                <div>STRUCTURE</div>
                 <div />
               </div>
 
@@ -1222,7 +1237,7 @@ function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; i
         transition,
         opacity: isDragging ? 0.5 : 1,
         display: "grid",
-        gridTemplateColumns: "28px 42px 1fr 100px",
+        gridTemplateColumns: "28px 42px 1fr 200px 100px",
         padding: "14px 4px",
         borderBottom: "1px solid var(--color-line)",
         alignItems: "center",
@@ -1280,6 +1295,7 @@ function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; i
           </div>
         )}
       </div>
+      <div>{song.sections.length > 0 ? <StructureBar sections={song.sections} height={5} gap={2} /> : null}</div>
       <div className="flex items-center justify-end">
         <button
           type="button"
