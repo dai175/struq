@@ -135,53 +135,52 @@ export const listSetlists = createServerFn({ method: "GET" })
       page.map((r) => r.id),
     );
     const items: SetlistWithSongCount[] = page.map((r) => {
-      const songStructure = structureMap.get(r.id) ?? [];
-      return { ...r, songCount: songStructure.length, songStructure };
+      const entry = structureMap.get(r.id);
+      return { ...r, songCount: entry?.songCount ?? 0, songStructure: entry?.structure ?? [] };
     });
 
     return { items, hasMore };
   });
 
-/**
- * Each entry in the returned array is the first section's type of the song at
- * that position, defaulting to "intro" when the song has no sections yet.
- * Soft-deleted songs are excluded so the length equals the setlist's live
- * song count.
- */
-async function loadSetlistSongStructures(db: Database, setlistIds: string[]): Promise<Map<string, SectionType[]>> {
-  const map = new Map<string, SectionType[]>();
-  if (setlistIds.length === 0) return map;
+async function loadSetlistSongStructures(
+  db: Database,
+  setlistIds: string[],
+): Promise<Map<string, { songCount: number; structure: SectionType[] }>> {
+  if (setlistIds.length === 0) return new Map();
 
   const rows = await db
     .select({
       setlistId: schema.setlistSongs.setlistId,
-      sortOrder: schema.setlistSongs.sortOrder,
+      songId: schema.setlistSongs.songId,
       type: schema.sections.type,
     })
     .from(schema.setlistSongs)
     .innerJoin(schema.songs, and(eq(schema.songs.id, schema.setlistSongs.songId), isNull(schema.songs.deletedAt)))
     .leftJoin(
       schema.sections,
-      and(
-        eq(schema.sections.songId, schema.setlistSongs.songId),
-        isNull(schema.sections.deletedAt),
-        sql`${schema.sections.id} = (
-          SELECT id FROM sections
-          WHERE song_id = ${schema.setlistSongs.songId} AND deleted_at IS NULL
-          ORDER BY sort_order ASC, id ASC
-          LIMIT 1
-        )`,
-      ),
+      and(eq(schema.sections.songId, schema.setlistSongs.songId), isNull(schema.sections.deletedAt)),
     )
     .where(inArray(schema.setlistSongs.setlistId, setlistIds))
-    .orderBy(schema.setlistSongs.setlistId, schema.setlistSongs.sortOrder);
+    .orderBy(schema.setlistSongs.setlistId, schema.setlistSongs.sortOrder, schema.sections.sortOrder);
 
+  const build = new Map<string, { songs: Set<string>; structure: SectionType[] }>();
   for (const row of rows) {
-    const arr = map.get(row.setlistId) ?? [];
-    arr.push((row.type as SectionType | null) ?? "intro");
-    map.set(row.setlistId, arr);
+    let entry = build.get(row.setlistId);
+    if (!entry) {
+      entry = { songs: new Set(), structure: [] };
+      build.set(row.setlistId, entry);
+    }
+    entry.songs.add(row.songId);
+    if (row.type) {
+      entry.structure.push(row.type as SectionType);
+    }
   }
-  return map;
+
+  const result = new Map<string, { songCount: number; structure: SectionType[] }>();
+  for (const [id, entry] of build) {
+    result.set(id, { songCount: entry.songs.size, structure: entry.structure });
+  }
+  return result;
 }
 
 // ─── getSetlist ────────────────────────────────────────
