@@ -747,6 +747,23 @@ function PerformView({
                           <BeatRow currentBeat={currentBeat} bpm={song.bpm} color={sectionColor} />
                         </StageCard>
                       )}
+                      {current.memo && (
+                        <StageCard label="MEMO">
+                          <p
+                            style={{
+                              fontFamily: "var(--font-sans)",
+                              fontSize: 18,
+                              fontWeight: 500,
+                              lineHeight: 1.5,
+                              color: "var(--color-text-strong)",
+                              wordBreak: "break-word",
+                              whiteSpace: "pre-wrap",
+                            }}
+                          >
+                            {current.memo}
+                          </p>
+                        </StageCard>
+                      )}
                       {next ? (
                         <StageCard label="UP NEXT" tone="dim">
                           <div className="flex items-center gap-3">
