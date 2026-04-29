@@ -23,6 +23,7 @@ import { BulkDownloadButton } from "@/offline/bulk-download-button";
 import { CacheDot, type CacheState, songCacheStateById } from "@/offline/cache-dot";
 import { type CachedSong, getOfflineSetlist, putOfflineSetlist } from "@/offline/db";
 import { useCachedSongs } from "@/offline/use-cached";
+import { isOffline } from "@/offline/use-online-status";
 import type { SetlistSongItem, SetlistSongSection } from "@/setlists/server-fns";
 import {
   createSetlistWithSongs,
@@ -48,9 +49,7 @@ export const Route = createFileRoute("/setlists/$id")({
     try {
       data = await getSetlist({ data: { setlistId: params.id } });
     } catch (error) {
-      // Offline: serve the IDB mirror so the setlist can still be opened
-      // and the perform view can navigate the song sequence.
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
+      if (isOffline()) {
         const cached = await getOfflineSetlist(params.id);
         if (cached) return { setlist: cached.setlist, songs: cached.songs };
       }

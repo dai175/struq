@@ -1,12 +1,6 @@
-// IndexedDB layer for offline-first read of songs and setlists.
-//
-// Storage shape (denormalized — see docs/offline-plan.md):
-//   songs    → keyed by songId,    value = { song, sections, cachedAt, ... }
-//   setlists → keyed by setlistId, value = { setlist, songIds, cachedAt, ... }
-//   meta     → key 'current',      value = { userId, lastFlushedAt }
-//
-// All public functions are SSR-safe — they short-circuit when called from a
-// non-browser context, so callers (route loaders) can use them unconditionally.
+// IndexedDB layer for offline-first read of songs and setlists. All public
+// functions short-circuit on the server, so callers (route loaders) can use
+// them unconditionally.
 
 import { type DBSchema, type IDBPDatabase, openDB } from "idb";
 import type { SetlistRow, SetlistSongItem } from "@/setlists/server-fns";
@@ -17,15 +11,19 @@ const DB_VERSION = 1;
 const SCHEMA_VERSION = 1;
 const META_KEY = "current";
 
-// Broadcast a window event after every cache mutation so hooks subscribed via
-// useCachedSongs / useCachedSetlists can refresh their snapshot. Bus is a bare
-// `Event` rather than `CustomEvent` because consumers re-read the whole store
-// — they don't need detail payloads.
 export const OFFLINE_CACHE_CHANGED_EVENT = "struq:offline-cache-changed";
 
+// Coalesces bursts of mutations (e.g. bulk download fires N puts in a tight
+// loop) into a single notification so subscribed list views re-read the
+// store once per microtask, not once per write.
+let cacheChangedPending = false;
 function emitCacheChanged(): void {
-  if (!isClient()) return;
-  window.dispatchEvent(new Event(OFFLINE_CACHE_CHANGED_EVENT));
+  if (!isClient() || cacheChangedPending) return;
+  cacheChangedPending = true;
+  queueMicrotask(() => {
+    cacheChangedPending = false;
+    window.dispatchEvent(new Event(OFFLINE_CACHE_CHANGED_EVENT));
+  });
 }
 
 export interface CachedSong {
@@ -38,9 +36,7 @@ export interface CachedSong {
 export interface CachedSetlist {
   setlist: SetlistRow;
   // Mirrors getSetlist's response shape so the perform loader can serve it
-  // straight from cache without reshaping. The lightweight section data here
-  // (id/type/bars/sortOrder) is enough for setlist navigation and the
-  // structure-bar visual; full SectionRow data lives in the songs store.
+  // without reshape; full SectionRow data lives in the songs store.
   songs: SetlistSongItem[];
   cachedAt: number;
   schemaVersion: number;
@@ -66,8 +62,6 @@ function isClient(): boolean {
 function getDB(): Promise<IDBPDatabase<StruqOfflineDB>> {
   if (!dbPromise) {
     dbPromise = openDB<StruqOfflineDB>(DB_NAME, DB_VERSION, {
-      // Schema bumps wipe state; A 案 is read-only so we lose nothing the
-      // server can't re-supply on the next visit.
       upgrade(db) {
         for (const name of ["songs", "setlists", "meta"] as const) {
           if (!db.objectStoreNames.contains(name)) {
@@ -75,11 +69,8 @@ function getDB(): Promise<IDBPDatabase<StruqOfflineDB>> {
           }
         }
       },
-      blocked() {
-        // Another tab holds an older version open — let it close on its own.
-      },
       blocking() {
-        // We're holding open while another tab wants to upgrade — release.
+        // Release so another tab can upgrade the schema without prompting.
         void dbPromise?.then((db) => db.close());
         dbPromise = null;
       },
@@ -97,6 +88,11 @@ export async function getOfflineSong(id: string): Promise<CachedSong | undefined
 export async function putOfflineSong(song: SongRow, sections: SectionRow[]): Promise<void> {
   if (!isClient()) return;
   const db = await getDB();
+  // Skip writes that wouldn't change anything — avoids waking up every
+  // mounted list view with a cache-changed event when revalidate (or a
+  // re-mount) finds the cached entry already fresh.
+  const existing = await db.get("songs", song.id);
+  if (existing && existing.song.updatedAt === song.updatedAt) return;
   await db.put("songs", { song, sections, cachedAt: Date.now(), schemaVersion: SCHEMA_VERSION }, song.id);
   emitCacheChanged();
 }
@@ -110,47 +106,30 @@ export async function getOfflineSetlist(id: string): Promise<CachedSetlist | und
 export async function putOfflineSetlist(setlist: SetlistRow, songs: SetlistSongItem[]): Promise<void> {
   if (!isClient()) return;
   const db = await getDB();
+  const existing = await db.get("setlists", setlist.id);
+  if (existing && existing.setlist.updatedAt === setlist.updatedAt) return;
   await db.put("setlists", { setlist, songs, cachedAt: Date.now(), schemaVersion: SCHEMA_VERSION }, setlist.id);
   emitCacheChanged();
 }
 
-export async function listCachedSongIds(): Promise<Set<string>> {
-  if (!isClient()) return new Set();
-  const db = await getDB();
-  const keys = await db.getAllKeys("songs");
-  return new Set(keys);
-}
-
-export async function listCachedSetlistIds(): Promise<Set<string>> {
-  if (!isClient()) return new Set();
-  const db = await getDB();
-  const keys = await db.getAllKeys("setlists");
-  return new Set(keys);
-}
-
-// Returns every cached entry indexed by id. List-row UI uses this to compare
-// each row's `updatedAt` against the cached copy and render the appropriate
-// dot state (cached / stale).
-export async function getAllCachedSongs(): Promise<Map<string, CachedSong>> {
+async function getAllAsMap<K extends "songs" | "setlists">(
+  storeName: K,
+  keyOf: (value: StruqOfflineDB[K]["value"]) => string,
+): Promise<Map<string, StruqOfflineDB[K]["value"]>> {
   if (!isClient()) return new Map();
   const db = await getDB();
-  const [keys, values] = await Promise.all([db.getAllKeys("songs"), db.getAll("songs")]);
-  const map = new Map<string, CachedSong>();
-  for (let i = 0; i < keys.length; i++) {
-    map.set(keys[i], values[i]);
-  }
+  const values = await db.getAll(storeName);
+  const map = new Map<string, StruqOfflineDB[K]["value"]>();
+  for (const value of values) map.set(keyOf(value), value);
   return map;
 }
 
-export async function getAllCachedSetlists(): Promise<Map<string, CachedSetlist>> {
-  if (!isClient()) return new Map();
-  const db = await getDB();
-  const [keys, values] = await Promise.all([db.getAllKeys("setlists"), db.getAll("setlists")]);
-  const map = new Map<string, CachedSetlist>();
-  for (let i = 0; i < keys.length; i++) {
-    map.set(keys[i], values[i]);
-  }
-  return map;
+export function getAllCachedSongs(): Promise<Map<string, CachedSong>> {
+  return getAllAsMap("songs", (v) => v.song.id);
+}
+
+export function getAllCachedSetlists(): Promise<Map<string, CachedSetlist>> {
+  return getAllAsMap("setlists", (v) => v.setlist.id);
 }
 
 export async function getOfflineMeta(): Promise<OfflineMeta | undefined> {
@@ -173,7 +152,7 @@ export async function clearAll(): Promise<void> {
 }
 
 // Wipes the cache when the active user changes; otherwise stamps the current
-// user so logout (Step 7) can verify the same identity owned the data.
+// user so logout can verify the same identity owned the data.
 export async function ensureUserMatches(userId: string): Promise<void> {
   if (!isClient()) return;
   const meta = await getOfflineMeta();

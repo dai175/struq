@@ -5,6 +5,7 @@ import { getSectionLabel, useI18n } from "@/i18n";
 import type { Locale } from "@/i18n/types";
 import { type ClickScheduleHandle, scheduleClicks, unlockAudio } from "@/lib/audio";
 import { getOfflineSetlist, getOfflineSong, putOfflineSetlist, putOfflineSong } from "@/offline/db";
+import { isOffline } from "@/offline/use-online-status";
 import { getSetlist, type SetlistSongItem } from "@/setlists/server-fns";
 import {
   useAccentDownbeat,
@@ -49,14 +50,14 @@ async function persistPerformData(
   }
 }
 
-// Background freshen: refreshes IDB so the *next* visit serves fresh data.
-// Failures (offline, 401) leave the existing cache intact.
+// Refreshes IDB so the next visit serves fresh data. Failures leave the
+// existing cache intact for offline reads.
 async function revalidatePerformData(songId: string, setlistId: string | undefined): Promise<void> {
   try {
     const { songData, setlistData } = await fetchPerformData(songId, setlistId);
     await persistPerformData(songData, setlistData);
   } catch {
-    // Network error or auth failure — keep the cache as a stale fallback.
+    // Keep the cache as a stale fallback.
   }
 }
 
@@ -67,9 +68,9 @@ export const Route = createFileRoute("/songs/$id/perform")({
   }),
   loaderDeps: ({ search }) => ({ setlistId: search.setlistId }),
   loader: async ({ params, deps }) => {
-    // Cache-first: serve IDB immediately for instant first paint, then refresh
-    // in the background. Falls through to the server only when the entries we
-    // need (song, plus setlist if asked for) are not both cached.
+    // Cache-first: serve IDB immediately and refresh in the background. Falls
+    // through to the server when the entries we need (song, plus setlist if
+    // asked for) aren't both cached.
     const [cachedSong, cachedSetlist] = await Promise.all([
       getOfflineSong(params.id),
       deps.setlistId ? getOfflineSetlist(deps.setlistId) : Promise.resolve(undefined),
@@ -77,7 +78,7 @@ export const Route = createFileRoute("/songs/$id/perform")({
 
     const setlistReady = deps.setlistId ? cachedSetlist !== undefined : true;
     if (cachedSong && setlistReady) {
-      if (typeof navigator !== "undefined" && navigator.onLine) {
+      if (!isOffline()) {
         void revalidatePerformData(params.id, deps.setlistId);
       }
       return {

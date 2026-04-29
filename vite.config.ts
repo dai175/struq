@@ -30,13 +30,10 @@ const releasedDate = (() => {
     .replace(/\//g, ".");
 })();
 
-// vite-plugin-pwa 1.x stores its resolved config in a single shared variable
-// across configResolved calls. With Vite 7's Environment API the hook fires
-// once globally and again per environment, so the SSR config (build.ssr=true)
-// wins and closeBundle then skips SW generation. We:
-//   1. wrap the main plugin's configResolved to ignore SSR-flagged configs so
-//      the client config remains captured;
-//   2. set applyToEnvironment so the build hooks only fire for the client env.
+// vite-plugin-pwa 1.x stores its resolved config in a shared variable across
+// configResolved calls; under Vite 7's Environment API the SSR config wins and
+// closeBundle then skips SW generation. Wrap configResolved to ignore SSR
+// configs and pin build hooks to the client env to keep generation alive.
 function pwaClientPlugins() {
   const plugins = VitePWA({
     registerType: "autoUpdate",
@@ -60,19 +57,16 @@ function pwaClientPlugins() {
       globPatterns: ["**/*.{js,css,svg,png,ico,webmanifest}"],
       navigateFallback: null,
       cleanupOutdatedCaches: true,
-      // Take control of the current page on first install so the runtime
-      // navigation rule below starts capturing immediately — without this,
-      // the very first online visit doesn't get cached, and the next reload
-      // (offline) finds an empty cache and shows the browser error page.
+      // Claim the current page on first install so the navigation rule below
+      // starts capturing on the very first online visit (otherwise the next
+      // offline reload sees an empty cache).
       skipWaiting: true,
       clientsClaim: true,
       runtimeCaching: [
         {
-          // SSR'd HTML isn't part of the precache (TanStack Start renders
-          // each page on the worker), so without this rule a fresh reload
-          // while offline lands on the browser's network-error page. Cache
-          // navigation responses with NetworkFirst: online users still get
-          // fresh HTML; offline users get the last successful response.
+          // SSR'd HTML isn't precached (TanStack Start renders per request);
+          // NetworkFirst keeps online users on fresh HTML and falls back to
+          // the last successful response when the network is unreachable.
           urlPattern: ({ request }) => request.mode === "navigate",
           handler: "NetworkFirst",
           options: {
