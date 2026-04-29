@@ -66,7 +66,7 @@ meta (key: 'current')
 
 - [x] **Step 1**：`vite-plugin-pwa` 導入と最小 SW（precache のみ）
 - [x] **Step 2**：`idb` 導入と `src/offline/db.ts`（read/write/clearAll）
-- [ ] **Step 3**：Perform ルート loader を SWR 化（IDB 即返し → server fetch → 差分）
+- [x] **Step 3**：Perform ルート loader を SWR 化（IDB 即返し → server fetch → 差分）
 - [ ] **Step 4**：online/offline フックと OFFLINE バッジ
 - [ ] **Step 5**：リスト画面の DL 状態ドット
 - [ ] **Step 6**：セトリ詳細の一括DLボタン

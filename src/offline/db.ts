@@ -9,7 +9,7 @@
 // non-browser context, so callers (route loaders) can use them unconditionally.
 
 import { type DBSchema, type IDBPDatabase, openDB } from "idb";
-import type { SetlistRow } from "@/setlists/server-fns";
+import type { SetlistRow, SetlistSongItem } from "@/setlists/server-fns";
 import type { SectionRow, SongRow } from "@/songs/server-fns";
 
 const DB_NAME = "struq-offline";
@@ -26,7 +26,11 @@ export interface CachedSong {
 
 export interface CachedSetlist {
   setlist: SetlistRow;
-  songIds: string[];
+  // Mirrors getSetlist's response shape so the perform loader can serve it
+  // straight from cache without reshaping. The lightweight section data here
+  // (id/type/bars/sortOrder) is enough for setlist navigation and the
+  // structure-bar visual; full SectionRow data lives in the songs store.
+  songs: SetlistSongItem[];
   cachedAt: number;
   schemaVersion: number;
 }
@@ -91,10 +95,10 @@ export async function getOfflineSetlist(id: string): Promise<CachedSetlist | und
   return db.get("setlists", id);
 }
 
-export async function putOfflineSetlist(setlist: SetlistRow, songIds: string[]): Promise<void> {
+export async function putOfflineSetlist(setlist: SetlistRow, songs: SetlistSongItem[]): Promise<void> {
   if (!isClient()) return;
   const db = await getDB();
-  await db.put("setlists", { setlist, songIds, cachedAt: Date.now(), schemaVersion: SCHEMA_VERSION }, setlist.id);
+  await db.put("setlists", { setlist, songs, cachedAt: Date.now(), schemaVersion: SCHEMA_VERSION }, setlist.id);
 }
 
 export async function listCachedSongIds(): Promise<Set<string>> {
