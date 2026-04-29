@@ -16,6 +16,13 @@ export function songCacheState(
   return entry.song.updatedAt === song.updatedAt ? "cached" : "stale";
 }
 
+// SetlistSongItem doesn't carry updatedAt, so the per-song dot inside a
+// setlist's song list can only distinguish "cached" from "not cached".
+// Stale detection still happens on the /songs list (via songCacheState).
+export function songCacheStateById(songId: string, cached: ReadonlyMap<string, CachedSong>): CacheState {
+  return cached.has(songId) ? "cached" : "none";
+}
+
 export function setlistCacheState(
   setlist: { id: string; updatedAt: number },
   cached: ReadonlyMap<string, CachedSetlist>,
