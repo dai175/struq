@@ -4,6 +4,7 @@ import { requireAuth } from "@/auth/server-fns";
 import { getSectionLabel, useI18n } from "@/i18n";
 import type { Locale } from "@/i18n/types";
 import { type ClickScheduleHandle, scheduleClicks, unlockAudio } from "@/lib/audio";
+import { getOfflineSetlist, getOfflineSong, putOfflineSetlist, putOfflineSong } from "@/offline/db";
 import { getSetlist, type SetlistSongItem } from "@/setlists/server-fns";
 import {
   useAccentDownbeat,
@@ -28,6 +29,37 @@ import { C } from "@/ui/tokens";
 
 type PerformSearch = { setlistId?: string };
 
+async function fetchPerformData(songId: string, setlistId: string | undefined) {
+  const [songData, setlistData] = await Promise.all([
+    getSongWithSections({ data: { songId } }),
+    setlistId ? getSetlist({ data: { setlistId } }) : null,
+  ]);
+  return { songData, setlistData };
+}
+
+async function persistPerformData(
+  songData: Awaited<ReturnType<typeof getSongWithSections>>,
+  setlistData: Awaited<ReturnType<typeof getSetlist>>,
+) {
+  if (songData) {
+    await putOfflineSong(songData.song, songData.sections);
+  }
+  if (setlistData) {
+    await putOfflineSetlist(setlistData.setlist, setlistData.songs);
+  }
+}
+
+// Background freshen: refreshes IDB so the *next* visit serves fresh data.
+// Failures (offline, 401) leave the existing cache intact.
+async function revalidatePerformData(songId: string, setlistId: string | undefined): Promise<void> {
+  try {
+    const { songData, setlistData } = await fetchPerformData(songId, setlistId);
+    await persistPerformData(songData, setlistData);
+  } catch {
+    // Network error or auth failure — keep the cache as a stale fallback.
+  }
+}
+
 export const Route = createFileRoute("/songs/$id/perform")({
   beforeLoad: requireAuth,
   validateSearch: (search: Record<string, unknown>): PerformSearch => ({
@@ -35,11 +67,29 @@ export const Route = createFileRoute("/songs/$id/perform")({
   }),
   loaderDeps: ({ search }) => ({ setlistId: search.setlistId }),
   loader: async ({ params, deps }) => {
-    const [songData, setlistData] = await Promise.all([
-      getSongWithSections({ data: { songId: params.id } }),
-      deps.setlistId ? getSetlist({ data: { setlistId: deps.setlistId } }) : null,
+    // Cache-first: serve IDB immediately for instant first paint, then refresh
+    // in the background. Falls through to the server only when the entries we
+    // need (song, plus setlist if asked for) are not both cached.
+    const [cachedSong, cachedSetlist] = await Promise.all([
+      getOfflineSong(params.id),
+      deps.setlistId ? getOfflineSetlist(deps.setlistId) : Promise.resolve(undefined),
     ]);
+
+    const setlistReady = deps.setlistId ? cachedSetlist !== undefined : true;
+    if (cachedSong && setlistReady) {
+      if (typeof navigator !== "undefined" && navigator.onLine) {
+        void revalidatePerformData(params.id, deps.setlistId);
+      }
+      return {
+        song: cachedSong.song,
+        sections: cachedSong.sections,
+        setlistData: cachedSetlist ? { setlist: cachedSetlist.setlist, songs: cachedSetlist.songs } : null,
+      };
+    }
+
+    const { songData, setlistData } = await fetchPerformData(params.id, deps.setlistId);
     if (!songData) throw redirect({ to: "/songs" });
+    void persistPerformData(songData, setlistData);
     return { ...songData, setlistData };
   },
   component: PerformPage,
