@@ -96,17 +96,14 @@ function SettingsPage() {
   };
 
   const handleLogout = async () => {
-    let serverLogoutOk = false;
     try {
       await logoutFn();
-      serverLogoutOk = true;
     } catch (error) {
       clientLogger.error("logout", error);
+      return;
     }
-    // Once the server has dropped the session, the client must follow through
-    // even if cache wipe throws — otherwise the user is stuck on /settings
-    // with stale offline data and no way to reach /login.
-    if (!serverLogoutOk) return;
+    // Server has dropped the session — finish the client-side cleanup even if
+    // cache wipe throws, so the user always lands on /login.
     try {
       await clearOfflineCache();
     } catch (error) {
