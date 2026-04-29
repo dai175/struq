@@ -753,9 +753,11 @@ function PerformView({
                       >
                         {sectionLabel(current, locale)}
                       </div>
-                      {(mode === "auto" || mode === "paused") && (
-                        <BarGrid total={current.bars} currentBar={currentBar} color={sectionColor} />
-                      )}
+                      <BarGrid
+                        total={current.bars}
+                        currentBar={mode === "manual" ? -1 : currentBar}
+                        color={sectionColor}
+                      />
                       <div
                         className="mt-4 flex gap-4"
                         style={{
@@ -990,6 +992,8 @@ function StageCard({
 }
 
 function BarGrid({ total, currentBar, color }: { total: number; currentBar: number; color: string }) {
+  // currentBar < 0 means no progress tracking (manual mode): show all bars uniformly.
+  const tracking = currentBar >= 0;
   return (
     <div
       className="mt-4 grid"
@@ -1002,8 +1006,8 @@ function BarGrid({ total, currentBar, color }: { total: number; currentBar: numb
       aria-hidden="true"
     >
       {Array.from({ length: total }, (_, i) => {
-        const active = i === currentBar;
-        const past = i < currentBar;
+        const active = tracking && i === currentBar;
+        const past = tracking && i < currentBar;
         return (
           <span
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length, never reordered
@@ -1012,7 +1016,7 @@ function BarGrid({ total, currentBar, color }: { total: number; currentBar: numb
               height: 18,
               background: active || past ? color : "transparent",
               border: `1px solid ${color}`,
-              opacity: active ? 1 : past ? 0.7 : 0.25,
+              opacity: active ? 1 : past ? 0.7 : tracking ? 0.25 : 0.5,
             }}
           />
         );
