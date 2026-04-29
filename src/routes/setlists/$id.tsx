@@ -19,7 +19,10 @@ import { createSetlistWithSongsInputSchema, saveSetlistWithSongsInputSchema } fr
 import { useToast } from "@/lib/toast";
 import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-import { putOfflineSetlist } from "@/offline/db";
+import { BulkDownloadButton } from "@/offline/bulk-download-button";
+import { CacheDot, type CacheState, songCacheStateById } from "@/offline/cache-dot";
+import { type CachedSong, putOfflineSetlist } from "@/offline/db";
+import { useCachedSongs } from "@/offline/use-cached";
 import type { SetlistSongItem, SetlistSongSection } from "@/setlists/server-fns";
 import {
   createSetlistWithSongs,
@@ -293,6 +296,8 @@ export function SetlistEditor(props: SetlistEditorProps) {
   const songCountLabel = `${String(songs.length).padStart(2, "0")} ${t.nav.songs.toUpperCase()}`;
   const subtitle = sessionDate ? `${sessionDate} · ${songCountLabel}` : songCountLabel;
 
+  const cachedSongs = useCachedSongs();
+
   return (
     <div
       className="min-h-screen"
@@ -317,6 +322,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
         isNew={isNew}
         totalSongSections={totalSongSections}
         totalMinutes={totalMinutes}
+        cachedSongs={cachedSongs}
         onTitleChange={(v) => {
           setTitle(v);
           if (titleError) setTitleError(false);
@@ -489,6 +495,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
             <MetaTag>
               {totalSongSections.length > 0 ? "03" : "02"} · SONGS · {String(songs.length).padStart(2, "0")} TOTAL
             </MetaTag>
+            {!isNew && <BulkDownloadButton songIds={songs.map((s) => s.songId)} />}
           </div>
 
           {songs.length === 0 ? (
@@ -512,6 +519,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
                       song={song}
                       index={index}
                       onRemove={() => handleRemoveSong(song.songId)}
+                      cacheState={songCacheStateById(song.songId, cachedSongs)}
                     />
                   ))}
                 </ul>
@@ -595,7 +603,17 @@ export function SetlistEditor(props: SetlistEditorProps) {
   );
 }
 
-function SortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; index: number; onRemove: () => void }) {
+function SortableSongRow({
+  song,
+  index,
+  onRemove,
+  cacheState,
+}: {
+  song: SetlistSongItem;
+  index: number;
+  onRemove: () => void;
+  cacheState: CacheState;
+}) {
   const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.songId });
 
@@ -657,8 +675,12 @@ function SortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; ind
         {String(index + 1).padStart(2, "0")}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate" style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>
-          {song.title}
+        <div
+          className="flex min-w-0 items-center gap-1.5"
+          style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}
+        >
+          <span className="truncate">{song.title}</span>
+          <CacheDot state={cacheState} />
         </div>
         {meta && (
           <div
@@ -901,6 +923,7 @@ function PcDetailPane({
   isNew,
   totalSongSections,
   totalMinutes,
+  cachedSongs,
   onTitleChange,
   onDescriptionChange,
   onSessionDateChange,
@@ -925,6 +948,7 @@ function PcDetailPane({
   isNew: boolean;
   totalSongSections: SetlistSongSection[];
   totalMinutes: number;
+  cachedSongs: ReadonlyMap<string, CachedSong>;
   onTitleChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onSessionDateChange: (v: string) => void;
@@ -1116,6 +1140,7 @@ function PcDetailPane({
           <div className="flex items-center" style={{ marginBottom: 14, gap: 10 }}>
             <MetaTag>03 · SONGS · {String(songs.length).padStart(2, "0")} TOTAL</MetaTag>
             <div style={{ flex: 1, height: 1, background: "var(--color-line)" }} />
+            {!isNew && <BulkDownloadButton songIds={songs.map((s) => s.songId)} />}
           </div>
 
           {songs.length === 0 ? (
@@ -1162,6 +1187,7 @@ function PcDetailPane({
                       song={song}
                       index={i}
                       onRemove={() => onRemoveSong(song.songId)}
+                      cacheState={songCacheStateById(song.songId, cachedSongs)}
                     />
                   ))}
                 </SortableContext>
@@ -1217,7 +1243,17 @@ function OverviewStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; index: number; onRemove: () => void }) {
+function PcSortableSongRow({
+  song,
+  index,
+  onRemove,
+  cacheState,
+}: {
+  song: SetlistSongItem;
+  index: number;
+  onRemove: () => void;
+  cacheState: CacheState;
+}) {
   const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: song.songId,
@@ -1270,8 +1306,12 @@ function PcSortableSongRow({ song, index, onRemove }: { song: SetlistSongItem; i
         {String(index + 1).padStart(2, "0")}
       </div>
       <div className="min-w-0">
-        <div className="truncate" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>
-          {song.title}
+        <div
+          className="flex min-w-0 items-center gap-1.5"
+          style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}
+        >
+          <span className="truncate">{song.title}</span>
+          <CacheDot state={cacheState} />
         </div>
         {song.artist && (
           <div

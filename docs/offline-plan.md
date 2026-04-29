@@ -69,7 +69,7 @@ meta (key: 'current')
 - [x] **Step 3**：Perform ルート loader を SWR 化（IDB 即返し → server fetch → 差分）
 - [x] **Step 4**：online/offline フックと OFFLINE バッジ
 - [x] **Step 5**：リスト画面の DL 状態ドット
-- [ ] **Step 6**：セトリ詳細の一括DLボタン
+- [x] **Step 6**：セトリ詳細の一括DLボタン
 - [ ] **Step 7**：ログアウト・ユーザー切替時の `clearAll()` 結線
 
 各ステップは独立 PR を想定。完了時はチェックを付けてコミット。
