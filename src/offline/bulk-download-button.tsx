@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
+import { useToast } from "@/lib/toast";
 import { getSongWithSections } from "@/songs/server-fns";
 import { putOfflineSong } from "./db";
 import { useCachedSongs } from "./use-cached";
@@ -12,6 +14,8 @@ interface BulkDownloadButtonProps {
 // time; per-song payloads are small enough that parallelising would mainly
 // blur the feedback.
 export function BulkDownloadButton({ songIds }: BulkDownloadButtonProps) {
+  const { t } = useI18n();
+  const { toast } = useToast();
   const cached = useCachedSongs();
   const total = songIds.length;
   const cachedCount = songIds.reduce((n, id) => (cached.has(id) ? n + 1 : n), 0);
@@ -26,19 +30,26 @@ export function BulkDownloadButton({ songIds }: BulkDownloadButtonProps) {
     setDownloading(true);
     setProgress(0);
     let succeeded = 0;
+    let failed = 0;
     for (const id of songIds) {
       try {
         const data = await getSongWithSections({ data: { songId: id } });
         if (data) {
           await putOfflineSong(data.song, data.sections);
           succeeded += 1;
+        } else {
+          failed += 1;
         }
       } catch (error) {
+        failed += 1;
         clientLogger.error("bulkDownloadSong", error);
       }
       setProgress(succeeded);
     }
     setDownloading(false);
+    if (failed > 0) {
+      toast.error(t.setlist.bulkDownloadPartial.replace("{count}", String(failed)));
+    }
   }
 
   const label = downloading
