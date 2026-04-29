@@ -26,6 +26,7 @@ import { useToast } from "@/lib/toast";
 import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
 import { isValidUrl } from "@/lib/validation";
 import { getOfflineSong, putOfflineSong } from "@/offline/db";
+import { isOffline } from "@/offline/use-online-status";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { type SectionData, SectionRow, type SectionRowVariant } from "@/songs/components/SectionRow";
 import { DEFAULT_BARS, PALETTE_TYPES, SECTION_COLORS } from "@/songs/constants";
@@ -78,10 +79,7 @@ export const Route = createFileRoute("/songs/$id/")({
     try {
       data = await getSongWithSections({ data: { songId: params.id } });
     } catch (error) {
-      // Offline: fall back to the IDB mirror so a previously-visited song
-      // can still be edited / viewed (read-only network operations) without
-      // throwing into the route's error boundary.
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
+      if (isOffline()) {
         const cached = await getOfflineSong(params.id);
         if (cached) return { song: cached.song, sections: cached.sections };
       }

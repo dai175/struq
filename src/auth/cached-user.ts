@@ -1,3 +1,4 @@
+import { isOffline } from "@/offline/use-online-status";
 import { getAuthUser } from "./server-fns";
 import type { SessionUser } from "./session";
 
@@ -45,7 +46,7 @@ export async function getAuthUserWithCache(): Promise<SessionUser | null> {
     writeCachedUser(user);
     return user;
   } catch (error) {
-    if (isClient() && !window.navigator.onLine) {
+    if (isOffline()) {
       return readCachedUser();
     }
     throw error;

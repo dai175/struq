@@ -7,16 +7,12 @@ import {
   OFFLINE_CACHE_CHANGED_EVENT,
 } from "./db";
 
-const EMPTY_SONGS: ReadonlyMap<string, CachedSong> = new Map();
-const EMPTY_SETLISTS: ReadonlyMap<string, CachedSetlist> = new Map();
-
-// Subscribes the caller to a single store and re-reads whenever the offline
-// db emits its change event (i.e. any putOffline / clearAll). Used by both
-// the songs and setlists hooks so PC layouts — where the list aside stays
-// mounted while the detail loader writes — stay in sync without a manual
-// refresh.
-function useCachedStore<T>(load: () => Promise<ReadonlyMap<string, T>>, empty: ReadonlyMap<string, T>) {
-  const [map, setMap] = useState<ReadonlyMap<string, T>>(empty);
+// Subscribes the caller to one store and re-reads on every offline-cache
+// change event. Used by both list-row hooks so PC layouts — where the list
+// aside stays mounted while the detail loader writes — stay in sync without
+// a manual refresh.
+function useCachedStore<T>(load: () => Promise<ReadonlyMap<string, T>>): ReadonlyMap<string, T> {
+  const [map, setMap] = useState<ReadonlyMap<string, T>>(() => new Map());
   useEffect(() => {
     let cancelled = false;
     const refresh = () => {
@@ -35,9 +31,9 @@ function useCachedStore<T>(load: () => Promise<ReadonlyMap<string, T>>, empty: R
 }
 
 export function useCachedSongs(): ReadonlyMap<string, CachedSong> {
-  return useCachedStore(getAllCachedSongs, EMPTY_SONGS);
+  return useCachedStore(getAllCachedSongs);
 }
 
 export function useCachedSetlists(): ReadonlyMap<string, CachedSetlist> {
-  return useCachedStore(getAllCachedSetlists, EMPTY_SETLISTS);
+  return useCachedStore(getAllCachedSetlists);
 }

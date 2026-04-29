@@ -1,4 +1,5 @@
 import { useI18n } from "@/i18n";
+import { clientLogger } from "@/lib/client-logger";
 import { useOnlineStatus } from "./use-online-status";
 
 interface OfflineErrorBoundaryProps {
@@ -6,11 +7,10 @@ interface OfflineErrorBoundaryProps {
   reset: () => void;
 }
 
-// Replaces TanStack Router's default "Something went wrong" UI when a route
-// loader fails. Reads navigator.onLine to give the user the right framing:
-// offline pages need to be downloaded ahead of time, online failures are
-// likely transient and can be retried in place.
-export function OfflineErrorBoundary({ reset }: OfflineErrorBoundaryProps) {
+// Replaces TanStack Router's default error UI with a Broadcast Console-styled
+// message that adapts to navigator.onLine.
+export function OfflineErrorBoundary({ error, reset }: OfflineErrorBoundaryProps) {
+  clientLogger.error("routeError", error);
   const online = useOnlineStatus();
   const { t } = useI18n();
 

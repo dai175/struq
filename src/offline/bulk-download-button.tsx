@@ -8,10 +8,9 @@ interface BulkDownloadButtonProps {
   songIds: string[];
 }
 
-// One-tap "make every song in this setlist available offline" action. Iterates
-// the song ids serially so the UI can render incremental progress (the LED
-// pulse + N/M counter) — the per-song payload is small enough that
-// parallelising would only obscure feedback for a marginal speedup.
+// Iterates ids serially so the LED pulse + N/M counter advance one song at a
+// time; per-song payloads are small enough that parallelising would mainly
+// blur the feedback.
 export function BulkDownloadButton({ songIds }: BulkDownloadButtonProps) {
   const cached = useCachedSongs();
   const total = songIds.length;
