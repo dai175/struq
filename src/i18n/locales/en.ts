@@ -101,6 +101,7 @@ export const en: Translations = {
     removeSong: "Remove song",
     pickerAllAdded: "All your songs are already in this setlist",
     addFromLibrary: "Add song from library",
+    bulkDownloadPartial: "Failed to download {count} song(s)",
     searchPlaceholder: "Search by title or venue",
     searchNoResults: "No matching setlists",
     searchClear: "Clear search",

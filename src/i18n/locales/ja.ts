@@ -101,6 +101,7 @@ export const ja: Translations = {
     removeSong: "曲を削除",
     pickerAllAdded: "すべての曲が追加済みです",
     addFromLibrary: "ライブラリから追加",
+    bulkDownloadPartial: "{count}曲のダウンロードに失敗しました",
     searchPlaceholder: "タイトル・会場で検索",
     searchNoResults: "該当するセットリストはありません",
     searchClear: "検索をクリア",

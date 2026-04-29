@@ -100,6 +100,7 @@ export interface Translations {
     removeSong: string;
     pickerAllAdded: string;
     addFromLibrary: string;
+    bulkDownloadPartial: string;
     searchPlaceholder: string;
     searchNoResults: string;
     searchClear: string;

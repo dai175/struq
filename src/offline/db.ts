@@ -79,10 +79,18 @@ function getDB(): Promise<IDBPDatabase<StruqOfflineDB>> {
   return dbPromise;
 }
 
+// Records written by an older SCHEMA_VERSION can have a stale shape; treat
+// them as cache misses so loaders fall through to the server (or fail loudly
+// offline) instead of feeding mismatched data into route components.
+function isFresh<T extends { schemaVersion: number }>(value: T | undefined): value is T {
+  return value !== undefined && value.schemaVersion === SCHEMA_VERSION;
+}
+
 export async function getOfflineSong(id: string): Promise<CachedSong | undefined> {
   if (!isClient()) return undefined;
   const db = await getDB();
-  return db.get("songs", id);
+  const record = await db.get("songs", id);
+  return isFresh(record) ? record : undefined;
 }
 
 export async function putOfflineSong(song: SongRow, sections: SectionRow[]): Promise<void> {
@@ -100,7 +108,8 @@ export async function putOfflineSong(song: SongRow, sections: SectionRow[]): Pro
 export async function getOfflineSetlist(id: string): Promise<CachedSetlist | undefined> {
   if (!isClient()) return undefined;
   const db = await getDB();
-  return db.get("setlists", id);
+  const record = await db.get("setlists", id);
+  return isFresh(record) ? record : undefined;
 }
 
 export async function putOfflineSetlist(setlist: SetlistRow, songs: SetlistSongItem[]): Promise<void> {
@@ -120,7 +129,9 @@ async function getAllAsMap<K extends "songs" | "setlists">(
   const db = await getDB();
   const values = await db.getAll(storeName);
   const map = new Map<string, StruqOfflineDB[K]["value"]>();
-  for (const value of values) map.set(keyOf(value), value);
+  for (const value of values) {
+    if (isFresh(value)) map.set(keyOf(value), value);
+  }
   return map;
 }
 

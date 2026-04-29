@@ -96,16 +96,24 @@ function SettingsPage() {
   };
 
   const handleLogout = async () => {
+    let serverLogoutOk = false;
     try {
       await logoutFn();
-      // Wipe the offline mirror so a different user signing in on the same
-      // device doesn't see the previous user's songs and setlists.
-      await clearOfflineCache();
-      clearCachedUser();
-      router.navigate({ to: "/login" });
+      serverLogoutOk = true;
     } catch (error) {
       clientLogger.error("logout", error);
     }
+    // Once the server has dropped the session, the client must follow through
+    // even if cache wipe throws — otherwise the user is stuck on /settings
+    // with stale offline data and no way to reach /login.
+    if (!serverLogoutOk) return;
+    try {
+      await clearOfflineCache();
+    } catch (error) {
+      clientLogger.error("logout.clearOfflineCache", error);
+    }
+    clearCachedUser();
+    router.navigate({ to: "/login" });
   };
 
   const handleLocaleChange = async (newLocale: Locale) => {
