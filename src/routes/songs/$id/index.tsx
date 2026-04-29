@@ -25,6 +25,7 @@ import {
 import { useToast } from "@/lib/toast";
 import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
 import { isValidUrl } from "@/lib/validation";
+import { putOfflineSong } from "@/offline/db";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { type SectionData, SectionRow, type SectionRowVariant } from "@/songs/components/SectionRow";
 import { DEFAULT_BARS, PALETTE_TYPES, SECTION_COLORS } from "@/songs/constants";
@@ -83,6 +84,11 @@ export const Route = createFileRoute("/songs/$id/")({
 function SongEditRoute() {
   const loaderData = Route.useLoaderData();
   const { id } = Route.useParams();
+  // Cache on actual mount, not on the loader, so router preload (hover) does
+  // not silently fill IDB with entries the user never opened.
+  useEffect(() => {
+    void putOfflineSong(loaderData.song, loaderData.sections);
+  }, [loaderData]);
   return <SongEditor mode="edit" id={id} initial={loaderData} />;
 }
 

@@ -5,6 +5,8 @@ import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useLoadMore } from "@/lib/use-load-more";
+import { CacheDot, type CacheState, setlistCacheState } from "@/offline/cache-dot";
+import { useCachedSetlists } from "@/offline/use-cached";
 import { listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconCal, IconPin, IconPlus, IconSearch, Logomark } from "@/ui/icons";
@@ -73,6 +75,7 @@ function SetlistsPage() {
   }
 
   const isSearching = !!search.q;
+  const cachedSetlists = useCachedSetlists();
 
   return (
     <div
@@ -184,7 +187,12 @@ function SetlistsPage() {
           <>
             <ul>
               {setlists.map((setlist, index) => (
-                <SetlistRow key={setlist.id} setlist={setlist} index={index} />
+                <SetlistRow
+                  key={setlist.id}
+                  setlist={setlist}
+                  index={index}
+                  cacheState={setlistCacheState(setlist, cachedSetlists)}
+                />
               ))}
             </ul>
             {hasMore && (
@@ -201,7 +209,15 @@ function SetlistsPage() {
   );
 }
 
-function SetlistRow({ setlist, index }: { setlist: SetlistWithSongCount; index: number }) {
+function SetlistRow({
+  setlist,
+  index,
+  cacheState,
+}: {
+  setlist: SetlistWithSongCount;
+  index: number;
+  cacheState: CacheState;
+}) {
   const sections = useMemo(
     () => setlist.songStructure.map((type, i) => ({ id: `${setlist.id}-${i}`, type, bars: 1 })),
     [setlist.id, setlist.songStructure],
@@ -236,9 +252,12 @@ function SetlistRow({ setlist, index }: { setlist: SetlistWithSongCount; index: 
           {String(index + 1).padStart(2, "0")}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>
-            {setlist.title}
-          </p>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <p className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>
+              {setlist.title}
+            </p>
+            <CacheDot state={cacheState} />
+          </div>
           {(setlist.sessionDate || setlist.venue) && (
             <div
               className="flex flex-wrap items-center"

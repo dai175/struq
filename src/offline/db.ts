@@ -17,6 +17,17 @@ const DB_VERSION = 1;
 const SCHEMA_VERSION = 1;
 const META_KEY = "current";
 
+// Broadcast a window event after every cache mutation so hooks subscribed via
+// useCachedSongs / useCachedSetlists can refresh their snapshot. Bus is a bare
+// `Event` rather than `CustomEvent` because consumers re-read the whole store
+// — they don't need detail payloads.
+export const OFFLINE_CACHE_CHANGED_EVENT = "struq:offline-cache-changed";
+
+function emitCacheChanged(): void {
+  if (!isClient()) return;
+  window.dispatchEvent(new Event(OFFLINE_CACHE_CHANGED_EVENT));
+}
+
 export interface CachedSong {
   song: SongRow;
   sections: SectionRow[];
@@ -87,6 +98,7 @@ export async function putOfflineSong(song: SongRow, sections: SectionRow[]): Pro
   if (!isClient()) return;
   const db = await getDB();
   await db.put("songs", { song, sections, cachedAt: Date.now(), schemaVersion: SCHEMA_VERSION }, song.id);
+  emitCacheChanged();
 }
 
 export async function getOfflineSetlist(id: string): Promise<CachedSetlist | undefined> {
@@ -99,6 +111,7 @@ export async function putOfflineSetlist(setlist: SetlistRow, songs: SetlistSongI
   if (!isClient()) return;
   const db = await getDB();
   await db.put("setlists", { setlist, songs, cachedAt: Date.now(), schemaVersion: SCHEMA_VERSION }, setlist.id);
+  emitCacheChanged();
 }
 
 export async function listCachedSongIds(): Promise<Set<string>> {
@@ -113,6 +126,31 @@ export async function listCachedSetlistIds(): Promise<Set<string>> {
   const db = await getDB();
   const keys = await db.getAllKeys("setlists");
   return new Set(keys);
+}
+
+// Returns every cached entry indexed by id. List-row UI uses this to compare
+// each row's `updatedAt` against the cached copy and render the appropriate
+// dot state (cached / stale).
+export async function getAllCachedSongs(): Promise<Map<string, CachedSong>> {
+  if (!isClient()) return new Map();
+  const db = await getDB();
+  const [keys, values] = await Promise.all([db.getAllKeys("songs"), db.getAll("songs")]);
+  const map = new Map<string, CachedSong>();
+  for (let i = 0; i < keys.length; i++) {
+    map.set(keys[i], values[i]);
+  }
+  return map;
+}
+
+export async function getAllCachedSetlists(): Promise<Map<string, CachedSetlist>> {
+  if (!isClient()) return new Map();
+  const db = await getDB();
+  const [keys, values] = await Promise.all([db.getAllKeys("setlists"), db.getAll("setlists")]);
+  const map = new Map<string, CachedSetlist>();
+  for (let i = 0; i < keys.length; i++) {
+    map.set(keys[i], values[i]);
+  }
+  return map;
 }
 
 export async function getOfflineMeta(): Promise<OfflineMeta | undefined> {
@@ -131,6 +169,7 @@ export async function clearAll(): Promise<void> {
     tx.objectStore("meta").clear(),
   ]);
   await tx.done;
+  emitCacheChanged();
 }
 
 // Wipes the cache when the active user changes; otherwise stamps the current

@@ -19,6 +19,7 @@ import { createSetlistWithSongsInputSchema, saveSetlistWithSongsInputSchema } fr
 import { useToast } from "@/lib/toast";
 import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { putOfflineSetlist } from "@/offline/db";
 import type { SetlistSongItem, SetlistSongSection } from "@/setlists/server-fns";
 import {
   createSetlistWithSongs,
@@ -50,6 +51,11 @@ export const Route = createFileRoute("/setlists/$id")({
 function SetlistDetailPage() {
   const data = Route.useLoaderData();
   const { id } = Route.useParams();
+  // Cache on actual mount, not on the loader, so router preload (hover) does
+  // not silently fill IDB with entries the user never opened.
+  useEffect(() => {
+    void putOfflineSetlist(data.setlist, data.songs);
+  }, [data]);
   return <SetlistEditor key={id} mode="edit" setlistId={id} data={data} />;
 }
 

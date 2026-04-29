@@ -6,6 +6,8 @@ import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useLoadMore } from "@/lib/use-load-more";
+import { CacheDot, type CacheState, setlistCacheState } from "@/offline/cache-dot";
+import { useCachedSetlists } from "@/offline/use-cached";
 import { listSetlists, type SetlistWithSongCount } from "@/setlists/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconCal, IconPlus, IconSearch } from "@/ui/icons";
@@ -90,6 +92,7 @@ function SetlistsPcListColumn() {
   }
 
   const isSearching = !!search.q;
+  const cachedSetlists = useCachedSetlists();
 
   return (
     <aside
@@ -173,7 +176,13 @@ function SetlistsPcListColumn() {
 
       <ul className="overflow-auto" style={{ flex: 1 }}>
         {items.map((setlist, i) => (
-          <SetlistsPcListRow key={setlist.id} setlist={setlist} index={i} active={setlist.id === activeId} />
+          <SetlistsPcListRow
+            key={setlist.id}
+            setlist={setlist}
+            index={i}
+            active={setlist.id === activeId}
+            cacheState={setlistCacheState(setlist, cachedSetlists)}
+          />
         ))}
         {hasMore && (
           <li className="flex justify-center" style={{ padding: "16px 22px" }}>
@@ -191,10 +200,12 @@ function SetlistsPcListRow({
   setlist,
   index,
   active,
+  cacheState,
 }: {
   setlist: SetlistWithSongCount;
   index: number;
   active: boolean;
+  cacheState: CacheState;
 }) {
   return (
     <li>
@@ -228,14 +239,15 @@ function SetlistsPcListRow({
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
-              className="truncate"
+              className="flex min-w-0 items-center gap-1.5"
               style={{
                 fontSize: 14,
                 fontWeight: active ? 700 : 600,
                 color: "var(--color-text)",
               }}
             >
-              {setlist.title}
+              <span className="truncate">{setlist.title}</span>
+              <CacheDot state={cacheState} />
             </div>
             <div
               className="flex flex-wrap"
