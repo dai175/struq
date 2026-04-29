@@ -755,8 +755,9 @@ function PerformView({
                       </div>
                       <BarGrid
                         total={current.bars}
-                        currentBar={mode === "manual" ? -1 : currentBar}
+                        currentBar={currentBar}
                         color={sectionColor}
+                        tracking={mode !== "manual"}
                       />
                       <div
                         className="mt-4 flex gap-4"
@@ -991,9 +992,17 @@ function StageCard({
   );
 }
 
-function BarGrid({ total, currentBar, color }: { total: number; currentBar: number; color: string }) {
-  // currentBar < 0 means no progress tracking (manual mode): show all bars uniformly.
-  const tracking = currentBar >= 0;
+function BarGrid({
+  total,
+  currentBar,
+  color,
+  tracking,
+}: {
+  total: number;
+  currentBar: number;
+  color: string;
+  tracking: boolean;
+}) {
   return (
     <div
       className="mt-4 grid"
