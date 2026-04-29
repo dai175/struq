@@ -5,6 +5,7 @@ import { I18nProvider } from "../i18n/provider";
 import { DEFAULT_LOCALE } from "../i18n/types";
 import { THEME_PRE_PAINT_SCRIPT, ThemeProvider } from "../lib/theme";
 import { ToastProvider } from "../lib/toast";
+import { SERVICE_WORKER_REGISTER_SCRIPT } from "../offline/register-sw";
 import appCss from "../styles.css?url";
 import { BottomNav } from "../ui/bottom-nav";
 import { SideRail } from "../ui/side-rail";
@@ -44,7 +45,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
     // Inline pre-paint script: resolves theme before first paint to avoid FOUC.
     // Trusted constant — see src/lib/theme.ts.
-    scripts: [{ children: THEME_PRE_PAINT_SCRIPT }],
+    scripts: [{ children: THEME_PRE_PAINT_SCRIPT }, { children: SERVICE_WORKER_REGISTER_SCRIPT }],
   }),
   beforeLoad: async () => {
     const user = await getAuthUser();
