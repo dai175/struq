@@ -1017,13 +1017,14 @@ function BarGrid({
       {Array.from({ length: total }, (_, i) => {
         const active = tracking && i === currentBar;
         const past = tracking && i < currentBar;
+        const filled = active || past || !tracking;
         return (
           <span
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length, never reordered
             key={i}
             style={{
               height: 18,
-              background: active || past ? color : "transparent",
+              background: filled ? color : "transparent",
               border: `1px solid ${color}`,
               opacity: active ? 1 : past ? 0.7 : tracking ? 0.25 : 0.5,
             }}
