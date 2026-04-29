@@ -534,19 +534,10 @@ export const listSongsForPicker = createServerFn({ method: "GET" })
       await requireSetlistOwner(db, data.setlistId, user.userId);
     }
 
-    // When setlistId is omitted (new setlist flow), skip the NOT IN subquery —
-    // the client de-duplicates against the in-memory song list instead.
-    const baseScope = data.setlistId
-      ? and(
-          eq(schema.songs.userId, user.userId),
-          isNull(schema.songs.deletedAt),
-          sql`${schema.songs.id} NOT IN (
-            SELECT ${schema.setlistSongs.songId}
-            FROM ${schema.setlistSongs}
-            WHERE ${schema.setlistSongs.setlistId} = ${data.setlistId}
-          )`,
-        )
-      : and(eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt));
+    // Return all of the user's songs; the client de-duplicates against the
+    // in-memory list. A server-side NOT IN against setlist_songs would hide
+    // songs the user has removed locally but not yet saved.
+    const baseScope = and(eq(schema.songs.userId, user.userId), isNull(schema.songs.deletedAt));
     let whereClause = baseScope;
     if (data.query) {
       const pattern = `%${escapeLikePattern(data.query)}%`;

@@ -41,7 +41,8 @@ export function useSongPicker(params: { editSetlistId: string | null; selectedSo
       });
   }, [open, editSetlistId, debouncedInput, t.common.errorLoadFailed, toast.error]);
 
-  // Server-side NOT IN can't see local-only edits; also dedupe client-side.
+  // The server returns all of the user's songs; we exclude ones already in the
+  // setlist here so locally-removed-but-unsaved songs reappear in the picker.
   const availableSongs = useMemo(() => {
     const existingIds = new Set(selectedSongIds);
     return items.filter((s) => !existingIds.has(s.id));
