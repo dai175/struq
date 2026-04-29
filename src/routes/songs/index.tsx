@@ -5,6 +5,8 @@ import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useLoadMore } from "@/lib/use-load-more";
+import { CacheDot, type CacheState, songCacheState } from "@/offline/cache-dot";
+import { useCachedSongs } from "@/offline/use-cached";
 import { listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconPlus, IconSearch, Logomark } from "@/ui/icons";
@@ -78,6 +80,7 @@ function SongsPage() {
   }
 
   const isSearching = !!search.q;
+  const cachedSongs = useCachedSongs();
 
   return (
     <>
@@ -180,7 +183,13 @@ function SongsPage() {
           <>
             <ul style={{ borderTop: "1px solid var(--color-line)" }}>
               {songs.map(({ song, sections }, index) => (
-                <SongRowView key={song.id} song={song} sections={sections} index={index} />
+                <SongRowView
+                  key={song.id}
+                  song={song}
+                  sections={sections}
+                  index={index}
+                  cacheState={songCacheState(song, cachedSongs)}
+                />
               ))}
             </ul>
             {hasMore && (
@@ -197,7 +206,17 @@ function SongsPage() {
   );
 }
 
-function SongRowView({ song, sections, index }: { song: SongRow; sections: SectionRow[]; index: number }) {
+function SongRowView({
+  song,
+  sections,
+  index,
+  cacheState,
+}: {
+  song: SongRow;
+  sections: SectionRow[];
+  index: number;
+  cacheState: CacheState;
+}) {
   const totalBars = sections.reduce((sum, s) => sum + s.bars, 0);
 
   return (
@@ -224,8 +243,12 @@ function SongRowView({ song, sections, index }: { song: SongRow; sections: Secti
       </span>
       <Link to="/songs/$id" params={{ id: song.id }} className="min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="truncate" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>
-            {song.title}
+          <span
+            className="inline-flex min-w-0 items-center gap-1.5"
+            style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}
+          >
+            <span className="truncate">{song.title}</span>
+            <CacheDot state={cacheState} />
           </span>
           {song.artist && (
             <span

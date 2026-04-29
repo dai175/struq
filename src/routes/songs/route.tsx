@@ -6,6 +6,8 @@ import { clientLogger } from "@/lib/client-logger";
 import { useToast } from "@/lib/toast";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useLoadMore } from "@/lib/use-load-more";
+import { CacheDot, type CacheState, songCacheState } from "@/offline/cache-dot";
+import { useCachedSongs } from "@/offline/use-cached";
 import { listSongs, type SectionRow, type SongRow } from "@/songs/server-fns";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconPlus, IconSearch } from "@/ui/icons";
@@ -90,6 +92,7 @@ function SongsPcLibraryColumn() {
   }
 
   const isSearching = !!search.q;
+  const cachedSongs = useCachedSongs();
 
   async function handleLoadMore() {
     try {
@@ -189,6 +192,7 @@ function SongsPcLibraryColumn() {
             sections={it.sections}
             index={i}
             active={it.song.id === activeId}
+            cacheState={songCacheState(it.song, cachedSongs)}
           />
         ))}
         {hasMore && (
@@ -208,11 +212,13 @@ function SongsPcLibraryRow({
   sections,
   index,
   active,
+  cacheState,
 }: {
   song: SongRow;
   sections: SectionRow[];
   index: number;
   active: boolean;
+  cacheState: CacheState;
 }) {
   return (
     <li>
@@ -246,14 +252,15 @@ function SongsPcLibraryRow({
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
-              className="truncate"
+              className="flex min-w-0 items-center gap-1.5"
               style={{
                 fontSize: 14,
                 fontWeight: active ? 700 : 600,
                 color: "var(--color-text)",
               }}
             >
-              {song.title}
+              <span className="truncate">{song.title}</span>
+              <CacheDot state={cacheState} />
             </div>
             <div
               className="flex"
