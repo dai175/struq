@@ -188,4 +188,12 @@ export const en: Translations = {
       "Use your Google account. Struq syncs sections, setlists and preferences across every device you sign in on.",
     continueWithGoogle: "Continue with Google",
   },
+  errorBoundary: {
+    onlineTitle: "Couldn't load this page",
+    onlineMessage: "There may have been a connection issue. Please try again.",
+    offlineTitle: "This page isn't available offline",
+    offlineMessage: "Only setlists and songs you've already downloaded work without a network.",
+    back: "Back",
+    retry: "Retry",
+  },
 };

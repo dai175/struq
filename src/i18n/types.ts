@@ -188,4 +188,13 @@ export interface Translations {
     signInBody: string;
     continueWithGoogle: string;
   };
+
+  errorBoundary: {
+    onlineTitle: string;
+    onlineMessage: string;
+    offlineTitle: string;
+    offlineMessage: string;
+    back: string;
+    retry: string;
+  };
 }

@@ -70,6 +70,6 @@ meta (key: 'current')
 - [x] **Step 4**：online/offline フックと OFFLINE バッジ
 - [x] **Step 5**：リスト画面の DL 状態ドット
 - [x] **Step 6**：セトリ詳細の一括DLボタン
-- [ ] **Step 7**：ログアウト・ユーザー切替時の `clearAll()` 結線
+- [x] **Step 7**：ログアウト・ユーザー切替時の `clearAll()` 結線
 
 各ステップは独立 PR を想定。完了時はチェックを付けてコミット。

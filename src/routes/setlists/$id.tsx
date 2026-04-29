@@ -21,7 +21,7 @@ import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { BulkDownloadButton } from "@/offline/bulk-download-button";
 import { CacheDot, type CacheState, songCacheStateById } from "@/offline/cache-dot";
-import { type CachedSong, putOfflineSetlist } from "@/offline/db";
+import { type CachedSong, getOfflineSetlist, putOfflineSetlist } from "@/offline/db";
 import { useCachedSongs } from "@/offline/use-cached";
 import type { SetlistSongItem, SetlistSongSection } from "@/setlists/server-fns";
 import {
@@ -44,7 +44,18 @@ const PC_SONG_GRID_COLUMNS = "28px 42px 1fr 200px 100px";
 export const Route = createFileRoute("/setlists/$id")({
   beforeLoad: requireAuth,
   loader: async ({ params }) => {
-    const data = await getSetlist({ data: { setlistId: params.id } });
+    let data: Awaited<ReturnType<typeof getSetlist>>;
+    try {
+      data = await getSetlist({ data: { setlistId: params.id } });
+    } catch (error) {
+      // Offline: serve the IDB mirror so the setlist can still be opened
+      // and the perform view can navigate the song sequence.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        const cached = await getOfflineSetlist(params.id);
+        if (cached) return { setlist: cached.setlist, songs: cached.songs };
+      }
+      throw error;
+    }
     if (!data) throw redirect({ to: "/setlists" });
     return data;
   },

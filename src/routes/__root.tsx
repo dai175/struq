@@ -1,11 +1,14 @@
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts, useMatches } from "@tanstack/react-router";
-import { getAuthUser } from "../auth/server-fns";
+import { useEffect } from "react";
+import { getAuthUserWithCache } from "../auth/cached-user";
 import type { SessionUser } from "../auth/session";
 import { I18nProvider } from "../i18n/provider";
 import { DEFAULT_LOCALE } from "../i18n/types";
 import { THEME_PRE_PAINT_SCRIPT, ThemeProvider } from "../lib/theme";
 import { ToastProvider } from "../lib/toast";
+import { ensureUserMatches } from "../offline/db";
 import { OfflineAnnouncer } from "../offline/offline-announcer";
+import { OfflineErrorBoundary } from "../offline/offline-error-boundary";
 import { SERVICE_WORKER_REGISTER_SCRIPT } from "../offline/register-sw";
 import appCss from "../styles.css?url";
 import { BottomNav } from "../ui/bottom-nav";
@@ -25,6 +28,7 @@ function NotFound() {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   notFoundComponent: NotFound,
+  errorComponent: OfflineErrorBoundary,
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -49,7 +53,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     scripts: [{ children: THEME_PRE_PAINT_SCRIPT }, { children: SERVICE_WORKER_REGISTER_SCRIPT }],
   }),
   beforeLoad: async () => {
-    const user = await getAuthUser();
+    const user = await getAuthUserWithCache();
     return { user };
   },
   shellComponent: RootDocument,
@@ -62,6 +66,14 @@ function RootLayout() {
   const currentPath = matches[matches.length - 1]?.fullPath ?? "";
   const isPerformView = currentPath.endsWith("/perform");
   const showNav = !!user && !isPerformView;
+
+  // Wipe the offline mirror if a different user is now signed in on this
+  // device — guards against showing the previous user's data after an
+  // account switch that bypassed the explicit logout flow.
+  const userId = user?.userId;
+  useEffect(() => {
+    if (userId) void ensureUserMatches(userId);
+  }, [userId]);
 
   return (
     <ThemeProvider>

@@ -1,12 +1,14 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { type ReactNode, useState } from "react";
+import { clearCachedUser } from "@/auth/cached-user";
 import { logout, requireAuth, updateLocale } from "@/auth/server-fns";
 import type { SessionUser } from "@/auth/session";
 import { useI18n } from "@/i18n";
 import { LOCALES, type Locale } from "@/i18n/types";
 import { clientLogger } from "@/lib/client-logger";
 import { type Appearance, useAppearance } from "@/lib/theme";
+import { clearAll as clearOfflineCache } from "@/offline/db";
 import {
   CLICK_SOUNDS,
   type ClickSound,
@@ -96,6 +98,10 @@ function SettingsPage() {
   const handleLogout = async () => {
     try {
       await logoutFn();
+      // Wipe the offline mirror so a different user signing in on the same
+      // device doesn't see the previous user's songs and setlists.
+      await clearOfflineCache();
+      clearCachedUser();
       router.navigate({ to: "/login" });
     } catch (error) {
       clientLogger.error("logout", error);
