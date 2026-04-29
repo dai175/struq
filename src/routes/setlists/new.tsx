@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { requireAuth } from "@/auth/server-fns";
-import { SetlistEditor } from "./$id";
+import { SetlistEditor } from "@/setlists/editor/SetlistEditor";
 
 export const Route = createFileRoute("/setlists/new")({
   beforeLoad: requireAuth,
