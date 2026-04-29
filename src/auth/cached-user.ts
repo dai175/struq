@@ -1,6 +1,7 @@
+import { getAuthUser } from "@/auth/server-fns";
+import type { SessionUser } from "@/auth/session";
+import { LOCALES } from "@/i18n/types";
 import { isOffline } from "@/offline/use-online-status";
-import { getAuthUser } from "./server-fns";
-import type { SessionUser } from "./session";
 
 // localStorage mirror of the SessionUser. Used as a last-known-good fallback
 // when the network is unreachable so route loaders can keep rendering instead
@@ -12,12 +13,31 @@ function isClient(): boolean {
   return typeof window !== "undefined";
 }
 
+// Cheap shape check before trusting localStorage — corrupt or older-shape
+// payloads (e.g. left over from a schema change) get rejected so the caller
+// sees `null` and skips the offline fallback rather than feeding broken data
+// into the route context.
+function isSessionUser(value: unknown): value is SessionUser {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.userId === "string" &&
+    typeof v.googleId === "string" &&
+    typeof v.email === "string" &&
+    typeof v.name === "string" &&
+    (v.avatarUrl === null || typeof v.avatarUrl === "string") &&
+    typeof v.locale === "string" &&
+    (LOCALES as readonly string[]).includes(v.locale)
+  );
+}
+
 function readCachedUser(): SessionUser | null {
   if (!isClient()) return null;
   const raw = window.localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as SessionUser;
+    const parsed = JSON.parse(raw) as unknown;
+    return isSessionUser(parsed) ? parsed : null;
   } catch {
     return null;
   }

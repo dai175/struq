@@ -25,16 +25,18 @@ export function BulkDownloadButton({ songIds }: BulkDownloadButtonProps) {
   async function handleClick() {
     setDownloading(true);
     setProgress(0);
-    let done = 0;
+    let succeeded = 0;
     for (const id of songIds) {
       try {
         const data = await getSongWithSections({ data: { songId: id } });
-        if (data) await putOfflineSong(data.song, data.sections);
+        if (data) {
+          await putOfflineSong(data.song, data.sections);
+          succeeded += 1;
+        }
       } catch (error) {
         clientLogger.error("bulkDownloadSong", error);
       }
-      done += 1;
-      setProgress(done);
+      setProgress(succeeded);
     }
     setDownloading(false);
   }
