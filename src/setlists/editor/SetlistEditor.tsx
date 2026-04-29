@@ -1,10 +1,11 @@
-import { closestCenter, DndContext, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { closestCenter, DndContext } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useI18n } from "@/i18n";
 import { ConfirmModal } from "@/lib/confirm-modal";
 import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
+import { useDndSensors } from "@/lib/use-dnd-sensors";
 import { BulkDownloadButton } from "@/offline/bulk-download-button";
 import { songCacheStateById } from "@/offline/cache-dot";
 import { useCachedSongs } from "@/offline/use-cached";
@@ -50,17 +51,12 @@ export function SetlistEditor(props: SetlistEditorProps) {
   const { totalSongSections, totalMinutes } = useSetlistTotals(form.songs);
   const cachedSongs = useCachedSongs();
 
-  const picker = useSongPicker({
-    editSetlistId,
-    selectedSongIds: form.songs.map((s) => s.songId),
-  });
+  const selectedSongIds = useMemo(() => form.songs.map((s) => s.songId), [form.songs]);
+  const picker = useSongPicker({ editSetlistId, selectedSongIds });
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
-  );
+  const sensors = useDndSensors();
 
   const fallbackTitle = isNew ? t.setlist.newSetlist : data.setlist.title;
   const songCountLabel = `${String(form.songs.length).padStart(2, "0")} ${t.nav.songs.toUpperCase()}`;

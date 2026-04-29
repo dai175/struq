@@ -9,17 +9,17 @@ export function usePerformControls(params: {
   setlistId: string | undefined;
   total: number;
   setlistSongs: SetlistSongItem[];
-  currentSongIdx: number;
   countIn: boolean;
   preRollBars: number;
 }) {
-  const { songId, setlistId, total, setlistSongs, currentSongIdx, countIn, preRollBars } = params;
+  const { songId, setlistId, total, setlistSongs, countIn, preRollBars } = params;
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<PerformMode>("selecting");
   const [currentIndex, setCurrentIndex] = useState(0);
   const swipedRef = useRef(false);
 
+  const currentSongIdx = setlistSongs.findIndex((s) => s.songId === songId);
   const isSetlistMode = !!setlistId && currentSongIdx >= 0;
   const hasNextSong = isSetlistMode && currentSongIdx < setlistSongs.length - 1;
   const hasPrevSong = isSetlistMode && currentSongIdx > 0;
@@ -132,6 +132,7 @@ export function usePerformControls(params: {
     isSetlistMode,
     hasNextSong,
     hasPrevSong,
+    currentSongIdx,
     advanceSection,
     handleBack,
     handleReset,

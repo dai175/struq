@@ -1,15 +1,8 @@
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+import { closestCenter, DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Link } from "@tanstack/react-router";
 import { useI18n } from "@/i18n";
+import { useDndSensors } from "@/lib/use-dnd-sensors";
 import { BulkDownloadButton } from "@/offline/bulk-download-button";
 import { songCacheStateById } from "@/offline/cache-dot";
 import type { CachedSong } from "@/offline/db";
@@ -74,10 +67,7 @@ export function PcDetailPane({
   onOpenPicker: () => void;
 }) {
   const { t } = useI18n();
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
-  );
+  const sensors = useDndSensors();
   const subtitle = [sessionDate, venue].filter(Boolean).join(" · ");
 
   return (

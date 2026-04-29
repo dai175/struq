@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useI18n } from "@/i18n";
 import type { getSetlist } from "@/setlists/server-fns";
 import {
@@ -52,7 +52,6 @@ export function PerformView({
   const [accentDownbeat] = useAccentDownbeat();
 
   const setlistSongs = setlistData?.songs ?? [];
-  const currentSongIdx = setlistSongs.findIndex((s) => s.songId === songId);
   const total = sections.length;
 
   const ctrl = usePerformControls({
@@ -60,7 +59,6 @@ export function PerformView({
     setlistId,
     total,
     setlistSongs,
-    currentSongIdx,
     countIn,
     preRollBars,
   });
@@ -130,10 +128,13 @@ export function PerformView({
     ctrl.handleTouchSwipe(dx);
   }
 
-  const metaParts: string[] = [];
-  if (song.artist) metaParts.push(song.artist.toUpperCase());
-  if (song.bpm) metaParts.push(`${song.bpm} BPM`);
-  if (song.key) metaParts.push(`KEY ${song.key}`);
+  const metaParts = useMemo(() => {
+    const parts: string[] = [];
+    if (song.artist) parts.push(song.artist.toUpperCase());
+    if (song.bpm) parts.push(`${song.bpm} BPM`);
+    if (song.key) parts.push(`KEY ${song.key}`);
+    return parts;
+  }, [song.artist, song.bpm, song.key]);
 
   return (
     <div
@@ -179,7 +180,7 @@ export function PerformView({
                 currentIndex={ctrl.currentIndex}
                 total={total}
                 isSetlistMode={ctrl.isSetlistMode}
-                currentSongIdx={currentSongIdx}
+                currentSongIdx={ctrl.currentSongIdx}
                 setlistTotal={setlistSongs.length}
               />
             )}
@@ -258,7 +259,7 @@ export function PerformView({
                     locale={locale}
                     isSetlistMode={ctrl.isSetlistMode}
                     hasNextSong={ctrl.hasNextSong}
-                    nextSongTitle={ctrl.hasNextSong ? setlistSongs[currentSongIdx + 1].title : null}
+                    nextSongTitle={ctrl.hasNextSong ? setlistSongs[ctrl.currentSongIdx + 1].title : null}
                   />
                 ) : null}
               </button>
