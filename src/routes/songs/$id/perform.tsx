@@ -753,9 +753,12 @@ function PerformView({
                       >
                         {sectionLabel(current, locale)}
                       </div>
-                      {(mode === "auto" || mode === "paused") && (
-                        <BarGrid total={current.bars} currentBar={currentBar} color={sectionColor} />
-                      )}
+                      <BarGrid
+                        total={current.bars}
+                        currentBar={currentBar}
+                        color={sectionColor}
+                        tracking={mode !== "manual"}
+                      />
                       <div
                         className="mt-4 flex gap-4"
                         style={{
@@ -768,9 +771,9 @@ function PerformView({
                         }}
                       >
                         <span>
-                          BAR {String(Math.max(currentBar, 0) + 1).padStart(2, "0")}
-                          {" OF "}
-                          {String(current.bars).padStart(2, "0")}
+                          {mode === "manual"
+                            ? `${String(current.bars).padStart(2, "0")} BARS`
+                            : `BAR ${String(Math.max(currentBar, 0) + 1).padStart(2, "0")} OF ${String(current.bars).padStart(2, "0")}`}
                         </span>
                         <span>{sectionBeats(current)} BEATS</span>
                       </div>
@@ -989,7 +992,17 @@ function StageCard({
   );
 }
 
-function BarGrid({ total, currentBar, color }: { total: number; currentBar: number; color: string }) {
+function BarGrid({
+  total,
+  currentBar,
+  color,
+  tracking,
+}: {
+  total: number;
+  currentBar: number;
+  color: string;
+  tracking: boolean;
+}) {
   return (
     <div
       className="mt-4 grid"
@@ -1002,8 +1015,8 @@ function BarGrid({ total, currentBar, color }: { total: number; currentBar: numb
       aria-hidden="true"
     >
       {Array.from({ length: total }, (_, i) => {
-        const active = i === currentBar;
-        const past = i < currentBar;
+        const active = tracking && i === currentBar;
+        const past = tracking && i < currentBar;
         return (
           <span
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length, never reordered
@@ -1012,7 +1025,7 @@ function BarGrid({ total, currentBar, color }: { total: number; currentBar: numb
               height: 18,
               background: active || past ? color : "transparent",
               border: `1px solid ${color}`,
-              opacity: active ? 1 : past ? 0.7 : 0.25,
+              opacity: active ? 1 : past ? 0.7 : tracking ? 0.25 : 0.5,
             }}
           />
         );
