@@ -5,6 +5,7 @@ import { I18nProvider } from "../i18n/provider";
 import { DEFAULT_LOCALE } from "../i18n/types";
 import { THEME_PRE_PAINT_SCRIPT, ThemeProvider } from "../lib/theme";
 import { ToastProvider } from "../lib/toast";
+import { OfflineAnnouncer } from "../offline/offline-announcer";
 import { SERVICE_WORKER_REGISTER_SCRIPT } from "../offline/register-sw";
 import appCss from "../styles.css?url";
 import { BottomNav } from "../ui/bottom-nav";
@@ -69,6 +70,7 @@ function RootLayout() {
         <Outlet />
       </div>
       {showNav && <BottomNav />}
+      <OfflineAnnouncer />
     </ThemeProvider>
   );
 }

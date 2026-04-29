@@ -1,4 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
+import { useOnlineStatus } from "@/offline/use-online-status";
 
 /**
  * Broadcast Console icon set — inline stroke-based SVGs, viewBox 0 0 24 24.
@@ -168,16 +169,20 @@ interface LogomarkProps {
 /**
  * Logomark — 5 colored rects in a 3-row structure chart, echoing a song's
  * section layout. Fills reference the section palette so any later palette
- * retune keeps the logo in sync.
+ * retune keeps the logo in sync. When the browser is offline, the mark
+ * collapses to a single dim color so every screen carries an at-a-glance
+ * cue without needing a separate floating badge.
  */
 export function Logomark({ size = 26 }: LogomarkProps) {
+  const online = useOnlineStatus();
+  const offlineFill = "var(--color-dim-2)";
   return (
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24">
-      <rect x="2" y="4" width="6" height="3" fill="var(--color-section-intro)" />
-      <rect x="10" y="4" width="8" height="3" fill="var(--color-section-a)" />
-      <rect x="2" y="10" width="12" height="3" fill="var(--color-section-chorus)" />
-      <rect x="2" y="16" width="5" height="3" fill="var(--color-section-bridge)" />
-      <rect x="9" y="16" width="11" height="3" fill="var(--color-section-solo)" />
+      <rect x="2" y="4" width="6" height="3" fill={online ? "var(--color-section-intro)" : offlineFill} />
+      <rect x="10" y="4" width="8" height="3" fill={online ? "var(--color-section-a)" : offlineFill} />
+      <rect x="2" y="10" width="12" height="3" fill={online ? "var(--color-section-chorus)" : offlineFill} />
+      <rect x="2" y="16" width="5" height="3" fill={online ? "var(--color-section-bridge)" : offlineFill} />
+      <rect x="9" y="16" width="11" height="3" fill={online ? "var(--color-section-solo)" : offlineFill} />
     </svg>
   );
 }
