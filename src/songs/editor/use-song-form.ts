@@ -181,7 +181,7 @@ export function useSongForm(params: { initialData: LoadedData; isNew: boolean; e
       savedSnapshotRef.current = currentSnapshot;
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
-      router.invalidate();
+      await router.invalidate();
     } catch (error) {
       clientLogger.error("saveSong", error);
       toast.error(t.common.errorSaveFailed);

@@ -167,7 +167,7 @@ export function useSetlistForm(params: { data: LoaderData; isNew: boolean; editS
       savedSnapshotRef.current = currentSnapshot;
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
-      router.invalidate();
+      await router.invalidate();
     } catch (error) {
       clientLogger.error("saveSetlistWithSongs", error);
       toast.error(t.common.errorSaveFailed);

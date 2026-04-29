@@ -354,9 +354,7 @@ export function SetlistEditor(props: SetlistEditorProps) {
         availableSongs={picker.availableSongs}
         loading={picker.loading}
         setlistHasSongs={form.songs.length > 0}
-        onAdd={(song) => {
-          form.handlePickerAdd(song);
-        }}
+        onAdd={form.handlePickerAdd}
         onClose={picker.close}
       />
     </div>
