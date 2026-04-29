@@ -770,9 +770,9 @@ function PerformView({
                         }}
                       >
                         <span>
-                          BAR {String(Math.max(currentBar, 0) + 1).padStart(2, "0")}
-                          {" OF "}
-                          {String(current.bars).padStart(2, "0")}
+                          {mode === "manual"
+                            ? `${String(current.bars).padStart(2, "0")} BARS`
+                            : `BAR ${String(Math.max(currentBar, 0) + 1).padStart(2, "0")} OF ${String(current.bars).padStart(2, "0")}`}
                         </span>
                         <span>{sectionBeats(current)} BEATS</span>
                       </div>
