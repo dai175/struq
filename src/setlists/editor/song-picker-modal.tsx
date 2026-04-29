@@ -4,6 +4,17 @@ import type { PickerSong } from "@/setlists/editor/use-song-picker";
 import { ConsoleBtn } from "@/ui/console-btn";
 import { IconPlus, IconSearch } from "@/ui/icons";
 
+export interface SongPickerModalProps {
+  open: boolean;
+  input: string;
+  onInputChange: (value: string) => void;
+  availableSongs: PickerSong[];
+  loading: boolean;
+  setlistHasSongs: boolean;
+  onAdd: (song: PickerSong) => void;
+  onClose: () => void;
+}
+
 export function SongPickerModal({
   open,
   input,
@@ -13,16 +24,7 @@ export function SongPickerModal({
   setlistHasSongs,
   onAdd,
   onClose,
-}: {
-  open: boolean;
-  input: string;
-  onInputChange: (value: string) => void;
-  availableSongs: PickerSong[];
-  loading: boolean;
-  setlistHasSongs: boolean;
-  onAdd: (song: PickerSong) => void;
-  onClose: () => void;
-}) {
+}: SongPickerModalProps) {
   const { t } = useI18n();
 
   useEffect(() => {

@@ -15,6 +15,33 @@ import { IconPlay, IconPlus, IconTrash } from "@/ui/icons";
 import { MetaTag } from "@/ui/meta-tag";
 import { StructureBar } from "@/ui/structure-bar";
 
+export interface PcDetailPaneProps {
+  title: string;
+  fallbackTitle: string;
+  description: string;
+  sessionDate: string;
+  venue: string;
+  titleError: boolean;
+  songs: SetlistSongItem[];
+  saving: boolean;
+  saved: boolean;
+  isDirty: boolean;
+  setlistId: string | null;
+  isNew: boolean;
+  totalSongSections: SetlistSongSection[];
+  totalMinutes: number;
+  cachedSongs: ReadonlyMap<string, CachedSong>;
+  onTitleChange: (v: string) => void;
+  onDescriptionChange: (v: string) => void;
+  onSessionDateChange: (v: string) => void;
+  onVenueChange: (v: string) => void;
+  onSave: () => void;
+  onDelete: () => void;
+  onDragEnd: (event: DragEndEvent) => void;
+  onRemoveSong: (songId: string) => void;
+  onOpenPicker: () => void;
+}
+
 export function PcDetailPane({
   title,
   fallbackTitle,
@@ -40,32 +67,7 @@ export function PcDetailPane({
   onDragEnd,
   onRemoveSong,
   onOpenPicker,
-}: {
-  title: string;
-  fallbackTitle: string;
-  description: string;
-  sessionDate: string;
-  venue: string;
-  titleError: boolean;
-  songs: SetlistSongItem[];
-  saving: boolean;
-  saved: boolean;
-  isDirty: boolean;
-  setlistId: string | null;
-  isNew: boolean;
-  totalSongSections: SetlistSongSection[];
-  totalMinutes: number;
-  cachedSongs: ReadonlyMap<string, CachedSong>;
-  onTitleChange: (v: string) => void;
-  onDescriptionChange: (v: string) => void;
-  onSessionDateChange: (v: string) => void;
-  onVenueChange: (v: string) => void;
-  onSave: () => void;
-  onDelete: () => void;
-  onDragEnd: (event: DragEndEvent) => void;
-  onRemoveSong: (songId: string) => void;
-  onOpenPicker: () => void;
-}) {
+}: PcDetailPaneProps) {
   const { t } = useI18n();
   const sensors = useDndSensors();
   const subtitle = [sessionDate, venue].filter(Boolean).join(" · ");
