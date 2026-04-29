@@ -67,7 +67,11 @@ function pwaClientPlugins() {
           // SSR'd HTML isn't precached (TanStack Start renders per request);
           // NetworkFirst keeps online users on fresh HTML and falls back to
           // the last successful response when the network is unreachable.
-          urlPattern: ({ request }) => request.mode === "navigate",
+          // Exclude /api/* so OAuth callbacks, server-fns, and any
+          // Set-Cookie / 3xx response bypass the SW entirely — Workbox can
+          // mishandle redirects ("no-response" in Safari) and we never want
+          // those endpoints served from cache.
+          urlPattern: ({ request, url }) => request.mode === "navigate" && !url.pathname.startsWith("/api/"),
           handler: "NetworkFirst",
           options: {
             cacheName: "struq-pages",
