@@ -1,16 +1,9 @@
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+import { closestCenter, DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Link } from "@tanstack/react-router";
 import { useI18n } from "@/i18n";
 import type { SectionType } from "@/i18n/types";
+import { useDndSensors } from "@/lib/use-dnd-sensors";
 import { isValidUrl } from "@/lib/validation";
 import type { SectionData } from "@/songs/components/SectionRow";
 import { PALETTE_TYPES, SECTION_COLORS } from "@/songs/constants";
@@ -88,10 +81,7 @@ export function PcEditorPane({
   onDragEnd,
 }: PcEditorPaneProps) {
   const { t } = useI18n();
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
-  );
+  const sensors = useDndSensors();
   const totalBars = sections.reduce((sum, s) => sum + s.bars, 0);
 
   return (

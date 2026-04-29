@@ -1,10 +1,11 @@
-import { closestCenter, DndContext, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { closestCenter, DndContext } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { useI18n } from "@/i18n";
 import { ConfirmModal } from "@/lib/confirm-modal";
 import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
+import { useDndSensors } from "@/lib/use-dnd-sensors";
 import { isValidUrl } from "@/lib/validation";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { AiGeneratePanel } from "@/songs/editor/ai-generate-panel";
@@ -49,10 +50,7 @@ export function SongEditor(props: SongEditorProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const handleCancelDeleteConfirm = useCallback(() => setShowDeleteConfirm(false), []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
-  );
+  const sensors = useDndSensors();
 
   const handleAiGenerate = useCallback(() => {
     if (!form.title.trim()) {

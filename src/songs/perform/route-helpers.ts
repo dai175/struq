@@ -14,12 +14,10 @@ export async function persistPerformData(
   songData: Awaited<ReturnType<typeof getSongWithSections>>,
   setlistData: Awaited<ReturnType<typeof getSetlist>>,
 ) {
-  if (songData) {
-    await putOfflineSong(songData.song, songData.sections);
-  }
-  if (setlistData) {
-    await putOfflineSetlist(setlistData.setlist, setlistData.songs);
-  }
+  await Promise.all([
+    songData ? putOfflineSong(songData.song, songData.sections) : null,
+    setlistData ? putOfflineSetlist(setlistData.setlist, setlistData.songs) : null,
+  ]);
 }
 
 // Refreshes IDB so the next visit serves fresh data. Failures leave the
