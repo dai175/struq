@@ -187,4 +187,12 @@ export const ja: Translations = {
     signInBody: "Googleアカウントでサインインすると、セクション・セットリスト・設定がすべての端末で同期されます。",
     continueWithGoogle: "Googleで続行",
   },
+  errorBoundary: {
+    onlineTitle: "ページを表示できませんでした",
+    onlineMessage: "通信エラーが発生した可能性があります。もう一度お試しください。",
+    offlineTitle: "このページはオフラインで開けません",
+    offlineMessage: "事前にダウンロードしたセットリスト・楽曲のみオフラインで利用できます。",
+    back: "戻る",
+    retry: "再試行",
+  },
 };

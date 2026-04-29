@@ -25,7 +25,7 @@ import {
 import { useToast } from "@/lib/toast";
 import { UnsavedChangesGuardModal } from "@/lib/unsaved-changes-guard-modal";
 import { isValidUrl } from "@/lib/validation";
-import { putOfflineSong } from "@/offline/db";
+import { getOfflineSong, putOfflineSong } from "@/offline/db";
 import { SectionPalette } from "@/songs/components/SectionPalette";
 import { type SectionData, SectionRow, type SectionRowVariant } from "@/songs/components/SectionRow";
 import { DEFAULT_BARS, PALETTE_TYPES, SECTION_COLORS } from "@/songs/constants";
@@ -74,7 +74,19 @@ function buildSongSnapshot(data: { song: SongRow; sections: SectionDbRow[] }): s
 export const Route = createFileRoute("/songs/$id/")({
   beforeLoad: requireAuth,
   loader: async ({ params }) => {
-    const data = await getSongWithSections({ data: { songId: params.id } });
+    let data: Awaited<ReturnType<typeof getSongWithSections>>;
+    try {
+      data = await getSongWithSections({ data: { songId: params.id } });
+    } catch (error) {
+      // Offline: fall back to the IDB mirror so a previously-visited song
+      // can still be edited / viewed (read-only network operations) without
+      // throwing into the route's error boundary.
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        const cached = await getOfflineSong(params.id);
+        if (cached) return { song: cached.song, sections: cached.sections };
+      }
+      throw error;
+    }
     if (!data) throw redirect({ to: "/songs" });
     return data;
   },
