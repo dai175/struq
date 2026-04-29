@@ -7,6 +7,19 @@ Struq is a web app for musicians to quickly map out song structures (Intro → A
 **URL:** struq.focuswave.cc
 **AI:** Google Gemini Flash (song structure generation from prompt)
 
+## Project Layout
+
+- `src/routes/` — TanStack Start file-based routing (`routeTree.gen.ts` is generated)
+- `src/auth/` — Google OAuth, sessions, `requireUser()` wiring
+- `src/db/` — Drizzle schema + `getDb()` factory (binding name `DB`)
+- `src/server/` — shared server helpers (`requireUser`, `now`)
+- `src/songs/`, `src/setlists/` — feature server-fns + components
+- `src/offline/` — PWA: SW registration, IndexedDB cache (idb), bulk download, offline error boundary
+- `src/i18n/` — `ja` / `en` locales + `I18nProvider`
+- `src/ui/` — Broadcast Console primitives (top-bar, side-rail, structure-bar, tokens, icons)
+- `src/lib/` — cross-cutting utilities (logger, schemas, rate-limit, theme)
+- `drizzle/` — D1 migration SQL files
+
 ## UI/UX Guidelines
 
 - **Broadcast Console** design language: dark ink surfaces (`--color-ink*`), high-contrast mono labels (JetBrains Mono), subtle line dividers (`--color-line*`)
@@ -37,3 +50,5 @@ Required: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GEMINI_API_KEY`, `SESSION
 - Server functions that operate on both a setlist and songs must verify ownership of **both** (see `addSongToSetlist` for the reference pattern)
 - Design tokens: use `import { C } from "@/ui/tokens"` for dynamic inline styles (per-section colors, box-shadow); for static Tailwind utilities use arbitrary values like `bg-[color:var(--color-ink)]`
 - Legacy tokens (`--color-surface*`, `--color-text-primary/secondary/on-dark`) coexist with Broadcast Console tokens — they're deprecated per-screen as each redesign PR lands; prefer `--color-ink*` / `--color-text` / `--color-dim*` for new code
+- Offline support uses `vite-plugin-pwa` + service worker + IndexedDB (`src/offline/db.ts`); cache schema is versioned — bump the version on shape changes and ensure logout wipes the IDB store
+- `AGENTS.md` is a symlink to `CLAUDE.md` (consumed by other agentic tools); edit `CLAUDE.md` only — never replace `AGENTS.md` with a regular file

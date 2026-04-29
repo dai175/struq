@@ -12,6 +12,7 @@
 - **セットリスト管理** — 日付・会場つきのセットリストに曲を並べて管理
 - **タイトル / アーティスト検索** — 曲一覧と追加モーダルで絞り込み
 - **ドラッグ&ドロップ並べ替え** — セクションとセットリスト内の曲を自由に並べ替え
+- **オフライン対応 (PWA)** — Service Worker + IndexedDB で曲・セットリストをキャッシュ。一括ダウンロードでオフライン時も閲覧可能
 - **日本語 / 英語** — ユーザー設定で切り替え可能な i18n
 
 ## Tech Stack
@@ -27,6 +28,7 @@
 | Language | TypeScript |
 | Linter / Formatter | Biome |
 | Testing | Vitest (unit) + Playwright (E2E) |
+| Offline / PWA | vite-plugin-pwa + Workbox + IndexedDB (idb) |
 
 ## Getting Started
 
@@ -92,6 +94,7 @@ src/
 ├── db/              # Drizzle スキーマ + getDb() ファクトリー
 ├── songs/           # 曲 CRUD サーバー関数 + コンポーネント
 ├── setlists/        # セットリスト CRUD サーバー関数
+├── offline/         # PWA: Service Worker 登録、IndexedDB キャッシュ、一括ダウンロード、オフラインエラーバウンダリ
 ├── i18n/            # 翻訳キー + I18nProvider (ja / en)
 ├── server/          # 共通サーバーヘルパー (requireUser, now)
 ├── ui/              # 共通 UI プリミティブ (top-bar, bottom-nav, side-rail, console-*, structure-bar, toggle, tokens, icons など)
