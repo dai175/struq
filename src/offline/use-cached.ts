@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { clientLogger } from "@/lib/client-logger";
 import {
   type CachedSetlist,
   type CachedSong,
@@ -15,12 +16,16 @@ function useCachedStore<T>(load: () => Promise<ReadonlyMap<string, T>>): Readonl
   const [map, setMap] = useState<ReadonlyMap<string, T>>(() => new Map());
   useEffect(() => {
     let cancelled = false;
-    const refresh = () => {
-      void load().then((m) => {
-        if (!cancelled) setMap(m);
-      });
+    const refresh = async () => {
+      try {
+        const next = await load();
+        if (!cancelled) setMap(next);
+      } catch (error) {
+        clientLogger.error("useCachedStore", error);
+        if (!cancelled) setMap(new Map());
+      }
     };
-    refresh();
+    void refresh();
     window.addEventListener(OFFLINE_CACHE_CHANGED_EVENT, refresh);
     return () => {
       cancelled = true;

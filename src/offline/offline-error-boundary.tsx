@@ -1,18 +1,32 @@
+import { useEffect } from "react";
 import { useI18n } from "@/i18n";
 import { clientLogger } from "@/lib/client-logger";
-import { useOnlineStatus } from "./use-online-status";
+import { useOnlineStatus } from "@/offline/use-online-status";
 
 interface OfflineErrorBoundaryProps {
   error: Error;
   reset: () => void;
 }
 
+function goBack() {
+  if (typeof window === "undefined") return;
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    window.location.assign("/");
+  }
+}
+
 // Replaces TanStack Router's default error UI with a Broadcast Console-styled
 // message that adapts to navigator.onLine.
 export function OfflineErrorBoundary({ error, reset }: OfflineErrorBoundaryProps) {
-  clientLogger.error("routeError", error);
   const online = useOnlineStatus();
   const { t } = useI18n();
+
+  // Effect (not render) so reactive re-renders don't log the same error twice.
+  useEffect(() => {
+    clientLogger.error("routeError", error);
+  }, [error]);
 
   return (
     <div
@@ -45,9 +59,7 @@ export function OfflineErrorBoundary({ error, reset }: OfflineErrorBoundaryProps
         <div className="flex" style={{ gap: 10, marginTop: 6 }}>
           <button
             type="button"
-            onClick={() => {
-              if (typeof window !== "undefined" && window.history.length > 1) window.history.back();
-            }}
+            onClick={goBack}
             style={{
               padding: "10px 18px",
               border: "1px solid var(--color-line)",
