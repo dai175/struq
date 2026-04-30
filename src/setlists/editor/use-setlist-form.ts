@@ -14,6 +14,7 @@ import {
   type SetlistSongItem,
   saveSetlistWithSongs,
 } from "@/setlists/server-fns";
+import { getSongWithSections } from "@/songs/server-fns";
 
 type LoaderData = NonNullable<Awaited<ReturnType<typeof getSetlist>>>;
 
@@ -102,20 +103,51 @@ export function useSetlistForm(params: { data: LoaderData; isNew: boolean; editS
     setSongs((prev) => prev.filter((s) => s.songId !== songId));
   }, []);
 
-  const handlePickerAdd = useCallback((song: PickerSong) => {
-    setSongs((prev) => [
-      ...prev,
-      {
-        songId: song.id,
-        title: song.title,
-        artist: song.artist,
-        bpm: null,
-        songKey: null,
-        sortOrder: prev.length,
-        sections: [],
-      },
-    ]);
-  }, []);
+  const handlePickerAdd = useCallback(
+    async (song: PickerSong) => {
+      setSongs((prev) => [
+        ...prev,
+        {
+          songId: song.id,
+          title: song.title,
+          artist: song.artist,
+          bpm: null,
+          songKey: null,
+          sortOrder: prev.length,
+          sections: [],
+        },
+      ]);
+      try {
+        const detail = await getSongWithSections({ data: { songId: song.id } });
+        if (!detail) {
+          setSongs((prev) => prev.filter((s) => s.songId !== song.id));
+          toast.error(t.common.errorLoadFailed);
+          return;
+        }
+        setSongs((prev) =>
+          prev.map((s) =>
+            s.songId === song.id
+              ? {
+                  ...s,
+                  bpm: detail.song.bpm,
+                  songKey: detail.song.key,
+                  sections: detail.sections.map((sec) => ({
+                    id: sec.id,
+                    type: sec.type,
+                    bars: sec.bars,
+                    sortOrder: sec.sortOrder,
+                  })),
+                }
+              : s,
+          ),
+        );
+      } catch (error) {
+        // Keep the optimistic row; structure will hydrate on next reload after save.
+        clientLogger.error("getSongWithSections", error);
+      }
+    },
+    [t.common.errorLoadFailed, toast.error],
+  );
 
   const handleSave = useCallback(async () => {
     const trimmed = title.trim();
